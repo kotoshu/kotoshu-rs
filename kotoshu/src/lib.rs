@@ -8,6 +8,7 @@
 
 pub mod dict;
 pub mod ffi;
+pub mod suggest;
 
 #[cfg(feature = "ruby")]
 pub use ffi::ruby as ruby_ffi;

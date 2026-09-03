@@ -93,6 +93,12 @@ impl Lookuper {
         Ok(Self { aff, dic })
     }
 
+    /// The suggestion pipeline's word list (the gem's
+    /// `Dictionary::Hunspell#words`).
+    pub fn words(&self) -> &[String] {
+        self.dic.suggest_words()
+    }
+
     /// The outermost correctness check (the gem's `Lookuper#call`):
     /// forbidden-word gate, `ICONV`, `IGNORE`, plain numbers, then every
     /// break-pattern splitting whose parts are all correct.
