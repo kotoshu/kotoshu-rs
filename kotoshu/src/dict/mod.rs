@@ -15,6 +15,8 @@ mod lookup;
 use std::fmt;
 use std::path::Path;
 
+use crate::suggest;
+
 /// A loaded Hunspell dictionary answering `correct?` queries.
 ///
 /// Created with [`Dictionary::load`]; each instance owns its parsed `.aff`
@@ -46,6 +48,23 @@ impl Dictionary {
             return false;
         }
         self.lookup.call(word)
+    }
+
+    /// The dictionary's word list for suggestion generation (the gem's
+    /// `Dictionary::Hunspell#words`): lowercased raw stems, file order.
+    pub fn words(&self) -> &[String] {
+        self.lookup.words()
+    }
+
+    /// Generate ranked suggestions for `word` (the gem's
+    /// `Spellchecker#suggest` over the default suggestion algorithms:
+    /// edit distance, phonetic, keyboard proximity, n-gram, composited).
+    ///
+    /// Empty and dictionary-accepted words return no suggestions, exactly
+    /// as in the gem (every default strategy skips words the dictionary
+    /// knows).
+    pub fn suggest(&self, word: &str, limit: usize) -> Vec<suggest::Suggestion> {
+        suggest::suggest(self, word, limit)
     }
 }
 

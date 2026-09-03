@@ -20,11 +20,14 @@
 //! behavior; kotoshu-rs must reproduce it byte-for-byte. v0-placeholders.jsonl
 //! is the original hand-written trio, kept for history.
 //!
-//! P1 policy: `correct` vectors are asserted through the engine
-//! ([`kotoshu::dict::Dictionary`]); `suggest` vectors are counted only
-//! (asserted from P2). When the fixture dictionaries are absent (local
-//! checkout without the gem) the assertions skip gracefully; a partial
-//! fixture set is an error.
+//! P2 policy: `correct` vectors are asserted through the engine
+//! ([`kotoshu::dict::Dictionary`]); `suggest` vectors are asserted through
+//! `Dictionary::suggest` — ordered equality of (word, distance, source)
+//! with exact f64 confidence comparison (the exporter wrote Ruby `Float`s,
+//! and the Rust pipeline performs the same IEEE-754 operations in the same
+//! order, so equality is exact). When the fixture dictionaries are absent
+//! (local checkout without the gem) the assertions skip gracefully; a
+//! partial fixture set is an error.
 
 use std::collections::HashMap;
 use std::fs;
@@ -43,7 +46,18 @@ struct Vector {
     #[serde(default)]
     dictionary: String,
     input: String,
+    #[serde(default)]
+    limit: Option<usize>,
     expected: serde_json::Value,
+}
+
+/// One expected suggestion entry of a `suggest` vector.
+#[derive(Deserialize)]
+struct ExpectedSuggestion {
+    word: String,
+    distance: u8,
+    confidence: f64,
+    source: String,
 }
 
 #[test]
@@ -151,7 +165,47 @@ fn conformance_correct_vectors() {
 
     for vector in &vectors {
         match vector.kind.as_str() {
-            "suggest" => suggest_counted += 1,
+            "suggest" => {
+                suggest_counted += 1;
+                let (aff_path, dic_path) = fixture_dictionary_paths(&vector.dictionary);
+                if !aff_path.is_file() || !dic_path.is_file() {
+                    correct_skipped += 1;
+                    continue;
+                }
+                let dictionary = match loaded.entry(vector.dictionary.clone()) {
+                    std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+                    std::collections::hash_map::Entry::Vacant(entry) => {
+                        match Dictionary::load(&aff_path, &dic_path) {
+                            Ok(dictionary) => entry.insert(dictionary),
+                            Err(error) => {
+                                failures.push(format!(
+                                    "{}: dictionary {} failed to load: {error}",
+                                    vector.input, vector.dictionary
+                                ));
+                                continue;
+                            }
+                        }
+                    }
+                };
+                let expected_list: Vec<ExpectedSuggestion> =
+                    serde_json::from_value(vector.expected.clone()).unwrap_or_else(|error| {
+                        panic!(
+                            "suggest vector with malformed expected list {:?}: {error}",
+                            vector.input
+                        )
+                    });
+                let got = dictionary.suggest(&vector.input, vector.limit.unwrap_or(5));
+                if let Some(divergence) = first_divergence(&got, &expected_list)
+                    && failures.len() < REPORT_LIMIT
+                {
+                    failures.push(format!(
+                        "{}: {} input {:?}: {divergence}",
+                        vector.dictionary,
+                        path.display(),
+                        vector.input
+                    ));
+                }
+            }
             "correct" => {
                 correct_total += 1;
                 let (aff_path, dic_path) = fixture_dictionary_paths(&vector.dictionary);
@@ -202,18 +256,70 @@ fn conformance_correct_vectors() {
     }
     assert_eq!(
         correct_skipped, 0,
-        "partial fixture sync: {correct_skipped} correct vectors had no dictionary fixture"
+        "partial fixture sync: {correct_skipped} vectors had no dictionary fixture"
     );
     eprintln!(
-        "conformance: {} correct vectors, {correct_asserted}/{correct_total} asserted (all passing), {} suggest vectors counted",
+        "conformance: {} correct vectors, {correct_asserted}/{correct_total} asserted (all passing), {} suggest vectors asserted",
         path.display(),
         suggest_counted
     );
     assert!(
         failures.is_empty(),
-        "{} conformance failures (of {} correct vectors):\n{}",
+        "{} conformance failures (of {} correct + {} suggest vectors):\n{}",
         failures.len(),
         correct_total,
+        suggest_counted,
         failures.join("\n")
     );
+}
+
+/// Ordered-equality check with a first-divergence diagnostic.
+fn first_divergence(
+    got: &[kotoshu::suggest::Suggestion],
+    expected: &[ExpectedSuggestion],
+) -> Option<String> {
+    for (index, (g, e)) in got.iter().zip(expected).enumerate() {
+        if g.word != e.word {
+            return Some(format!(
+                "[{index}] word: expected {:?}, got {:?} (full expected {:?}, got {:?})",
+                e.word,
+                g.word,
+                expected.iter().map(|s| s.word.as_str()).collect::<Vec<_>>(),
+                got.iter().map(|s| s.word.as_str()).collect::<Vec<_>>(),
+            ));
+        }
+        if g.distance != e.distance {
+            return Some(format!(
+                "[{index}] {:?}: distance: expected {}, got {}",
+                e.word, e.distance, g.distance
+            ));
+        }
+        if g.source.as_str() != e.source {
+            return Some(format!(
+                "[{index}] {:?}: source: expected {:?}, got {:?}",
+                e.word,
+                e.source,
+                g.source.as_str()
+            ));
+        }
+        if g.confidence != e.confidence {
+            return Some(format!(
+                "[{index}] {:?}: confidence: expected {}, got {} (delta {})",
+                e.word,
+                e.confidence,
+                g.confidence,
+                (e.confidence - g.confidence).abs()
+            ));
+        }
+    }
+    if got.len() != expected.len() {
+        return Some(format!(
+            "length: expected {} suggestions, got {} (expected {:?}, got {:?})",
+            expected.len(),
+            got.len(),
+            expected.iter().map(|s| s.word.as_str()).collect::<Vec<_>>(),
+            got.iter().map(|s| s.word.as_str()).collect::<Vec<_>>(),
+        ));
+    }
+    None
 }

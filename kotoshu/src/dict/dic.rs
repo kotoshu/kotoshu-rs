@@ -33,6 +33,10 @@ pub struct Dic {
     word_index: HashMap<String, Vec<usize>>,
     /// Lowercased stems → entry indexes, for the ALLCAPS fallback.
     lowercase_index: HashMap<String, Vec<usize>>,
+    /// The suggestion pipeline's word list (the gem's
+    /// `Dictionary::Hunspell#words`, i.e. `@word_index.keys`): lowercased
+    /// RAW stems — before `IGNORE` stripping — in first-occurrence order.
+    suggest_words: Vec<String>,
 }
 
 impl Dic {
@@ -51,6 +55,9 @@ impl Dic {
         let mut word_index: HashMap<String, Vec<usize>> = HashMap::new();
         let mut lowercase_index: HashMap<String, Vec<usize>> = HashMap::new();
         let mut ph_reps = Vec::new();
+        let mut suggest_words: Vec<String> = Vec::new();
+        let mut suggest_seen: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
 
         for line in lines.iter().skip(1) {
             let (head, morph) = split_stem_and_morph(line);
@@ -77,7 +84,15 @@ impl Dic {
                 (stem, flags)
             };
 
+            // Capture the pre-`IGNORE` stem for the suggest word list.
+            let raw_stem = stem.clone();
             let stem = strip_ignore(&stem, ignore);
+            // Suggest-word key: the RAW stem lowercased (pre-IGNORE), as
+            // the gem's `Dictionary::Hunspell#build_word_index` does.
+            let raw_lower = raw_stem.to_lowercase();
+            if suggest_seen.insert(raw_lower.clone()) {
+                suggest_words.push(raw_lower);
+            }
             let ph_tokens: Vec<&str> = morph
                 .split_whitespace()
                 .filter_map(|token| token.strip_prefix("ph:"))
@@ -103,9 +118,16 @@ impl Dic {
                 entries,
                 word_index,
                 lowercase_index,
+                suggest_words,
             },
             ph_reps,
         )
+    }
+
+    /// The suggestion pipeline's word list (first-occurrence lowercased
+    /// raw stems, file order).
+    pub fn suggest_words(&self) -> &[String] {
+        &self.suggest_words
     }
 
     /// Exact-stem homonyms (empty when the stem is unknown).
