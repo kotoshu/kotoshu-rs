@@ -93,7 +93,10 @@ jobs:
       - name: Install onnxruntime and locate its libonnxruntime
         run: |
           pip install onnxruntime
-          dylib="$(python3 -c "import glob, os, onnxruntime; root = os.path.dirname(onnxruntime.__file__); print(glob.glob(os.path.join(root, 'capi', 'libonnxruntime*.so*'))[0])")"
+          # The capi/ directory also ships libonnxruntime_providers_shared.so
+          # (no OrtGetApiBase); select the main library, providers excluded,
+          # preferring the unversioned name.
+          dylib="$(python3 -c "import glob, os, onnxruntime; root = os.path.join(os.path.dirname(onnxruntime.__file__), 'capi'); cands = [p for p in glob.glob(os.path.join(root, 'libonnxruntime*.so*')) if 'providers' not in os.path.basename(p)]; cands.sort(key=lambda p: (not os.path.basename(p).startswith('libonnxruntime.so'), len(p))); print(cands[0])")"
           test -n "$dylib"
           echo "KOTOSHU_ORT_DYLIB=$dylib" >> "$GITHUB_ENV"
       - name: Sync gem conformance vectors and fixtures
@@ -105,4 +108,13 @@ jobs:
       - name: Unit tests with features
         run: cargo test --verbose --features onnx,resources
       - name: Integration test (ignored; network + dylib)
-        run: cargo test --features onnx,resources --test rerank_integration -- --ignored --nocapture
+        # A clean SKIP (missing dylib / unsynced fixtures) is a local-dev
+        # convenience — in CI it means the job asserted nothing, so treat
+        # it as a failure.
+        run: |
+          set -o pipefail
+          cargo test --features onnx,resources --test rerank_integration -- --ignored --nocapture | tee "$RUNNER_TEMP/integration.log"
+          if grep -q "^SKIP:" "$RUNNER_TEMP/integration.log"; then
+            echo "::error::integration test skipped in CI (see the SKIP line above)"
+            exit 1
+          fi
