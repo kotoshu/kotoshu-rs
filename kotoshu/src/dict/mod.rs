@@ -41,6 +41,10 @@ impl Dictionary {
     /// break patterns, `ICONV`, `IGNORE`, `KEEPCASE`/`NEEDAFFIX`/
     /// `CIRCUMFIX`/`ONLYINCOMPOUND` and friends.
     pub fn correct(&self, word: &str) -> bool {
+        // Mirrors the gem's `Dictionary::Hunspell#lookup` guard.
+        if word.is_empty() {
+            return false;
+        }
         self.lookup.call(word)
     }
 }

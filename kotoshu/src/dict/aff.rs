@@ -224,8 +224,11 @@ pub struct Affix {
 #[derive(Debug, Clone)]
 pub struct RuleItem {
     /// Accepted flag strings for this position (single characters, or
-    /// parenthesized groups like `(1001)` for long/num flags).
-    pub alts: BTreeSet<String>,
+    /// parenthesized groups like `(1001)` for long/num flags). `None`
+    /// means `.` — a regex wildcard matching any single flag string (the
+    /// gem embeds rule items into a regex, so `NN*.NN*%?` matches a
+    /// percent between the number runs).
+    pub alts: Option<BTreeSet<String>>,
     /// How often the item may occur.
     pub quant: RuleQuant,
 }
@@ -285,10 +288,12 @@ impl CompoundRule {
                 // A parenthesized group is ONE alternative (possibly a
                 // multi-character flag string, e.g. `(nn)` under FLAG
                 // long/num) — the gem keeps the group content whole.
+                // Regex metacharacters inside groups would be wildcards in
+                // the gem; the corpus has none.
                 let alt = group;
                 flags.insert(alt.clone());
                 items.push(RuleItem {
-                    alts: BTreeSet::from([alt]),
+                    alts: Some(BTreeSet::from([alt])),
                     quant,
                 });
             } else if c != '*' && c != '?' {
@@ -304,12 +309,18 @@ impl CompoundRule {
                     }
                     _ => RuleQuant::One,
                 };
-                let alt = c.to_string();
-                flags.insert(alt.clone());
-                items.push(RuleItem {
-                    alts: BTreeSet::from([alt]),
-                    quant,
-                });
+                if c == '.' {
+                    // Regex wildcard; still a rule flag for intersections.
+                    flags.insert(".".to_owned());
+                    items.push(RuleItem { alts: None, quant });
+                } else {
+                    let alt = c.to_string();
+                    flags.insert(alt.clone());
+                    items.push(RuleItem {
+                        alts: Some(BTreeSet::from([alt])),
+                        quant,
+                    });
+                }
             } else {
                 chars.next();
             }
@@ -386,7 +397,11 @@ impl CompoundRule {
             return true;
         }
         // One occurrence.
-        if pos < tokens.len() && rule_item.alts.contains(tokens[pos]) {
+        let accepted = match &rule_item.alts {
+            None => true, // wildcard
+            Some(alts) => pos < tokens.len() && alts.contains(tokens[pos]),
+        };
+        if accepted && pos < tokens.len() {
             match rule_item.quant {
                 RuleQuant::Star => {
                     if self.match_items(tokens, item + 1, pos + 1, full) {
