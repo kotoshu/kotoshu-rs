@@ -22,18 +22,28 @@ vectors speak the same bytes.
 
 [parsanol-rs]: https://github.com/parsanol/parsanol-rs
 
-## Status: P1 (dictionary engine)
+## Status: P2 (suggestions)
 
-Everything from P0 plus the real Hunspell dictionary path: `.aff`/`.dic`
-parsing (encodings, flag formats, `AF` aliases), affix expansion (two-fold
-suffixes, cross-product prefixes, `COMPLEXPREFIXES`), compounds (flags and
-rules), capitalization (standard/German/Turkic), break patterns, `ICONV`,
-`IGNORE`, and the full `correct?` flag semantics (`KEEPCASE`, `NEEDAFFIX`,
-`CIRCUMFIX`, `ONLYINCOMPOUND`, `FORBIDDENWORD`, …) in `kotoshu/src/dict/`.
-The 2630-vector conformance pack from the gem is asserted for `correct`
-(1315/1315) via `scripts/sync_conformance.sh` (fixtures synced from the gem
-repo, never committed; the test skips gracefully without them). Suggest
-vectors count but are not asserted until P2. Remaining phases — see
+Everything from P1 plus the full suggestion pipeline in
+`kotoshu/src/suggest/`: the gem's four default strategies — edit distance
+(Damerau threshold DP with enhanced scoring: frequency bonus, keyboard
+penalty, transposition and typo-pattern bonuses), phonetic (Soundex),
+keyboard proximity (variant generation over a neighbor table), and n-gram
+(multiset Jaccard) — composited into one ranked `SuggestionSet`. Ranking
+reproduces the gem byte-for-byte, including Ruby's unstable sort tie
+orders: MRI 3.4's `sort_by` introsort (`suggest/ruby_sort.rs`) and the
+macOS libc `qsort_r` that `Array#sort!` delegates to on the export
+platform (`suggest/macos_qsort.rs`) — 16 frozen vectors contain full-tie
+suggestion pairs whose surviving `source` label is decided by that tie
+order. The Kelly frequency tiers that shaped the export (frozen from the
+gem's `FrequencyCache` state, embedded in `suggest/frequency_data.rs`)
+drive the frequency bonus. All 2630 conformance vectors assert green:
+1315/1315 `correct` and 1315/1315 `suggest` (ordered equality, exact f64
+confidences) — through the engine AND through the KOSH-v1 batch wire on
+the C ABI (`kotoshu_dict_load`/`kotoshu_dict_free` lifecycle +
+`kotoshu_batch`). Differential fuzz against the live gem (5,948 suggests
+across all 125 fixture dictionaries: mutations, junk, unicode, limits
+1-10) reports zero mismatches. Remaining phases — see
 [`TODO.impl/`](TODO.impl/) and the authoritative plan in the gem repo,
 [plan 66 — kotoshu-rs: the Rust core][plan-66].
 
@@ -42,7 +52,9 @@ vectors count but are not asserted until P2. Remaining phases — see
 ## Layout
 
 ```
-kotoshu/            core crate (rlib): dict/{aff,dic,casing,encoding,lookup}, ffi/{shared,c,ruby,wasm}
+kotoshu/            core crate (rlib): dict/{aff,dic,casing,encoding,lookup},
+                    suggest/{edit_distance,phonetic,keyboard,ngram,frequency,rank,...},
+                    ffi/{shared,registry,c,ruby,wasm}
 tests/              conformance-vector runner + golden JSONL pack (+ synced fixtures, gitignored)
 scripts/            sync_conformance.sh (vectors + fixture dictionaries from the gem repo)
 .github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, release-plz.yml
