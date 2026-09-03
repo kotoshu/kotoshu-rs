@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
 members = ["kotoshu"]
+# The ruby-feature smoke shim (tests/ruby_ext) builds its own cdylib with
+# magnus; excluded so default workspace builds stay dependency-free. Build
+# it via scripts/ruby_ffi_smoke.sh (or --manifest-path tests/ruby_ext).
+exclude = ["tests/ruby_ext"]
 
 [workspace.package]
 version = "0.1.0"

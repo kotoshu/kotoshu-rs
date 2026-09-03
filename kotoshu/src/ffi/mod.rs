@@ -4,7 +4,7 @@
 //! - [`registry`] — process-wide language → dictionary registry backing the
 //!   batch protocol and the C ABI lifecycle calls
 //! - [`c`] — C ABI (always available)
-//! - [`ruby`] — magnus bindings (feature `ruby`; lands P4)
+//! - [`ruby`] — magnus bindings (feature `ruby`)
 //! - [`wasm`] — wasm-bindgen bindings (feature `wasm`; lands P4)
 
 pub mod c;
