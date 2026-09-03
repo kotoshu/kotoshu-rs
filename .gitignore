@@ -32,3 +32,8 @@ perf.data
 # Claude Code instruction files - NEVER commit these
 CLAUDE.md
 CLAUDE.local.md
+
+# Ruby-feature smoke shim (tests/ruby_ext) is excluded from the workspace;
+# its lock file is a test artifact (the pinned core lock lives at the root).
+/tests/ruby_ext/Cargo.lock
+/tests/ruby_ext/target/
