@@ -58,6 +58,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
+      - name: Sync gem conformance vectors and fixtures
+        # The conformance test asserts the full 2630-vector pack when the
+        # fixture dictionaries are present; without this step it skips
+        # gracefully. Fixture files are never committed to this repo.
+        run: |
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
       - name: Build
         run: cargo build --verbose
       - name: Test

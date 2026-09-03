@@ -6,6 +6,7 @@
 //! `parsanol-rs` (Ribose, in production): one pure-Rust core, all FFI
 //! feature-gated inside the core, per-language packages as thin shims.
 
+pub mod dict;
 pub mod ffi;
 
 #[cfg(feature = "ruby")]
