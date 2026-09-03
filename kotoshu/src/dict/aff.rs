@@ -982,9 +982,14 @@ pub fn parse_lines(lines: Vec<String>) -> Result<Aff, String> {
                 let rows = read_array(&mut lines, ruby_to_i(values.first().copied()) as usize)?;
                 let mut aliases = HashMap::new();
                 for (idx, row) in rows.iter().enumerate() {
+                    // AF entries are decoded with the dictionary's FLAG
+                    // format, never alias-resolved (they define the
+                    // aliases). Mirrors the gem's format-aware fix; with
+                    // `FLAG num`, "AF 214,216" is two flags, not six chars.
+                    let no_aliases = HashMap::new();
                     let flags: BTreeSet<String> = row
                         .first()
-                        .map(|first| first.chars().map(|c| c.to_string()).collect())
+                        .map(|first| parse_aff_flags(first, raw.flag_format, &no_aliases))
                         .unwrap_or_default();
                     aliases.insert((idx + 1).to_string(), flags);
                 }
@@ -1144,6 +1149,33 @@ pub fn strip_ignore(text: &str, ignore: &[char]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn af_aliases_decode_with_the_active_flag_format() {
+        // Mirrors the gem's T2 2A regression: AF values must be decoded
+        // with the FLAG format, not shredded into single characters.
+        let set =
+            |words: &[&str]| -> BTreeSet<String> { words.iter().map(|w| w.to_string()).collect() };
+
+        let num = parse_lines(
+            ["FLAG num", "AF 2", "AF 214,216", "AF 54321,999"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        )
+        .unwrap();
+        assert_eq!(num.af_aliases.get("1").unwrap(), &set(&["214", "216"]));
+        assert_eq!(num.af_aliases.get("2").unwrap(), &set(&["54321", "999"]));
+
+        let long = parse_lines(
+            ["FLAG long", "AF 1", "AF g?1G"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        )
+        .unwrap();
+        assert_eq!(long.af_aliases.get("1").unwrap(), &set(&["g?", "1G"]));
+    }
 
     #[test]
     fn conditions_match_stem_edges() {
