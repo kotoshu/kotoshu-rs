@@ -28,4 +28,17 @@ through the C ABI.
 
 ## Status
 
-_Planning._
+**Implemented** (2026-09-03, branch `feat/p1-dictionary`). The gem's entire
+Hunspell `correct?` path is ported in `kotoshu/src/dict/` (`aff` parser,
+`dic` loader, `casing`, `encoding`, `lookup`); behavior is frozen by the
+gem's conformance vectors — 1315/1315 `correct` vectors assert green
+(1315 `suggest` vectors counted only until P2). Indexes use the gem's own
+structures (char-keyed suffix/prefix buckets, exact + lowercase stem
+indexes), not a separate trie/DAFSA — the gem's Trie is not on this path.
+
+Deferred: `logging` → `log` (now planned with P2), criterion bench skeleton
+(P2, alongside the parallel batch feature), and routing `Request::Check`
+through the C ABI — that needs a dictionary-lifecycle API
+(load/register/free by language or path) which lands with `parallel`; the
+P0 stub response stays (see `ffi/shared.rs`), and the conformance suite
+exercises `dict::Dictionary::correct` directly.
