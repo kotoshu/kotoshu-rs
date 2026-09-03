@@ -41,6 +41,7 @@ jobs:
           cache-on-failure: true
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo clippy --all-targets --no-default-features -- -D warnings
+      - run: cargo clippy --all-targets --features onnx,resources -- -D warnings
       - run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: "-D warnings"
@@ -71,3 +72,31 @@ jobs:
         run: cargo test --verbose
       - name: Build ruby feature (dep-free until P4)
         run: cargo build --features ruby --verbose
+
+  # P3: the ort provider against the REAL en/mini model. pip's
+  # onnxruntime supplies libonnxruntime (ort is load-dynamic only —
+  # nothing onnxruntime-shaped is ever bundled); the ignored
+  # integration test downloads the ~3 MB artifact through the resource
+  # layer and sha-verifies it against the registry fixture.
+  onnx:
+    name: ONNX rerank (integration)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install onnxruntime and locate its libonnxruntime
+        run: |
+          pip install onnxruntime
+          dylib="$(python3 -c "import glob, os, onnxruntime; root = os.path.dirname(onnxruntime.__file__); print(glob.glob(os.path.join(root, 'capi', 'libonnxruntime*.so*'))[0])")"
+          test -n "$dylib"
+          echo "KOTOSHU_ORT_DYLIB=$dylib" >> "$GITHUB_ENV"
+      - name: Unit tests with features
+        run: cargo test --verbose --features onnx,resources
+      - name: Integration test (ignored; network + dylib)
+        run: cargo test --features onnx,resources --test rerank_integration -- --ignored --nocapture
