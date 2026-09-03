@@ -20,9 +20,16 @@ crate-type = ["rlib"]
 #   resources -> serde/serde_json (registry.json parse) + sha2 (checksums).
 # The DEFAULT feature set stays empty: without features the core has zero
 # third-party dependencies (P0 policy).
+#
+# magnus (ruby feature) is the released 0.8 from crates.io. Parsanol moved
+# to a git-rev magnus 0.9 + [patch.crates-io] rb-sys only for Ruby 4.0
+# compatibility ("feat: use magnus and rb-sys compatible with ruby 4.0");
+# kotoshu's matrix is 3.3/3.4 today, where 0.8 is verified by the
+# ruby-ffi smoke. When the matrix grows to 4.0-head (P4 gate), mirror the
+# parsanol policy if the released line misbehaves.
 [features]
 default = []
-ruby = []
+ruby = ["dep:magnus"]
 wasm = []
 onnx = ["dep:ort", "dep:serde", "dep:serde_json"]
 resources = ["dep:serde", "dep:serde_json", "dep:sha2"]
@@ -38,6 +45,7 @@ ort = { version = "2.0.0-rc.13", default-features = false, features = ["load-dyn
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 sha2 = { version = "0.10", optional = true }
+magnus = { version = "0.8", optional = true }
 
 # serde_json is a DEV dependency for the default build too (conformance-vector
 # runner); `float_roundtrip` is load-bearing: without it serde_json's fast
