@@ -1,11 +1,13 @@
-# Ruby FFI CI.
+# Ruby FFI CI (P4: REAL).
 #
-# P0 smoke check only: the `ruby` feature is declared without its magnus
-# dependency yet (keeps CI green with no Ruby toolchain requirement).
-# This workflow ACTIVATES AT P4 (plan 66): `cargo test --features ruby`
-# under one MRI (matrix grows to 3.2/3.3/3.4/4.0-head at the P4 gate),
-# magnus behind the feature, `[patch.crates-io]` rb-sys revs per parsanol
-# policy, so binding breakage is caught in this repo's CI, not downstream.
+# The `ruby` feature attaches magnus (crates.io 0.8) behind the feature
+# flag. This job builds the reference shim extension (tests/ruby_ext — the
+# exact cdylib shape the kotoshu gem's ext/kotoshu_native will use) and
+# runs the Ruby smoke test against the real engine and the synced fixture
+# dictionaries, under MRI 3.3 and 3.4. The matrix grows to 3.2 and
+# 4.0-head at the P4 gate (plan 66), where — per the parsanol policy — a
+# git-rev magnus + [patch.crates-io] rb-sys may be needed if the released
+# line misbehaves on 4.0 (magnus 0.8 is verified on 3.3/3.4 today).
 
 name: Ruby FFI
 
@@ -15,6 +17,10 @@ on:
     paths:
       - "**.rs"
       - "Cargo.toml"
+      - "kotoshu/Cargo.toml"
+      - "tests/ruby_ext/**"
+      - "tests/ruby_ffi_smoke.rb"
+      - "scripts/ruby_ffi_smoke.sh"
       - ".github/workflows/ruby-ffi.yml"
   pull_request:
 
@@ -27,13 +33,32 @@ permissions:
 
 jobs:
   ruby-ffi:
-    name: Ruby FFI (activates at P4)
+    name: Ruby FFI smoke (${{ matrix.ruby }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.3", "3.4"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
-      - name: Check ruby feature compiles
-        run: cargo check --no-default-features --features ruby
+      - name: Make the setup-ruby libruby discoverable at runtime
+        # rb-sys links test binaries against the probed libruby; on Linux
+        # the loader needs its directory on LD_LIBRARY_PATH.
+        run: echo "LD_LIBRARY_PATH=$(ruby -e 'print RbConfig::CONFIG["libdir"]')" >> "$GITHUB_ENV"
+      - name: Clippy (ruby feature)
+        run: cargo clippy --all-targets --no-default-features --features ruby -- -D warnings
+      - name: Sync gem conformance vectors and fixtures
+        run: |
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
+      - name: Unit + conformance tests (ruby feature)
+        run: cargo test --no-default-features --features ruby
+      - name: Build the reference shim and run the smoke test
+        run: scripts/ruby_ffi_smoke.sh

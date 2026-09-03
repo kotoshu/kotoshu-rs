@@ -37,4 +37,42 @@ wasm`, single-binary CLI/LSP.
 
 ## Status
 
-_Planning._
+**P4a core-side done** (2026-09-03, branch `feat/p4a-ruby`) — the `ruby`
+feature and the activated `ruby-ffi.yml`. The gem-side ext scaffold is
+**pending (P4b, separate PR in the gem repo)**.
+
+- `kotoshu/src/ffi/ruby/`: `ffi::ruby::init(&Ruby)` defines
+  `Kotoshu::Native` — `VERSION` (crate version), `available?` → true,
+  `Dictionary.load(aff, dic)` returning an instance with `correct?(word)`
+  and `suggest(word, limit = 5)`. Suggestion rows are hashes of exactly
+  the gem Suggestion / conformance `SUGGESTION_KEYS` fields
+  (`word`/`distance`/`confidence`/`source`), so P4b materializes
+  `Kotoshu::Suggestions::Suggestion` objects from them directly. Failures
+  raise `Kotoshu::Native::Error` (RuntimeError subclass) carrying the
+  Rust message. Magnus types stop at the ffi module (engine stays pure
+  Rust). Instance surface, not the KOSH batch calls — the wire stays
+  available via the C ABI for hosts that want it; the Ruby-idiomatic
+  surface is what the gem needs.
+- **Version policy**: magnus 0.8 from crates.io (rb-sys 0.9.130 resolves
+  under it). Parsanol's git-rev magnus 0.9 + `[patch.crates-io]` rb-sys
+  exist for Ruby 4.0 compatibility ("use magnus and rb-sys compatible
+  with ruby 4.0"); on this repo's 3.3/3.4 matrix the released line is
+  verified by the smoke test, and the patch's remaining rev in parsanol
+  is unused in its own graph today. **Relax trigger**: when the matrix
+  grows 4.0-head (P4 gate) and the released line misbehaves, mirror the
+  parsanol revs then. No patch pins were added.
+- `tests/ruby_ext/` (workspace-excluded cdylib) is the shim pattern
+  itself — `#[magnus::init]` forwarding to `ffi::ruby::init` — kept as
+  the smoke test: `scripts/ruby_ffi_smoke.sh` builds it, stages the
+  bundle for `require`, and runs `tests/ruby_ffi_smoke.rb` (21
+  assertions incl. the canonical `hlelo` → `hello/1/1.0/edit_distance`
+  conformance row and the error surface). macOS needs
+  `-undefined dynamic_lookup` in `tests/ruby_ext/.cargo/config.toml`
+  (rb_sys/mkmf normally supplies it; this build is outside extconf).
+- `ruby-ffi.yml` is real: clippy + `cargo test --features ruby` (full
+  2630-vector conformance pack) on Ruby 3.3/3.4, then the smoke.
+- Remaining in this phase: wasm feature (blocked on npm credentials per
+  plan 67), Python wheel, CLI/LSP distribution — and P4b gem-side
+  (`ext/kotoshu_native`, `extconf.rb`, `KOTOSHU_BACKEND`,
+  `rake compat:*`), which needs from this PR only the
+  `ffi::ruby::init` signature above and the suggestion-row shape.
