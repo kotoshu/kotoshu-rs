@@ -1,0 +1,7 @@
+# A Ruby extension resolves its rb_* symbols against the host libruby at
+# dlopen time (Ruby loads the bundle and provides its own API). macOS's
+# linker rejects undefined symbols by default; Linux allows them in shared
+# libraries. extconf.rb builds get this flag from rb_sys/mkmf — this crate
+# builds standalone, so it is set here.
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "link-arg=-Wl,-undefined,dynamic_lookup"]

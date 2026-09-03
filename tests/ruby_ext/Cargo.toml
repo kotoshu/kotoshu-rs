@@ -1,0 +1,21 @@
+# Test-only Ruby extension: the exact shim shape the kotoshu gem's future
+# `ext/kotoshu_native` will use (plan 66) — a cdylib whose `#[magnus::init]`
+# forwards to `kotoshu::ffi::ruby::init`. Building and loading THIS crate is
+# the `ruby` feature's smoke test (scripts/ruby_ffi_smoke.sh,
+# tests/ruby_ffi_smoke.rb).
+#
+# Deliberately outside the workspace (root Cargo.toml `exclude`): the core's
+# default builds must stay magnus-free, so this crate is only ever built by
+# explicit invocation, never by a bare `cargo build`/`cargo test` at the root.
+[package]
+name = "kotoshu_ruby_ext"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+kotoshu = { path = "../../kotoshu", features = ["ruby"] }
+magnus = "0.8"

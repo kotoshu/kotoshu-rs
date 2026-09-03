@@ -23,6 +23,8 @@ onnx = "onnx"
 onnxruntime = "onnxruntime"
 oov = "oov"
 int = "int"
+# Canonical misspelling input for suggestion tests (deliberately misspelled)
+helo = "helo"
 
 # Rust / tooling terms
 serde = "serde"
