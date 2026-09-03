@@ -161,6 +161,7 @@ fn conformance_correct_vectors() {
     let mut correct_asserted = 0;
     let mut correct_skipped = 0;
     let mut suggest_counted = 0;
+    let mut suggest_skipped = 0;
     let mut loaded: HashMap<String, Dictionary> = HashMap::new();
     let mut failures: Vec<String> = Vec::new();
     const REPORT_LIMIT: usize = 40;
@@ -171,7 +172,7 @@ fn conformance_correct_vectors() {
                 suggest_counted += 1;
                 let (aff_path, dic_path) = fixture_dictionary_paths(&vector.dictionary);
                 if !aff_path.is_file() || !dic_path.is_file() {
-                    correct_skipped += 1;
+                    suggest_skipped += 1;
                     continue;
                 }
                 let dictionary = match loaded.entry(vector.dictionary.clone()) {
@@ -249,16 +250,29 @@ fn conformance_correct_vectors() {
         }
     }
 
-    if correct_asserted == 0 && correct_skipped == correct_total {
+    // All fixtures absent (local checkout without the gem): skip
+    // gracefully — but only when EVERY vector of both kinds skipped;
+    // a partial fixture set is an error. (The committed pack lives in
+    // tests/conformance/, so "no fixtures at all" is a normal state on
+    // machines that never ran scripts/sync_conformance.sh; the skip
+    // accounting must distinguish the two kinds to tell it apart.)
+    if correct_asserted == 0
+        && correct_skipped == correct_total
+        && suggest_skipped == suggest_counted
+    {
         eprintln!(
-            "conformance: fixtures absent; skipped {} correct vectors, counted {} suggest vectors",
+            "conformance: fixtures absent; skipped {} correct vectors and {} suggest vectors",
             correct_total, suggest_counted
         );
         return;
     }
     assert_eq!(
         correct_skipped, 0,
-        "partial fixture sync: {correct_skipped} vectors had no dictionary fixture"
+        "partial fixture sync: {correct_skipped} correct vectors had no dictionary fixture"
+    );
+    assert_eq!(
+        suggest_skipped, 0,
+        "partial fixture sync: {suggest_skipped} suggest vectors had no dictionary fixture"
     );
     eprintln!(
         "conformance: {} correct vectors, {correct_asserted}/{correct_total} asserted (all passing), {} suggest vectors asserted",
