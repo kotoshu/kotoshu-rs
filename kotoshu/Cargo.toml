@@ -24,6 +24,12 @@ onnx = []
 parallel = []
 logging = []
 
+# serde_json is a DEV dependency only (conformance-vector runner); the core
+# crate itself stays zero third-party dependencies.
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
 # Conformance-vector runner lives at the workspace root (plan 66 layout).
 [[test]]
 name = "conformance"

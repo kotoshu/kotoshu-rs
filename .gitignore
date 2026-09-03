@@ -24,6 +24,11 @@
 flamegraph.svg
 perf.data
 
+# Conformance fixture dictionaries — synced from the gem repo by
+# scripts/sync_conformance.sh, never committed (licensing stays with the
+# gem repo, which documents provenance).
+/tests/fixtures/
+
 # Claude Code instruction files - NEVER commit these
 CLAUDE.md
 CLAUDE.local.md

@@ -106,8 +106,13 @@ pub enum Status {
     InvalidUtf8 = 5,
 }
 
-/// P0 placeholder response: shape-correct, engine-empty.
-/// Replaced by real results in P1 (Check) and P2 (Suggest).
+/// Placeholder response: shape-correct, engine-empty.
+///
+/// TODO(P2): route `Check` through [`crate::dict::Dictionary`] (needs the
+/// dictionary lifecycle on the C ABI — load/register/free calls keyed by
+/// language or path — which lands with the `parallel` batch feature) and
+/// `Suggest` through the P2 suggester. The P1 engine is exercised directly
+/// by the conformance suite via `kotoshu::dict::Dictionary::correct`.
 pub fn stub_response(request: &Request) -> Response {
     match request {
         Request::Check { words, .. } => Response::Check {
