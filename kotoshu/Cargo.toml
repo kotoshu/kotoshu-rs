@@ -14,21 +14,35 @@ crate-type = ["rlib"]
 
 # Optional dependencies attach per phase (plan 66): ruby -> magnus (P4),
 # wasm -> wasm-bindgen/js-sys/console_error_panic_hook (P4),
-# onnx -> ort/load-dynamic (P3), parallel -> rayon (P2), logging -> log (P1).
-# Deliberately absent at P0 so CI stays green without those toolchains.
+# parallel -> rayon (P2), logging -> log (P1). P3 attached two:
+#   onnx     -> ort (load-dynamic only — never a bundled onnxruntime) plus
+#               serde/serde_json for the tier vocab.json, and
+#   resources -> serde/serde_json (registry.json parse) + sha2 (checksums).
+# The DEFAULT feature set stays empty: without features the core has zero
+# third-party dependencies (P0 policy).
 [features]
 default = []
 ruby = []
 wasm = []
-onnx = []
+onnx = ["dep:ort", "dep:serde", "dep:serde_json"]
+resources = ["dep:serde", "dep:serde_json", "dep:sha2"]
 parallel = []
 logging = []
 
-# serde_json is a DEV dependency only (conformance-vector runner); the core
-# crate itself stays zero third-party dependencies. `float_roundtrip` is
-# load-bearing: without it serde_json's fast float parse is up to 1 ulp off,
-# which breaks the exact f64 confidence comparison against the gem's
-# exported values.
+# ort is 2.0.0-rc.* on crates.io; a bare "2" does not match pre-releases.
+# Relax to "2" once ort publishes a stable 2.x. `load-dynamic` is the ONLY
+# enabled feature: the library never links a bundled onnxruntime — the host
+# supplies libonnxruntime (KOTOSHU_ORT_DYLIB or ort's own search).
+[dependencies]
+ort = { version = "2.0.0-rc.13", default-features = false, features = ["load-dynamic"], optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+# serde_json is a DEV dependency for the default build too (conformance-vector
+# runner); `float_roundtrip` is load-bearing: without it serde_json's fast
+# float parse is up to 1 ulp off, which breaks the exact f64 confidence
+# comparison against the gem's exported values.
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
@@ -37,3 +51,11 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 [[test]]
 name = "conformance"
 path = "../tests/conformance.rs"
+
+# P3 integration test: real registry fixture + real en/mini model download +
+# ort provider + rerank. Ignored by default (network + libonnxruntime); the
+# CI onnx job runs it explicitly.
+[[test]]
+name = "rerank_integration"
+path = "../tests/rerank_integration.rs"
+required-features = ["onnx", "resources"]

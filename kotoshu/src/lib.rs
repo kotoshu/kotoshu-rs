@@ -8,6 +8,9 @@
 
 pub mod dict;
 pub mod ffi;
+pub mod rerank;
+#[cfg(feature = "resources")]
+pub mod resource;
 pub mod suggest;
 
 #[cfg(feature = "ruby")]
