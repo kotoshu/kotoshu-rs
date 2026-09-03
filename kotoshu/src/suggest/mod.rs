@@ -5,11 +5,11 @@
 //!
 //! The conformance vectors freeze the gem's actual output, quirks
 //! included: per-strategy result caps of 10 (the strategies' own config
-//! default, independent of the caller's limit), the phonetic strategy's
-//! hardcoded `distance = 1` from `create_suggestion_set`'s empty distance
-//! map, the keyboard strategy's dead "extra double letter" branch, and
-//! MRI/macOS-libc sort tie orders (see [`ruby_sort`] and
-//! [`macos_qsort`]). Behavioral reference:
+//! default, independent of the caller-facing limit), the phonetic
+//! strategy's hardcoded `distance = 1` from `create_suggestion_set`'s
+//! empty distance map, the keyboard strategy's dead "extra double letter"
+//! branch, and MRI/macOS-libc sort tie orders (see the private `ruby_sort`
+//! and `macos_qsort` submodules). Behavioral reference:
 //! `lib/kotoshu/suggestions/` in the gem.
 
 mod edit_distance;
@@ -225,10 +225,10 @@ fn keyboard_penalty(original: &[char], suggestion: &[char]) -> u32 {
             continue;
         }
         penalty += match layout.distance(*c1, *c2) {
-            None => 50,          // unknown key — medium penalty
-            Some(1) => 10,       // adjacent keys — very likely typo
-            Some(2) => 30,       // somewhat likely
-            Some(_) => 100,      // far keys (0 included) — unlikely
+            None => 50,     // unknown key — medium penalty
+            Some(1) => 10,  // adjacent keys — very likely typo
+            Some(2) => 30,  // somewhat likely
+            Some(_) => 100, // far keys (0 included) — unlikely
         };
     }
     penalty
@@ -239,14 +239,8 @@ fn transposition_bonus(original: &[char], suggestion: &[char]) -> u32 {
     if original.len() != suggestion.len() {
         return 0;
     }
-    let o: Vec<char> = original
-        .iter()
-        .flat_map(|c| c.to_lowercase())
-        .collect();
-    let s: Vec<char> = suggestion
-        .iter()
-        .flat_map(|c| c.to_lowercase())
-        .collect();
+    let o: Vec<char> = original.iter().flat_map(|c| c.to_lowercase()).collect();
+    let s: Vec<char> = suggestion.iter().flat_map(|c| c.to_lowercase()).collect();
 
     let mut transpositions = 0usize;
     for i in 0..o.len() {
@@ -367,8 +361,7 @@ fn keyboard_proximity_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
 
     // Insertion-ordered `results_with_distances` (min distance per word).
     let mut order: Vec<String> = Vec::new();
-    let mut distances: std::collections::HashMap<String, usize> =
-        std::collections::HashMap::new();
+    let mut distances: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for variant in &variants {
         let Some(dict_word) = find_word(words, variant) else {
             continue;
@@ -437,8 +430,7 @@ fn keyboard_variants(word: &str, max_distance: usize) -> Vec<String> {
     let mut variants: Vec<Vec<char>> = vec![lowered];
     for _ in 0..max_distance {
         let mut next: Vec<Vec<char>> = Vec::new();
-        let mut next_seen: std::collections::HashSet<Vec<char>> =
-            std::collections::HashSet::new();
+        let mut next_seen: std::collections::HashSet<Vec<char>> = std::collections::HashSet::new();
         for variant in &variants {
             for i in 0..variant.len() {
                 for neighbor in keyboard::proximity_neighbors(variant[i]) {
@@ -511,8 +503,7 @@ fn ngram_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
     let word_ngrams = ngram::extract_ngrams(&word_chars, NGRAM_N);
 
     let mut order: Vec<String> = Vec::new();
-    let mut distances: std::collections::HashMap<String, usize> =
-        std::collections::HashMap::new();
+    let mut distances: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for dict_word in words {
         if dict_word == word {
             continue;

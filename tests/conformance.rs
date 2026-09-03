@@ -44,6 +44,8 @@ const CONFORMANCE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/con
 struct Vector {
     kind: String,
     #[serde(default)]
+    language: Option<String>,
+    #[serde(default)]
     dictionary: String,
     input: String,
     #[serde(default)]
@@ -263,6 +265,80 @@ fn conformance_correct_vectors() {
         path.display(),
         suggest_counted
     );
+
+    // Second enforcement point: the same suggest vectors through the KOSH
+    // batch wire on the C ABI (register → batch → decode), per the plan's
+    // acceptance criteria. Fixtures re-register per dictionary under the
+    // vector's language (the registry routes by language).
+    let mut abi_failures: Vec<String> = Vec::new();
+    let mut abi_asserted = 0usize;
+    for (dictionary_id, group_vectors) in group_by_dictionary(&vectors) {
+        let (aff_path, dic_path) = fixture_dictionary_paths(&dictionary_id);
+        if !aff_path.is_file() || !dic_path.is_file() {
+            continue;
+        }
+        let Some(language) = group_vectors.first().and_then(|v| v.language.clone()) else {
+            continue;
+        };
+        kotoshu::ffi::registry::register(&language, &aff_path, &dic_path).unwrap_or_else(|error| {
+            panic!("ABI dictionary {dictionary_id} failed to load: {error}")
+        });
+        for vector in group_vectors.iter().filter(|v| v.kind == "suggest") {
+            let request =
+                kotoshu::ffi::shared::encode_request(&kotoshu::ffi::shared::Request::Suggest {
+                    language: language.clone(),
+                    word: vector.input.clone(),
+                    limit: vector.limit.unwrap_or(5).min(u8::MAX as usize) as u8,
+                });
+            let mut output: *mut u8 = std::ptr::null_mut();
+            let mut output_len: usize = 0;
+            let status = unsafe {
+                kotoshu::ffi::c::kotoshu_batch(
+                    request.as_ptr(),
+                    request.len(),
+                    &mut output,
+                    &mut output_len,
+                )
+            };
+            assert_eq!(status, kotoshu::ffi::shared::Status::Ok as i32);
+            let bytes = unsafe { std::slice::from_raw_parts(output, output_len) };
+            let response = kotoshu::ffi::shared::decode_response(bytes).unwrap();
+            unsafe { kotoshu::ffi::c::kotoshu_free(output, output_len) };
+
+            let kotoshu::ffi::shared::Response::Suggest { suggestions } = response else {
+                panic!("expected suggest response for {:?}", vector.input);
+            };
+            abi_asserted += 1;
+            let got: Vec<kotoshu::suggest::Suggestion> = suggestions
+                .into_iter()
+                .map(|s| kotoshu::suggest::Suggestion {
+                    word: s.word,
+                    distance: s.distance,
+                    confidence: s.confidence,
+                    source: engine_source(s.source),
+                })
+                .collect();
+            let expected_list: Vec<ExpectedSuggestion> =
+                serde_json::from_value(vector.expected.clone()).unwrap();
+            if let Some(divergence) = first_divergence(&got, &expected_list)
+                && abi_failures.len() < REPORT_LIMIT
+            {
+                abi_failures.push(format!(
+                    "C-ABI {dictionary_id} input {:?}: {divergence}",
+                    vector.input
+                ));
+            }
+        }
+        kotoshu::ffi::registry::unregister(&language);
+    }
+    eprintln!("conformance: {abi_asserted} suggest vectors asserted through the C ABI");
+    assert!(
+        abi_failures.is_empty(),
+        "{} C-ABI conformance failures:\n{}",
+        abi_failures.len(),
+        abi_failures.join("\n")
+    );
+
     assert!(
         failures.is_empty(),
         "{} conformance failures (of {} correct + {} suggest vectors):\n{}",
@@ -271,6 +347,40 @@ fn conformance_correct_vectors() {
         suggest_counted,
         failures.join("\n")
     );
+}
+
+/// Vectors grouped by their dictionary, preserving overall order.
+fn group_by_dictionary(vectors: &[Vector]) -> Vec<(String, Vec<&Vector>)> {
+    let mut groups: Vec<(String, Vec<&Vector>)> = Vec::new();
+    let mut index: HashMap<&str, usize> = HashMap::new();
+    for vector in vectors {
+        match index.get(vector.dictionary.as_str()) {
+            Some(&i) => groups[i].1.push(vector),
+            None => {
+                index.insert(&vector.dictionary, groups.len());
+                groups.push((vector.dictionary.clone(), vec![vector]));
+            }
+        }
+    }
+    groups
+}
+
+/// Map a wire suggestion source back to the engine enum (test-side only;
+/// the crate defines only the engine → wire direction).
+fn engine_source(
+    source: kotoshu::ffi::shared::SuggestionSource,
+) -> kotoshu::suggest::SuggestionSource {
+    use kotoshu::ffi::shared::SuggestionSource as Wire;
+    use kotoshu::suggest::SuggestionSource as Engine;
+    match source {
+        Wire::EditDistance => Engine::EditDistance,
+        Wire::Phonetic => Engine::Phonetic,
+        Wire::KeyboardProximity => Engine::KeyboardProximity,
+        Wire::Ngram => Engine::Ngram,
+        // Semantic suggestions are not produced by the default P2
+        // strategies; the wire keeps the discriminant for P3.
+        Wire::Semantic => panic!("unexpected semantic suggestion over the wire"),
+    }
 }
 
 /// Ordered-equality check with a first-divergence diagnostic.

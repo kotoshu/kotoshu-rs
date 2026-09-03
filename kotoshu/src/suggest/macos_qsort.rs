@@ -20,10 +20,7 @@
 /// Sort `items` with `compare`, reproducing macOS Libc `qsort_r` including
 /// its tie order. `T: Clone` covers the heapsort fallback's displaced
 /// element (the C code memmoves it aside).
-pub fn sort_by<T: Clone>(
-    items: &mut [T],
-    compare: impl Fn(&T, &T) -> std::cmp::Ordering + Copy,
-) {
+pub fn sort_by<T: Clone>(items: &mut [T], compare: impl Fn(&T, &T) -> std::cmp::Ordering + Copy) {
     let n = items.len();
     if n <= 1 {
         return;
@@ -241,9 +238,7 @@ fn heapsort<T: Clone>(
             if child_i > n {
                 break;
             }
-            if child_i < n
-                && compare(&items[at(child_i)], &items[at(child_i + 1)]) == Less
-            {
+            if child_i < n && compare(&items[at(child_i)], &items[at(child_i + 1)]) == Less {
                 child_i += 1;
             }
             if compare(&items[at(child_i)], &items[at(par_i)]) != Greater {
@@ -270,9 +265,7 @@ fn heapsort<T: Clone>(
             if child_i > nmemb {
                 break;
             }
-            if child_i < nmemb
-                && compare(&items[at(child_i)], &items[at(child_i + 1)]) == Less
-            {
+            if child_i < nmemb && compare(&items[at(child_i)], &items[at(child_i + 1)]) == Less {
                 child_i += 1;
             }
             items[at(hole)] = items[at(child_i)].clone();
@@ -309,26 +302,25 @@ mod tests {
             (vec![2, 3, 1, 3, 3, 2], vec![2, 0, 5, 1, 3, 4]),
             (
                 vec![
-                    1, 2, 3, 3, 0, 2, 3, 2, 0, 1, 3, 1, 0, 0, 0, 1, 1, 1, 3, 1, 3, 1, 0, 1, 0,
-                    1, 0, 1, 0, 0, 0, 2, 0, 2, 0, 2, 3, 3, 1, 2, 1, 2, 2, 1, 1, 2, 3, 0, 3, 1,
-                    2, 3, 2, 0, 2, 3, 3, 2, 2, 0,
+                    1, 2, 3, 3, 0, 2, 3, 2, 0, 1, 3, 1, 0, 0, 0, 1, 1, 1, 3, 1, 3, 1, 0, 1, 0, 1,
+                    0, 1, 0, 0, 0, 2, 0, 2, 0, 2, 3, 3, 1, 2, 1, 2, 2, 1, 1, 2, 3, 0, 3, 1, 2, 3,
+                    2, 0, 2, 3, 3, 2, 2, 0,
                 ],
                 vec![
-                    47, 34, 28, 32, 26, 30, 22, 8, 24, 59, 29, 53, 12, 13, 14, 4, 0, 9, 11, 15,
-                    16, 17, 19, 21, 23, 25, 27, 38, 40, 43, 44, 49, 5, 39, 1, 50, 33, 52, 41,
-                    42, 54, 57, 58, 7, 31, 45, 35, 46, 36, 37, 55, 56, 6, 3, 48, 51, 2, 20, 18,
-                    10,
+                    47, 34, 28, 32, 26, 30, 22, 8, 24, 59, 29, 53, 12, 13, 14, 4, 0, 9, 11, 15, 16,
+                    17, 19, 21, 23, 25, 27, 38, 40, 43, 44, 49, 5, 39, 1, 50, 33, 52, 41, 42, 54,
+                    57, 58, 7, 31, 45, 35, 46, 36, 37, 55, 56, 6, 3, 48, 51, 2, 20, 18, 10,
                 ],
             ),
             (
                 vec![
-                    3, 2, 1, 0, 0, 0, 1, 3, 1, 3, 1, 2, 2, 3, 2, 0, 0, 2, 2, 2, 0, 0, 0, 1, 0,
-                    1, 3, 2, 2, 3, 2, 0, 3, 0, 1, 2, 2, 2, 3, 3, 3, 0, 1, 3, 0, 3, 2, 3, 0,
+                    3, 2, 1, 0, 0, 0, 1, 3, 1, 3, 1, 2, 2, 3, 2, 0, 0, 2, 2, 2, 0, 0, 0, 1, 0, 1,
+                    3, 2, 2, 3, 2, 0, 3, 0, 1, 2, 2, 2, 3, 3, 3, 0, 1, 3, 0, 3, 2, 3, 0,
                 ],
                 vec![
-                    22, 3, 4, 15, 16, 5, 48, 20, 21, 24, 41, 44, 33, 31, 6, 42, 25, 10, 8, 2,
-                    34, 23, 30, 1, 11, 12, 14, 17, 18, 19, 27, 28, 35, 36, 37, 46, 45, 47, 38,
-                    39, 40, 26, 13, 43, 9, 32, 0, 29, 7,
+                    22, 3, 4, 15, 16, 5, 48, 20, 21, 24, 41, 44, 33, 31, 6, 42, 25, 10, 8, 2, 34,
+                    23, 30, 1, 11, 12, 14, 17, 18, 19, 27, 28, 35, 36, 37, 46, 45, 47, 38, 39, 40,
+                    26, 13, 43, 9, 32, 0, 29, 7,
                 ],
             ),
         ];

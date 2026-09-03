@@ -56,8 +56,7 @@ impl Dic {
         let mut lowercase_index: HashMap<String, Vec<usize>> = HashMap::new();
         let mut ph_reps = Vec::new();
         let mut suggest_words: Vec<String> = Vec::new();
-        let mut suggest_seen: std::collections::HashSet<String> =
-            std::collections::HashSet::new();
+        let mut suggest_seen: std::collections::HashSet<String> = std::collections::HashSet::new();
 
         for line in lines.iter().skip(1) {
             let (head, morph) = split_stem_and_morph(line);

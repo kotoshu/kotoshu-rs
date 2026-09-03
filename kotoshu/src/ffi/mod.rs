@@ -1,11 +1,14 @@
 //! FFI: one batch serialization, every binding.
 //!
 //! - [`shared`] — batch wire format shared by ALL bindings (always available)
+//! - [`registry`] — process-wide language → dictionary registry backing the
+//!   batch protocol and the C ABI lifecycle calls
 //! - [`c`] — C ABI (always available)
 //! - [`ruby`] — magnus bindings (feature `ruby`; lands P4)
 //! - [`wasm`] — wasm-bindgen bindings (feature `wasm`; lands P4)
 
 pub mod c;
+pub mod registry;
 pub mod shared;
 
 #[cfg(feature = "ruby")]

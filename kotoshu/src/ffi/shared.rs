@@ -24,9 +24,14 @@
 //! magic "KOSH", u32 version, u16 kind        (echoes the request kind)
 //!   kind 1 (check):   u32 n, n x u8          (0 = miss, 1 = correct)
 //!   kind 2 (suggest): u32 n, n x suggestion
-//!     suggestion := str word, u8 distance, f32 confidence (LE bits),
+//!     suggestion := str word, u8 distance, f64 confidence (LE bits),
 //!                   u8 source (SuggestionSource discriminant)
 //! ```
+//!
+//! Confidence is an f64 (Ruby `Float`) so the gem's exact confidences
+//! round-trip; the pre-P2 draft sketched f32, but nothing outside this
+//! repository ever consumed that layout, so v1 was corrected before any
+//! binding shipped.
 
 /// Magic prefix of every batch buffer.
 pub const MAGIC: [u8; 4] = *b"KOSH";
@@ -59,8 +64,19 @@ pub enum Request {
 pub struct Suggestion {
     pub word: String,
     pub distance: u8,
-    pub confidence: f32,
+    pub confidence: f64,
     pub source: SuggestionSource,
+}
+
+impl From<crate::suggest::Suggestion> for Suggestion {
+    fn from(engine: crate::suggest::Suggestion) -> Self {
+        Self {
+            word: engine.word,
+            distance: engine.distance,
+            confidence: engine.confidence,
+            source: SuggestionSource::from(engine.source),
+        }
+    }
 }
 
 /// Which strategy produced a suggestion (gem `Suggestions::Strategies::*`).
@@ -72,6 +88,17 @@ pub enum SuggestionSource {
     KeyboardProximity = 2,
     Ngram = 3,
     Semantic = 4,
+}
+
+impl From<crate::suggest::SuggestionSource> for SuggestionSource {
+    fn from(engine: crate::suggest::SuggestionSource) -> Self {
+        match engine {
+            crate::suggest::SuggestionSource::EditDistance => Self::EditDistance,
+            crate::suggest::SuggestionSource::Phonetic => Self::Phonetic,
+            crate::suggest::SuggestionSource::KeyboardProximity => Self::KeyboardProximity,
+            crate::suggest::SuggestionSource::Ngram => Self::Ngram,
+        }
+    }
 }
 
 impl SuggestionSource {
@@ -104,23 +131,47 @@ pub enum Status {
     UnsupportedVersion = 3,
     UnknownKind = 4,
     InvalidUtf8 = 5,
+    /// The request's `language` has no loaded dictionary (load one with
+    /// `kotoshu_dict_load` first).
+    DictionaryNotLoaded = 6,
 }
 
-/// Placeholder response: shape-correct, engine-empty.
+/// C ABI status for a dictionary that failed to LOAD (distinct from
+/// [`Status::DictionaryNotLoaded`], which means no dictionary was ever
+/// registered for the language). The wire format has no channel for
+/// load-error detail; hosts that need it use the Rust/Ruby API.
+pub const STATUS_DICTIONARY_LOAD_FAILED: std::ffi::c_int = 7;
+
+/// Execute one batch request against the process-wide dictionary registry
+/// (see [`super::registry`]).
 ///
-/// TODO(P2): route `Check` through [`crate::dict::Dictionary`] (needs the
-/// dictionary lifecycle on the C ABI — load/register/free calls keyed by
-/// language or path — which lands with the `parallel` batch feature) and
-/// `Suggest` through the P2 suggester. The P1 engine is exercised directly
-/// by the conformance suite via `kotoshu::dict::Dictionary::correct`.
-pub fn stub_response(request: &Request) -> Response {
-    match request {
+/// `Check` runs [`crate::dict::Dictionary::correct`] per word; `Suggest`
+/// runs [`crate::dict::Dictionary::suggest`] with the request's limit.
+/// Both route by the request's `language`.
+pub fn respond(request: &Request) -> Result<Response, Status> {
+    let dictionary =
+        super::registry::lookup(request.language()).ok_or(Status::DictionaryNotLoaded)?;
+    Ok(match request {
         Request::Check { words, .. } => Response::Check {
-            correct: vec![false; words.len()],
+            correct: words.iter().map(|word| dictionary.correct(word)).collect(),
         },
-        Request::Suggest { .. } => Response::Suggest {
-            suggestions: Vec::new(),
+        Request::Suggest { word, limit, .. } => Response::Suggest {
+            suggestions: dictionary
+                .suggest(word, (*limit).into())
+                .into_iter()
+                .map(Suggestion::from)
+                .collect(),
         },
+    })
+}
+
+impl Request {
+    /// The language the request routes by.
+    pub fn language(&self) -> &str {
+        match self {
+            Request::Check { language, .. } => language,
+            Request::Suggest { language, .. } => language,
+        }
     }
 }
 
@@ -143,7 +194,7 @@ impl Writer {
         self.0.extend_from_slice(&value.to_le_bytes());
     }
 
-    fn f32(&mut self, value: f32) {
+    fn f64(&mut self, value: f64) {
         self.0.extend_from_slice(&value.to_bits().to_le_bytes());
     }
 
@@ -184,9 +235,11 @@ impl Reader<'_> {
         Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
     }
 
-    fn f32(&mut self) -> Result<f32, Status> {
-        let bytes = self.take(4)?;
-        Ok(f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+    fn f64(&mut self) -> Result<f64, Status> {
+        let bytes = self.take(8)?;
+        Ok(f64::from_le_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ]))
     }
 
     fn str(&mut self) -> Result<String, Status> {
@@ -290,7 +343,7 @@ pub fn encode_response(response: &Response) -> Vec<u8> {
             for suggestion in suggestions {
                 writer.str(&suggestion.word);
                 writer.u8(suggestion.distance);
-                writer.f32(suggestion.confidence);
+                writer.f64(suggestion.confidence);
                 writer.u8(suggestion.source as u8);
             }
             writer
@@ -318,7 +371,7 @@ pub fn decode_response(bytes: &[u8]) -> Result<Response, Status> {
             for _ in 0..count {
                 let word = reader.str()?;
                 let distance = reader.u8()?;
-                let confidence = reader.f32()?;
+                let confidence = reader.f64()?;
                 let source =
                     SuggestionSource::from_discriminant(reader.u8()?).ok_or(Status::UnknownKind)?;
                 suggestions.push(Suggestion {
@@ -394,13 +447,32 @@ mod tests {
     }
 
     #[test]
-    fn stub_response_round_trips_with_matching_shape() {
-        let request = check_request();
-        let stub = stub_response(&request);
-        let Response::Check { correct } = decode_response(&encode_response(&stub)).unwrap() else {
-            panic!("expected check response");
+    fn suggest_confidence_round_trips_exactly() {
+        // A Ruby-Float-grade value from the conformance vectors must
+        // survive the wire bit-for-bit.
+        let response = Response::Suggest {
+            suggestions: vec![Suggestion {
+                word: "b".to_owned(),
+                distance: 1,
+                confidence: 0.9523809523809523,
+                source: SuggestionSource::EditDistance,
+            }],
         };
-        assert_eq!(correct, vec![false, false]);
+        assert_eq!(
+            decode_response(&encode_response(&response)).unwrap(),
+            response
+        );
+    }
+
+    #[test]
+    fn respond_requires_a_loaded_dictionary() {
+        // Unique language: the registry is process-global and other tests
+        // may have loaded "en".
+        let request = Request::Check {
+            language: "zz-unloaded".to_owned(),
+            words: vec!["hello".to_owned()],
+        };
+        assert_eq!(respond(&request), Err(Status::DictionaryNotLoaded));
     }
 
     #[test]
