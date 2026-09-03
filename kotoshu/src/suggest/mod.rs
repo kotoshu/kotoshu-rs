@@ -259,7 +259,10 @@ fn transposition_bonus(original: &[char], suggestion: &[char]) -> u32 {
         }
         // s.index(o[i], i + 1): first matching position at or after i+1.
         if let Some(match_idx) = (i + 1..s.len()).find(|&j| s[j] == *o_char) {
-            if match_idx == i + 1 || (match_idx > i + 1 && s[i] == s[match_idx]) {
+            // Ruby cross-indexes s[i] against o[match_idx] (nil reads are
+            // never equal).
+            let cross = o.get(match_idx).is_some_and(|oc| s.get(i) == Some(oc));
+            if match_idx == i + 1 || (match_idx > i + 1 && cross) {
                 transpositions += 1;
             }
         }
