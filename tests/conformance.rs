@@ -9,14 +9,16 @@
 //!  "expected":[{"word":"receive","distance":1,"confidence":0.95,"source":"edit_distance"}]}
 //! ```
 //!
-//! The pack in this repository is a PLACEHOLDER (three hand-written lines
-//! covering the `Kotoshu.correct?` / `Kotoshu.suggest` shapes). It will be
-//! replaced by the gem's `rake kotoshu:conformance:export` golden vectors
-//! (plan 67 M3) — one source of truth, three enforcement points (C ABI,
-//! `ruby` feature, wasm32).
+//! The live pack is the gem's golden vectors (2630 lines, 125 fixture
+//! dictionaries), exported by `rake kotoshu:conformance:export` in the
+//! gem repo (plan 67 M3) — one source of truth, three enforcement points
+//! (C ABI, `ruby` feature, wasm32). Vector shape includes a `dictionary`
+//! key (the gem repo's fixture path) and `kind` values `correct` /
+//! `suggest`. v0-placeholders.jsonl is the original hand-written trio,
+//! kept for history.
 //!
 //! P0 policy: with no engine yet, this test only validates pack shape and
-//! counts vectors; real assertions activate with P1 (`correct?`) and P2
+//! counts vectors; real assertions activate with P1 (`correct`) and P2
 //! (`suggest`). An absent or empty pack asserts nothing.
 
 use std::fs;
