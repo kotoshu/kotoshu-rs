@@ -96,6 +96,12 @@ jobs:
           dylib="$(python3 -c "import glob, os, onnxruntime; root = os.path.dirname(onnxruntime.__file__); print(glob.glob(os.path.join(root, 'capi', 'libonnxruntime*.so*'))[0])")"
           test -n "$dylib"
           echo "KOTOSHU_ORT_DYLIB=$dylib" >> "$GITHUB_ENV"
+      - name: Sync gem conformance vectors and fixtures
+        # The integration test reranks suggest("helo") through the base
+        # fixture dictionary; without the sync it skips that section.
+        run: |
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
       - name: Unit tests with features
         run: cargo test --verbose --features onnx,resources
       - name: Integration test (ignored; network + dylib)
