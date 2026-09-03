@@ -22,11 +22,29 @@ vectors speak the same bytes.
 
 [parsanol-rs]: https://github.com/parsanol/parsanol-rs
 
-## Status: P3 (rerank + resources)
+## Status: P4a (ruby bindings) on top of P3
 
-Everything from P2 plus context-aware reranking in `kotoshu/src/rerank/`
-and resource handling in `kotoshu/src/resource/` (both P3 features;
-see below):
+Everything from P3 (reranking, resources, onnx) plus the first P4 shim, the
+`ruby` feature in `kotoshu/src/ffi/ruby/`:
+
+- `ruby` feature: magnus 0.8 (released crates.io; parsanol's git-rev
+  magnus/rb-sys patches are only needed for Ruby 4.0, and this matrix is
+  3.3/3.4 — the released line is verified by the smoke below). The core
+  stays an `rlib`; `ffi::ruby::init(&Ruby)` defines `Kotoshu::Native`
+  (`VERSION`, `available?`, `Dictionary.load(aff, dic)` → instance with
+  `correct?(word)` and `suggest(word, limit = 5)` returning hashes of the
+  gem's Suggestion fields; errors raise `Kotoshu::Native::Error`). The
+  per-language gem's future `ext/kotoshu_native` is a cdylib whose
+  `#[magnus::init]` just forwards to that `init`.
+- `tests/ruby_ext/` is that shim, exactly, kept as the smoke test: the
+  reference extension builds against the workspace, loads into a real MRI
+  (`scripts/ruby_ffi_smoke.sh`), and asserts the engine against the synced
+  conformance fixtures (including the canonical `suggest("hlelo")` →
+  `hello/1/1.0/edit_distance` vector). CI runs it on Ruby 3.3 and 3.4
+  (`ruby-ffi.yml`). The gem-side scaffold (extconf.rb, `KOTOSHU_BACKEND`,
+  `rake compat:*`) is the separate P4b PR in the gem repo.
+
+Everything from P2/P3 remains:
 
 - `rerank/` (always compiled, zero dependencies): the
   `EmbeddingProvider` trait (inference is host-injected — the rerank
@@ -79,8 +97,10 @@ kotoshu/            core crate (rlib): dict/{aff,dic,casing,encoding,lookup},
                     rerank/{dequant,oov,onnx}, resource/,
                     ffi/{shared,registry,c,ruby,wasm}
 tests/              conformance-vector runner + golden JSONL pack (+ synced fixtures, gitignored),
-                    rerank_integration.rs (#[ignore]; real model, network + dylib) + registry.json
-scripts/            sync_conformance.sh (vectors + fixture dictionaries from the gem repo)
+                    rerank_integration.rs (#[ignore]; real model, network + dylib) + registry.json,
+                    ruby_ext/ (reference gem-shim cdylib, workspace-excluded) + ruby_ffi_smoke.rb
+scripts/            sync_conformance.sh (vectors + fixture dictionaries from the gem repo),
+                    ruby_ffi_smoke.sh (build the shim, run the smoke under MRI)
 .github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, release-plz.yml
 ```
 
@@ -93,7 +113,7 @@ core has zero third-party dependencies. Optional deps attach per phase:
 |------------|----------|---------|
 | `onnx`     | ort `load-dynamic` + serde/serde_json (P3) | embedding inference over the tier `.onnx` artifacts |
 | `resources`| serde/serde_json + sha2 (P3) | registry parse, sha256 verify, model cache |
-| `ruby`     | magnus (P4) | Ruby bindings inside the core |
+| `ruby`     | magnus 0.8 (P4) | `Kotoshu::Native` bindings inside the core; the gem's ext cdylib forwards to `ffi::ruby::init` |
 | `wasm`     | wasm-bindgen & co. (P4) | `@kotoshu/wasm` browser/Node |
 | `parallel` | rayon (P2) | parallel batch checking |
 | `logging`  | log (P2, deferred from P1) | diagnostics |

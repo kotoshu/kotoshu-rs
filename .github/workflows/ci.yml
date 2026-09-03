@@ -70,8 +70,8 @@ jobs:
         run: cargo build --verbose
       - name: Test
         run: cargo test --verbose
-      - name: Build ruby feature (dep-free until P4)
-        run: cargo build --features ruby --verbose
+      # The ruby feature's build/test/smoke lives in ruby-ffi.yml (needs a
+      # Ruby toolchain since P4 attached magnus); wasm in wasm.yml.
 
   # P3: the ort provider against the REAL en/mini model. pip's
   # onnxruntime supplies libonnxruntime (ort is load-dynamic only —
