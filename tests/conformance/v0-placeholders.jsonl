@@ -1,0 +1,3 @@
+{"kind":"correct","language":"en","input":"hello","expected":true,"note":"PLACEHOLDER - replace with gem rake kotoshu:conformance:export (plan 67 M3)"}
+{"kind":"correct","language":"en","input":"recieve","expected":false,"note":"PLACEHOLDER - replace with gem rake kotoshu:conformance:export (plan 67 M3)"}
+{"kind":"suggest","language":"en","input":"recieve","expected":[{"word":"receive","distance":1,"confidence":0.95,"source":"edit_distance"}],"note":"PLACEHOLDER - replace with gem rake kotoshu:conformance:export (plan 67 M3)"}

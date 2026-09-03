@@ -1,0 +1,33 @@
+# Release-plz.
+#
+# DISABLED UNTIL THE FIRST CRATE RELEASE. Crate versions, MSRV, and the
+# first release are owner decisions (plan 67 owner-decision gates); no
+# push trigger is wired and the job is hard-gated. To enable: add the
+# `push: branches: [main]` trigger, remove `if: false`, and set
+# CARGO_REGISTRY_TOKEN. Versioning policy: separate version lines per
+# package; release-plz automates the core's only (plan 66).
+
+name: Release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release-plz:
+    name: Release-plz (disabled until owner approves first release)
+    runs-on: ubuntu-latest
+    if: false # owner gate — do not enable as part of routine changes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz
+        uses: MarcoIeni/release-plz-action@v0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

@@ -1,0 +1,68 @@
+# Pre-commit hooks for kotoshu-rs
+# Mirrors the CI checks in .github/workflows/ci.yml
+#
+# Usage:
+#   1. Install pre-commit: pip install pre-commit
+#   2. Install hooks: pre-commit install
+#   3. (Optional) Run on all files: pre-commit run --all-files
+
+repos:
+  # Rust format check
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --all -- --check
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # Clippy lint (default features)
+  - repo: local
+    hooks:
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy --all-targets -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # Clippy lint (no features)
+  - repo: local
+    hooks:
+      - id: cargo-clippy-no-features
+        name: cargo clippy (no features)
+        entry: cargo clippy --all-targets --no-default-features -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # Documentation build
+  - repo: local
+    hooks:
+      - id: cargo-doc
+        name: cargo doc
+        entry: bash -c 'RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features'
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # Spell check (typos)
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.45.0
+    hooks:
+      - id: typos
+
+  # Standard git checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: '\.md$'

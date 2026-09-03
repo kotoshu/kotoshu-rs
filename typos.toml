@@ -1,0 +1,42 @@
+# Configuration for typos spell checker
+# See: https://github.com/crate-ci/typos
+
+[files]
+extend-exclude = ["target/", ".git/"]
+
+[default.extend-words]
+# Project terms
+kotoshu = "kotoshu"
+Kotoshu = "Kotoshu"
+hunspell = "hunspell"
+Hunspell = "Hunspell"
+spylls = "spylls"
+magnus = "magnus"
+
+# Domain terms
+aff = "aff"
+dic = "dic"
+ngram = "ngram"
+rerank = "rerank"
+reranking = "reranking"
+onnx = "onnx"
+onnxruntime = "onnxruntime"
+oov = "oov"
+int = "int"
+
+# Rust / tooling terms
+serde = "serde"
+clippy = "clippy"
+rustfmt = "rustfmt"
+wasm = "wasm"
+wasm32 = "wasm32"
+ffi = "ffi"
+cdylib = "cdylib"
+rlib = "rlib"
+codegen = "codegen"
+crates = "crates"
+
+# Misc
+conformance = "conformance"
+jsonl = "jsonl"
+KOSH = "KOSH"

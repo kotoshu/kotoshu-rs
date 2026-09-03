@@ -1,0 +1,24 @@
+# Release-plz configuration for kotoshu-rs
+#
+# NOT ACTIVE until the owner approves the first crate release — crate
+# versions, MSRV, and the first release are owner decisions (plan 67
+# owner-decision gates). See .github/workflows/release-plz.yml.
+#
+# See: https://release-plz.dev/docs/config
+
+[workspace]
+git_release_enable = false
+
+dependencies_update = true
+
+[changelog]
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }}\
+{% if commit.breaking %} (BREAKING){% endif %}\
+{% if commit.author != "github-actions[bot]" %} by @{{ commit.author }}{% endif %}\
+{% endfor %}
+{% endfor %}
+"""

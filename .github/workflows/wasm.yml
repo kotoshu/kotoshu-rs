@@ -1,0 +1,38 @@
+# WASM CI.
+#
+# P0 smoke check only: the `wasm` feature is declared without its
+# wasm-bindgen dependency yet. This workflow ACTIVATES WHEN WASM-BINDGEN
+# LANDS (P4, plan 66): wasm32-unknown-unknown build, wasm-pack, tests run
+# natively, and publication of `@kotoshu/wasm` (npm publish blocked on org
+# credentials — plan 67 M5).
+
+name: WASM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.rs"
+      - "Cargo.toml"
+      - ".github/workflows/wasm.yml"
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wasm:
+    name: WASM (activates when wasm-bindgen lands)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Check wasm feature compiles
+        run: cargo check --no-default-features --features wasm

@@ -1,0 +1,39 @@
+# Ruby FFI CI.
+#
+# P0 smoke check only: the `ruby` feature is declared without its magnus
+# dependency yet (keeps CI green with no Ruby toolchain requirement).
+# This workflow ACTIVATES AT P4 (plan 66): `cargo test --features ruby`
+# under one MRI (matrix grows to 3.2/3.3/3.4/4.0-head at the P4 gate),
+# magnus behind the feature, `[patch.crates-io]` rb-sys revs per parsanol
+# policy, so binding breakage is caught in this repo's CI, not downstream.
+
+name: Ruby FFI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.rs"
+      - "Cargo.toml"
+      - ".github/workflows/ruby-ffi.yml"
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ruby-ffi:
+    name: Ruby FFI (activates at P4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Check ruby feature compiles
+        run: cargo check --no-default-features --features ruby

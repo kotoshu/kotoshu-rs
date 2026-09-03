@@ -1,0 +1,30 @@
+[package]
+name = "kotoshu"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "../README.md"
+description = "Kotoshu semantic spell-checking engine: dictionaries, affixes, ranked suggestions, embedding reranking"
+homepage = "https://github.com/kotoshu/kotoshu-rs"
+
+[lib]
+crate-type = ["rlib"]
+
+# Optional dependencies attach per phase (plan 66): ruby -> magnus (P4),
+# wasm -> wasm-bindgen/js-sys/console_error_panic_hook (P4),
+# onnx -> ort/load-dynamic (P3), parallel -> rayon (P2), logging -> log (P1).
+# Deliberately absent at P0 so CI stays green without those toolchains.
+[features]
+default = []
+ruby = []
+wasm = []
+onnx = []
+parallel = []
+logging = []
+
+# Conformance-vector runner lives at the workspace root (plan 66 layout).
+[[test]]
+name = "conformance"
+path = "../tests/conformance.rs"
