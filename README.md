@@ -22,11 +22,18 @@ vectors speak the same bytes.
 
 [parsanol-rs]: https://github.com/parsanol/parsanol-rs
 
-## Status: P0 (scaffold)
+## Status: P1 (dictionary engine)
 
-Workspace, `kotoshu` core crate (rlib), batch wire format, C ABI skeleton
-(`kotoshu_version`, `kotoshu_batch`, `kotoshu_free`), conformance-vector
-runner (placeholder pack), and CI. The engine itself lands in phases — see
+Everything from P0 plus the real Hunspell dictionary path: `.aff`/`.dic`
+parsing (encodings, flag formats, `AF` aliases), affix expansion (two-fold
+suffixes, cross-product prefixes, `COMPLEXPREFIXES`), compounds (flags and
+rules), capitalization (standard/German/Turkic), break patterns, `ICONV`,
+`IGNORE`, and the full `correct?` flag semantics (`KEEPCASE`, `NEEDAFFIX`,
+`CIRCUMFIX`, `ONLYINCOMPOUND`, `FORBIDDENWORD`, …) in `kotoshu/src/dict/`.
+The 2630-vector conformance pack from the gem is asserted for `correct`
+(1315/1315) via `scripts/sync_conformance.sh` (fixtures synced from the gem
+repo, never committed; the test skips gracefully without them). Suggest
+vectors count but are not asserted until P2. Remaining phases — see
 [`TODO.impl/`](TODO.impl/) and the authoritative plan in the gem repo,
 [plan 66 — kotoshu-rs: the Rust core][plan-66].
 
@@ -35,8 +42,9 @@ runner (placeholder pack), and CI. The engine itself lands in phases — see
 ## Layout
 
 ```
-kotoshu/            core crate (rlib): ffi/{shared,c,ruby,wasm}
-tests/              conformance-vector runner + golden JSONL pack
+kotoshu/            core crate (rlib): dict/{aff,dic,casing,encoding,lookup}, ffi/{shared,c,ruby,wasm}
+tests/              conformance-vector runner + golden JSONL pack (+ synced fixtures, gitignored)
+scripts/            sync_conformance.sh (vectors + fixture dictionaries from the gem repo)
 .github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, release-plz.yml
 ```
 
@@ -52,7 +60,7 @@ lands:
 | `wasm`    | wasm-bindgen & co. (P4) | `@kotoshu/wasm` browser/Node  |
 | `onnx`    | ort `load-dynamic` (P3) | embedding inference          |
 | `parallel`| rayon (P2)  | parallel batch checking                     |
-| `logging` | log (P1)    | diagnostics                                 |
+| `logging` | log (P2, deferred from P1) | diagnostics                     |
 
 ## MSRV
 
