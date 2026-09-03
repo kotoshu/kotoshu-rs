@@ -20,7 +20,11 @@ pub fn extract_ngrams(word: &[char], n: usize) -> HashMap<String, usize> {
 
 /// `NgramStrategy#ngram_similarity` — multiset Jaccard coefficient
 /// between the input word's n-grams and another word's.
-pub fn ngram_similarity(word_ngrams: &HashMap<String, usize>, other_word: &[char], n: usize) -> f64 {
+pub fn ngram_similarity(
+    word_ngrams: &HashMap<String, usize>,
+    other_word: &[char],
+    n: usize,
+) -> f64 {
     let other_ngrams = extract_ngrams(other_word, n);
 
     let mut intersection = 0usize;
@@ -95,9 +99,10 @@ pub fn typo_similarity(word1: &str, word2: &str) -> f64 {
     let length_penalty = len1.abs_diff(len2) as f64 * 0.1;
 
     // Ruby: similarity + prefix_bonus + suffix_bonus - length_penalty
-    // (left-associated), then clamp [0.0, 1.0].
+    // (left-associated), then clamp [0.0, 1.0] — `[[s, 1.0].min, 0.0].max`,
+    // which equals clamp for the finite values produced here.
     let combined = similarity + prefix_bonus + suffix_bonus - length_penalty;
-    combined.min(1.0).max(0.0)
+    combined.clamp(0.0, 1.0)
 }
 
 #[cfg(test)]

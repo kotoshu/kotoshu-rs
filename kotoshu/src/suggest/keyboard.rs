@@ -95,9 +95,7 @@ impl Layout {
     pub fn distance(&self, key1: char, key2: char) -> Option<u32> {
         let pos1 = self.position(key1)?;
         let pos2 = self.position(key2)?;
-        Some(
-            (pos1.0.abs_diff(pos2.0) + pos1.1.abs_diff(pos2.1)) as u32,
-        )
+        Some((pos1.0.abs_diff(pos2.0) + pos1.1.abs_diff(pos2.1)) as u32)
     }
 }
 

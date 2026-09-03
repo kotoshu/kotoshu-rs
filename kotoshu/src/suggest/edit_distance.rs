@@ -38,7 +38,9 @@ pub fn damerau_with_threshold(str1: &[char], str2: &[char], threshold: usize) ->
         let mut row_min = usize::MAX;
         for j in 1..=len2 {
             let cost = usize::from(str1[i - 1] != str2[j - 1]);
-            let mut cell = (d[i - 1][j] + 1).min(d[i][j - 1] + 1).min(d[i - 1][j - 1] + cost);
+            let mut cell = (d[i - 1][j] + 1)
+                .min(d[i][j - 1] + 1)
+                .min(d[i - 1][j - 1] + cost);
             if i > 1 && j > 1 && str1[i - 1] == str2[j - 2] && str1[i - 2] == str2[j - 1] {
                 cell = cell.min(d[i - 2][j - 2] + 1);
             }
@@ -111,7 +113,10 @@ mod tests {
 
     #[test]
     fn damerau_equal_strings_short_circuit() {
-        assert_eq!(damerau_with_threshold(&chars("aa"), &chars("aa"), 0), Some(0));
+        assert_eq!(
+            damerau_with_threshold(&chars("aa"), &chars("aa"), 0),
+            Some(0)
+        );
     }
 
     #[test]
