@@ -99,8 +99,51 @@ feature and the activated `ruby-ffi.yml`. The gem-side ext scaffold is
     twin of the Ruby smoke).
   - `wasm.yml` real: wasm32-unknown-unknown build + wasm-pack + the Node
     smoke on synced fixtures; no publish step (deliberately).
-- Remaining in this phase: the `@kotoshu/wasm` npm publish itself
-  (owner credentials, plan 67 M5), Python wheel, CLI/LSP distribution — and P4b gem-side
+- **P4d build half done** (2026-09-04, branch `feat/p4d-python`) — the
+  `python` feature is real; only the PyPI publish is left
+  (credentials-blocked, below).
+  - `kotoshu/src/ffi/python/`: `ffi::python::register(&Bound<PyModule>)`
+    defines the `kotoshu_native` module — `VERSION` (crate version),
+    `available()` → `True`, `Dictionary.load(aff_path, dic_path)`
+    returning a `#[pyclass]` instance with `correct(word)` and
+    `suggest(word, limit = 5)` returning dicts of exactly the conformance
+    `SUGGESTION_KEYS` (`word`/`distance`/`confidence`/`source`), the
+    same row shape `ffi::ruby` hashes. Failures raise
+    `KotoshuNativeError` (Exception subclass) carrying the Rust message;
+    `Dictionary()` itself raises (instances exist only through `load`,
+    the ruby feature's undef-`allocate` stance). Engine calls run under
+    `Python::detach` — pyo3 ≥ 0.26's rename of `allow_threads` — so the
+    GIL is released for loads/lookups (engine is plain `Send + Sync`
+    data; rows materialize back under the GIL). pyo3 is the released
+    0.29.2 from crates.io (no git revs/patches, magnus policy); pyo3
+    types stop at `ffi/python`.
+  - `kotoshu-python/` member: thin `#[pymodule] kotoshu_native` cdylib
+    forwarding to `ffi::python::register` (the `tests/ruby_ext` shim
+    pattern promoted to a workspace member, the `kotoshu-wasm` twin),
+    with its OWN opt-in `python` feature (default workspace builds stay
+    dependency-free, P0 policy) and a direct pyo3 dep for the macro.
+    maturin wheel: distribution `kotoshu-native`, module `kotoshu_native`
+    (the `[lib]` name), version 0.1.0 PLACEHOLDER — owner decision, name
+    included. `RELEASING.md` documents the blocked publish, the exact
+    commands, and the integration plan: the PyPI `kotoshu` package
+    (kotoshu-python repository, pure-Python today) will depend on
+    `kotoshu-native` and import `kotoshu_native` behind a
+    `KOTOSHU_BACKEND=native|http|auto` guard — this repo's counterpart
+    of the gem-side P4b PR.
+  - `scripts/python_smoke.sh` (venv + maturin + wheel install) and
+    `scripts/python_smoke.py` (real fixture dictionaries via
+    sync_conformance, frozen `hlelo` → `hello/1/1.0/edit_distance` row,
+    OOV word, error surface, 22 assertions — the Python twin of the Ruby
+    and Node smokes). Note: standalone test binaries link libpython;
+    macOS dev needs `DYLD_LIBRARY_PATH` at the interpreter's libdir (CI
+    sets the Linux `LD_LIBRARY_PATH` equivalent, like the ruby job's
+    libruby).
+  - `python-ffi.yml` real: clippy + `cargo test --features python` (full
+    conformance pack) on Python 3.12, then the venv/wheel/smoke chain;
+    no publish step (deliberately).
+- Remaining in this phase: the `@kotoshu/wasm` npm publish and the
+  `kotoshu-native` PyPI publish (owner credentials, plan 67 M5), the
+  kotoshu-python repo integration above, CLI/LSP distribution — and P4b gem-side
   (`ext/kotoshu_native`, `extconf.rb`, `KOTOSHU_BACKEND`,
   `rake compat:*`), which needs from this PR only the
   `ffi::ruby::init` signature above and the suggestion-row shape.
