@@ -22,11 +22,30 @@ vectors speak the same bytes.
 
 [parsanol-rs]: https://github.com/parsanol/parsanol-rs
 
-## Status: P4c (wasm bindings, build half) on top of P4a/P3
+## Status: P4d (Python bindings, build half) on top of P4a–P4c/P3
 
-Everything from P3 (reranking, resources, onnx) plus the first P4 shim, the
-`ruby` feature in `kotoshu/src/ffi/ruby/`:
+Everything from P3 (reranking, resources, onnx) plus the first P4 shims,
+the `ruby` and `wasm` features and the new `python` feature in
+`kotoshu/src/ffi/python/`:
 
+- `python` feature (P4d): the `kotoshu_native` module over pyo3 0.29
+  (released crates.io; 0.29.2 verified by the smoke below) — `VERSION`,
+  `available()`, and a `Dictionary` class (`load(aff_path, dic_path)`
+  instance with `correct(word)` and `suggest(word, limit = 5)` returning
+  dicts of the conformance `SUGGESTION_KEYS`
+  (`word`/`distance`/`confidence`/`source`)); errors raise
+  `KotoshuNativeError` carrying the Rust message. Engine calls run under
+  `Python::detach` (pyo3 ≥ 0.26's rename of `allow_threads`) so the GIL
+  is released for loads and lookups. The `kotoshu-python` workspace
+  member (thin `#[pymodule]` cdylib re-export, its own opt-in `python`
+  feature) is the maturin wheel: distribution `kotoshu-native`, module
+  `kotoshu_native`, version 0.1.0 PLACEHOLDER (first release is an owner
+  decision; publish blocked on PyPI credentials —
+  `kotoshu-python/RELEASING.md`, which also documents how the PyPI
+  `kotoshu` package will consume the wheel), built and smoked by
+  `scripts/python_smoke.sh` + `scripts/python_smoke.py` (real fixtures,
+  frozen `hlelo` row); CI runs the whole chain (`python-ffi.yml`,
+  Python 3.12).
 - `wasm` feature (P4c): the `KotoshuWasm` JS class in `ffi/wasm` over
   wasm-bindgen — `VERSION`, `new(affSrc, dicSrc)` taking source STRING
   contents (wasm has no fs; byte-symmetric with a path load via the new
@@ -111,17 +130,20 @@ All 2630 conformance vectors remain green (1315 `correct` + 1315
 kotoshu/            core crate (rlib): dict/{aff,dic,casing,encoding,lookup},
                     suggest/{edit_distance,phonetic,keyboard,ngram,frequency,rank,...},
                     rerank/{dequant,oov,onnx}, resource/,
-                    ffi/{shared,registry,c,ruby,wasm}
+                    ffi/{shared,registry,c,ruby,wasm,python}
 kotoshu-wasm/       @kotoshu/wasm packaging member (thin cdylib over ffi/wasm,
                     own opt-in wasm feature — wasm-pack builds it)
+kotoshu-python/     kotoshu-native packaging member (maturin #[pymodule] shim over
+                    ffi/python, own opt-in python feature — provides kotoshu_native)
 tests/              conformance-vector runner + golden JSONL pack (+ synced fixtures, gitignored),
                     rerank_integration.rs (#[ignore]; real model, network + dylib) + registry.json,
                     ruby_ext/ (reference gem-shim cdylib, workspace-excluded) + ruby_ffi_smoke.rb
 scripts/            sync_conformance.sh (vectors + fixture dictionaries from the gem repo),
                     ruby_ffi_smoke.sh (build the shim, run the smoke under MRI),
 wasm_build.sh (wasm-pack package build for @kotoshu/wasm),
-wasm_node_smoke.mjs (Node smoke test over real fixtures)
-.github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, release-plz.yml
+wasm_node_smoke.mjs (Node smoke test over real fixtures),
+python_smoke.sh + python_smoke.py (venv + maturin wheel + Python smoke)
+.github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, python-ffi.yml, release-plz.yml
 ```
 
 ## Features
@@ -135,6 +157,7 @@ core has zero third-party dependencies. Optional deps attach per phase:
 | `resources`| serde/serde_json + sha2 (P3) | registry parse, sha256 verify, model cache |
 | `ruby`     | magnus 0.8 (P4) | `Kotoshu::Native` bindings inside the core; the gem's ext cdylib forwards to `ffi::ruby::init` |
 | `wasm`     | wasm-bindgen/js-sys/console_error_panic_hook (P4) | `KotoshuWasm` JS class in `ffi/wasm` (in-memory sources, conformance-row shape); the `kotoshu-wasm` member packages it as `@kotoshu/wasm` (publish blocked on npm credentials) |
+| `python`   | pyo3 0.29 (P4) | `kotoshu_native` module in `ffi/python` (`Dictionary.load`/`correct`/`suggest`, conformance-row dicts, GIL released for engine calls); the `kotoshu-python` member builds the `kotoshu-native` maturin wheel (publish blocked on PyPI credentials) |
 | `parallel` | rayon (P2) | parallel batch checking |
 | `logging`  | log (P2, deferred from P1) | diagnostics |
 
@@ -162,6 +185,29 @@ Same engine, same frozen conformance vectors, same suggestion-row shape as
 the Ruby gem and the C ABI. Publishing is blocked on npm org credentials;
 build the package locally with `scripts/wasm_build.sh` and run the same
 smoke CI runs with `node scripts/wasm_node_smoke.mjs`.
+
+## Python: `kotoshu_native`
+
+```python
+import kotoshu_native
+
+kotoshu_native.VERSION  # "0.1.0" (kotoshu crate version)
+
+dictionary = kotoshu_native.Dictionary.load("en.aff", "en.dic")
+
+dictionary.correct("hlelo")  # False
+dictionary.suggest("hlelo", 5)
+# [{"word": "hello", "distance": 1, "confidence": 1.0, "source": "edit_distance"}, ...]
+```
+
+Same engine, same frozen conformance vectors, same suggestion-row shape as
+the Ruby gem, the C ABI and the WASM build; every failure raises
+`kotoshu_native.KotoshuNativeError` with the Rust message. The wheel
+(distribution `kotoshu-native`, module `kotoshu_native`) is destined for
+the PyPI `kotoshu` package owned by the kotoshu-python repository; that
+integration and the publish itself are owner-gated — see
+`kotoshu-python/RELEASING.md`. Build and smoke locally with
+`scripts/python_smoke.sh` (venv + maturin + the frozen `hlelo` row).
 
 ## MSRV
 
