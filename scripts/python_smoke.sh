@@ -37,7 +37,15 @@ VENV_PY="$VENV/bin/python"
 # under test). --force-reinstall because a stale dist-info makes a plain
 # install a no-op that would leave the broken launcher in place.
 if ! "$VENV/bin/maturin" --version >/dev/null 2>&1; then
-  "$VENV_PY" -m pip install --quiet --force-reinstall 'maturin>=1.5,<2.0'
+  "$VENV_PY" -m pip install --force-reinstall 'maturin>=1.5,<2.0'
+fi
+if ! "$VENV/bin/maturin" --version >/dev/null 2>&1; then
+  echo "python_smoke: $VENV/bin/maturin still not runnable after install:" >&2
+  ls -la "$VENV/bin" >&2 || true
+  stat "$VENV/bin/maturin" >&2 || true
+  head -c 16 "$VENV/bin/maturin" 2>/dev/null | od -An -tx1 >&2 || true
+  "$VENV_PY" -m pip show -f maturin >&2 || true
+  exit 1
 fi
 "$VENV/bin/maturin" --version
 
