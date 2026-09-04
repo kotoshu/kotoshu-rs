@@ -12,8 +12,8 @@ standing decision; the ledger records what IS.
 | `kotoshu-native` (maturin wheel, module `kotoshu_native`) | 0.1.0 | PyPI | **LIVE** — pypi.org/project/kotoshu-native/0.1.0/ (sdist + cp310 macOS arm64 wheel; more platforms via CI later) |
 | `@kotoshu/wasm` | 0.1.0 | npm | **BUILT, BLOCKED** — kotoshu-wasm/pkg/ ready; npm token invalid (E401) + org `kotoshu` not yet created |
 | `@kotoshu/client` (JS) | 0.1.0 | npm | **BUILT, BLOCKED** — dist/ ready, smoke 7/7 |
-| `kotoshu` gem | 0.6.x | RubyGems | live (native ext lands in the NEXT gem release — version the owner's call) |
-| kotoshu-rs crates | 0.1.0 | crates.io | **NOT PUBLISHED** — release-plz gated on `RELEASE_PLZ_ENABLED` (owner) |
+| `kotoshu` gem | **0.7.0** | RubyGems | **LIVE** (2026-09-05) — rubygems.org/gems/kotoshu/versions/0.7.0; the universal-kotoshu cut: tiers+registry, native ext, conformance export, cascade, correctness wave. Git tag not pushed (owner action). |
+| kotoshu-rs crates | 0.1.0 | crates.io | **BLOCKED** — no cargo token on this machine (`cargo login` needed, owner) |
 
 ## npm unblock (owner, two steps)
 
