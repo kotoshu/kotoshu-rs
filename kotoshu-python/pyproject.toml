@@ -1,0 +1,39 @@
+# Build the kotoshu-native wheel with maturin; publishing is BLOCKED (see
+# RELEASING.md). The module this wheel provides is `kotoshu_native` —
+# destined to live inside the PyPI `kotoshu` package owned by the
+# kotoshu-python repository (which will depend on this distribution and
+# import the module behind a backend guard). That repo owns the
+# integration; this file only builds what it will consume.
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+# PLACEHOLDER name and version, both owner decisions (plan 67 M5): nothing
+# has been published, and the PyPI token does not exist yet. The name is
+# the one the integration plan expects for the wheel the `kotoshu` package
+# will depend on.
+name = "kotoshu-native"
+version = "0.1.0"
+description = "Native kotoshu spell-check engine for Python: the kotoshu_native extension module"
+license = { text = "BSD-2-Clause" }
+authors = [{ name = "Ribose Inc.", email = "open.source@ribose.com" }]
+# Matches the existing PyPI `kotoshu` package's floor (kotoshu-python
+# repo); pyo3 0.29 itself supports older interpreters if the owner ever
+# widens this.
+requires-python = ">=3.10"
+classifiers = [
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Rust",
+  "Topic :: Text Processing",
+]
+
+[project.urls]
+Homepage = "https://github.com/kotoshu/kotoshu-rs"
+Source = "https://github.com/kotoshu/kotoshu-rs"
+
+[tool.maturin]
+# The member's opt-in python feature (which pulls the core's `python`
+# feature); default workspace builds stay pyo3-free.
+features = ["python"]
