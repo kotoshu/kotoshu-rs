@@ -1,0 +1,28 @@
+[package]
+name = "kotoshu-wasm"
+# Independent version line (parsanol policy): the npm @kotoshu/wasm package
+# tracks THIS crate, not the core. 0.1.0 is a PLACEHOLDER — the first
+# release and its version are owner decisions (plan 67 M5); publishing is
+# blocked on npm org credentials (see RELEASING.md).
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage = "https://github.com/kotoshu/kotoshu-rs"
+description = "npm @kotoshu/wasm packaging shim: wasm-pack build of the kotoshu engine's wasm-bindgen surface"
+
+[lib]
+# wasm-pack needs the cdylib; the rlib keeps cargo test/clippy working.
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+# Opt-in, mirroring the core's P0 policy: without it this member compiles
+# against a dependency-free core, so default workspace builds stay free of
+# third-party dependencies. wasm-pack builds pass --features wasm
+# (scripts/wasm_build.sh — parsanol's build shape).
+wasm = ["kotoshu/wasm"]
+
+[dependencies]
+kotoshu = { path = "../kotoshu" }
