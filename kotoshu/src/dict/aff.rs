@@ -445,98 +445,154 @@ fn full_product(
     false
 }
 
-/// A `CHECKCOMPOUNDPATTERN` entry.
+/// A `CHECKCOMPOUNDPATTERN` entry (the gem's `Readers::CompoundPattern`,
+/// mirroring Hunspell's `parse_checkcpdtable`).
+///
+/// Each side is the literal text up to an optional `/flag`; neither side is
+/// rewritten at parse time. In particular a leading `0` on the left stays a
+/// `0` — match time gives it the bare-root meaning (see
+/// [`CompoundPattern::matches`]); the right side never gets one.
 #[derive(Debug, Clone)]
 pub struct CompoundPattern {
-    /// Left stem suffix that triggers the pattern (`0` means empty).
+    /// Left side up to the `/` (a leading `0` included).
     pub left_stem: String,
-    /// Optional flag the left part must carry.
+    /// Flag the left part must carry (`None` when the side has no `/`).
     pub left_flag: Option<String>,
-    /// Whether the left part must NOT be a bare stem (`0/...` form).
+    /// Whether the left side starts with `0` ("the text running into the
+    /// seam is the bare dictionary root").
     pub left_no_affix: bool,
-    /// Right stem prefix that triggers the pattern.
+    /// Right side up to the `/`.
     pub right_stem: String,
-    /// Optional flag the right part must carry.
+    /// Flag the right part must carry.
     pub right_flag: Option<String>,
-    /// Whether the right part must NOT be a bare stem.
-    pub right_no_affix: bool,
+    /// Whether the right side contains `.` (Hunspell's `isSubset`
+    /// single-character wildcard).
+    pub right_wildcard: bool,
+    /// Non-empty replacement (3rd field) that spells a simplified compound
+    /// form; `None` when absent or empty.
+    pub replacement: Option<String>,
+}
+
+/// One junction member under test: its surface text, the form's stem, and
+/// the form's combined flags.
+pub struct PatternPart<'a> {
+    /// The member as written.
+    pub text: &'a str,
+    /// The form's stem (word minus affixes).
+    pub stem: &'a str,
+    /// Dictionary + affix-continuation flags of the form.
+    pub flags: &'a BTreeSet<String>,
 }
 
 impl CompoundPattern {
     /// Parse a `CHECKCOMPOUNDPATTERN` row (left, right, optional
     /// replacement).
-    pub fn new(left: &str, right: &str, _replacement: Option<&str>) -> Self {
-        let (left_stem, left_flag) = partition_flag(left);
-        let (right_stem, right_flag) = partition_flag(right);
+    pub fn new(left: &str, right: &str, replacement: Option<&str>) -> Self {
+        let (left_stem, left_flag) = partition_slash(left);
+        let (right_stem, right_flag) = partition_slash(right);
         Self {
-            left_no_affix: left_stem.is_empty() && left.starts_with('0'),
+            left_no_affix: left_stem.starts_with('0'),
             left_stem,
             left_flag,
-            right_no_affix: right_stem.is_empty() && right.starts_with('0'),
+            right_wildcard: right_stem.contains('.'),
             right_stem,
             right_flag,
+            replacement: replacement
+                .filter(|replacement| !replacement.is_empty())
+                .map(str::to_owned),
         }
     }
 
-    /// Whether the pattern rejects this compound pair (stems are the
-    /// dictionary stems, flags the combined part flags, `is_base` whether
-    /// the part carries no affixes).
-    pub fn matches(
-        &self,
-        left_stem: &str,
-        left_flags: &BTreeSet<String>,
-        left_is_base: bool,
-        right_stem: &str,
-        right_flags: &BTreeSet<String>,
-        right_is_base: bool,
-    ) -> bool {
-        if !left_stem.ends_with(self.left_stem.as_str()) {
-            return false;
-        }
-        if !right_stem.starts_with(self.right_stem.as_str()) {
-            return false;
-        }
-        if self.left_no_affix && left_is_base {
-            return false;
-        }
-        if self.right_no_affix && right_is_base {
+    /// Whether the pattern rejects this compound junction (Hunspell's
+    /// `cpdpat_check`): both sides are matched against the members as
+    /// written, not their stems.
+    ///
+    /// The left side has three readings, in order: an empty stem means only
+    /// the flags matter; a leading `0` means the text running into the seam
+    /// is the bare dictionary root (which a zero-width affix still
+    /// satisfies); anything else is literal text the left member must end
+    /// with. The right side is a prefix test (with `.` wildcards).
+    pub fn matches(&self, left: PatternPart<'_>, right: PatternPart<'_>) -> bool {
+        if !self.right_matches(right.text) {
             return false;
         }
         if let Some(flag) = &self.left_flag
-            && !left_flags.contains(flag)
+            && !left.flags.contains(flag)
         {
             return false;
         }
         if let Some(flag) = &self.right_flag
-            && !right_flags.contains(flag)
+            && !right.flags.contains(flag)
         {
             return false;
         }
-        true
+        self.left_matches(left)
+    }
+
+    /// How the two members are written when this pattern's replacement
+    /// stands in for their junction: `foo` and `bar` under
+    /// `CHECKCOMPOUNDPATTERN o b z` are written `fozar`. Without a
+    /// replacement the members are simply concatenated.
+    ///
+    /// Trims by length, not content — Hunspell splices the stems in at
+    /// fixed offsets, so undoing it is positional.
+    pub fn surface(&self, left_text: &str, right_text: &str) -> String {
+        let Some(replacement) = &self.replacement else {
+            return format!("{left_text}{right_text}");
+        };
+        let left_kept = drop_last_n_chars(left_text, self.left_stem.chars().count());
+        let right_rest = drop_first_n_chars(right_text, self.right_stem.chars().count());
+        format!("{left_kept}{replacement}{right_rest}")
+    }
+
+    fn right_matches(&self, text: &str) -> bool {
+        if !self.right_wildcard {
+            return text.starts_with(self.right_stem.as_str());
+        }
+        let mut text_chars = text.chars();
+        self.right_stem
+            .chars()
+            .all(|c| c == '.' || text_chars.next() == Some(c))
+    }
+
+    fn left_matches(&self, left: PatternPart<'_>) -> bool {
+        if self.left_stem.is_empty() {
+            return true;
+        }
+        if self.left_no_affix {
+            return left.text.ends_with(left.stem);
+        }
+        left.text.ends_with(self.left_stem.as_str())
     }
 }
 
-/// Ruby `String#partition('/')` semantics: `nil` flag when there is no
-/// slash, `""`-stem special-cased for `0`.
-fn partition_flag(part: &str) -> (String, Option<String>) {
+/// Ruby `String#partition('/')`: stem plus `Some(flag)` when a slash is
+/// present (an empty flag after the slash stays `Some("")`), `None` when
+/// not.
+fn partition_slash(part: &str) -> (String, Option<String>) {
     match part.split_once('/') {
-        None => (
-            if part == "0" {
-                String::new()
-            } else {
-                part.to_owned()
-            },
-            None,
-        ),
-        Some((stem, flag)) => (
-            if stem == "0" {
-                String::new()
-            } else {
-                stem.to_owned()
-            },
-            Some(flag.to_owned()),
-        ),
+        Some((stem, flag)) => (stem.to_owned(), Some(flag.to_owned())),
+        None => (part.to_owned(), None),
     }
+}
+
+fn drop_last_n_chars(text: &str, n: usize) -> &str {
+    let count = text.chars().count();
+    &text[..text
+        .char_indices()
+        .nth(count.saturating_sub(n))
+        .map_or(text.len(), |(idx, _)| idx)]
+}
+
+fn drop_first_n_chars(text: &str, n: usize) -> &str {
+    let mut remaining = n;
+    for (idx, _) in text.char_indices() {
+        if remaining == 0 {
+            return &text[idx..];
+        }
+        remaining -= 1;
+    }
+    ""
 }
 
 /// A `BREAK` pattern: literal text, optionally anchored with `^`/`$`.

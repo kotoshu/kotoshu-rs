@@ -13,7 +13,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use super::LoadError;
-use super::aff::{Aff, BreakPattern, parse_lines as parse_aff_lines};
+use super::aff::{Aff, BreakPattern, PatternPart, parse_lines as parse_aff_lines};
 use super::casing::CapType;
 use super::dic::Dic;
 use super::encoding;
@@ -25,6 +25,10 @@ pub struct Lookuper {
     pub(super) aff: Aff,
     /// Indexed `.dic` entries.
     pub(super) dic: Dic,
+    /// Whether any dictionary entry contains a space (the gem's memoized
+    /// `dictionary_has_word_pairs?`): when none does, no space-separated
+    /// candidate can ever be found and the word-pair scan is skipped.
+    dictionary_has_word_pairs: bool,
 }
 
 /// Position of a word part inside a compound (the gem's `CompoundPos`).
@@ -66,10 +70,45 @@ impl Form {
     fn has_affixes(&self) -> bool {
         self.suffix.is_some() || self.prefix.is_some()
     }
+}
 
-    fn is_base(&self) -> bool {
-        !self.has_affixes()
+/// A hypothesis of a word as several [`Form`]s (the gem's `CompoundForm`).
+///
+/// Junctions sit between parts, so a compound of N parts has N-1 of them.
+/// `junction_patterns` holds, front-to-back, the `CHECKCOMPOUNDPATTERN`
+/// whose replacement rebuilt each junction, or `None` where the parts
+/// simply met; a shorter list means the trailing junctions are ordinary.
+#[derive(Debug, Clone)]
+struct Compound {
+    parts: Vec<Form>,
+    junction_patterns: Vec<Option<usize>>,
+}
+
+impl Compound {
+    fn plain(parts: Vec<Form>) -> Self {
+        Self {
+            parts,
+            junction_patterns: Vec::new(),
+        }
     }
+
+    /// The pattern whose replacement rebuilt the junction after part
+    /// `index`, if any.
+    fn junction_pattern(&self, index: usize) -> Option<usize> {
+        self.junction_patterns.get(index).copied().flatten()
+    }
+}
+
+/// One candidate reading of a compound boundary (one yield of the gem's
+/// `each_compound_junction`): the left member to look up, the remaining
+/// text, the surface text to record on the left member when it differs
+/// from the lookup text, and the replacement pattern that rebuilt the
+/// junction.
+struct Junction {
+    left: String,
+    right: String,
+    left_text: Option<String>,
+    pattern: Option<usize>,
 }
 
 impl Lookuper {
@@ -96,7 +135,12 @@ impl Lookuper {
             Dic::parse(&dic_lines, flag_format, &aliases, &aff.casing, &aff.ignore);
         aff.af_aliases = aliases;
         aff.rep.extend(ph_reps);
-        Ok(Self { aff, dic })
+        let dictionary_has_word_pairs = dic.entries.iter().any(|entry| entry.stem.contains(' '));
+        Ok(Self {
+            aff,
+            dic,
+            dictionary_has_word_pairs,
+        })
     }
 
     /// The suggestion pipeline's word list (the gem's
@@ -275,8 +319,7 @@ impl Lookuper {
         }
 
         if !self.aff.compoundrules.is_empty() {
-            let rules: Vec<usize> = (0..self.aff.compoundrules.len()).collect();
-            for compound in self.compounds_by_rules(word, &[], &rules) {
+            for compound in self.compounds_by_rules(word, &[]) {
                 if !self.is_bad_compound(&compound, captype) {
                     return true;
                 }
@@ -540,6 +583,14 @@ impl Lookuper {
             };
         };
 
+        // Fogemorpheme END rule (Hunspell's suffix_check guard): an
+        // ONLYINCOMPOUND suffix cannot close a compound. A prefix on the
+        // form is an explicit exemption, and a zero-width suffix is
+        // handled upstream without this guard.
+        if compoundpos == CompoundPos::End && self.barred_from_compound_end(form) {
+            return false;
+        }
+
         if let Some(compoundflag) = self.aff.compoundflag.as_deref()
             && all_flags.contains(compoundflag)
         {
@@ -556,14 +607,34 @@ impl Lookuper {
         }
     }
 
+    /// Whether a suffix stops this form from closing a compound (the gem's
+    /// `barred_from_compound_end?`, Hunspell's suffix_check guard).
+    ///
+    /// A suffix is barred at the compound end only when it carries
+    /// ONLYINCOMPOUND and nothing else rescues it: a prefix on the form is
+    /// an explicit exemption, and zero-width suffixes are handled by a
+    /// separate branch upstream without this guard. That is how German
+    /// reaches "Arbeitscomputern" — through its decapitalising prefix, not
+    /// any compound-position flag.
+    fn barred_from_compound_end(&self, form: &Form) -> bool {
+        let Some(only_in_compound) = self.aff.onlyincompound.as_deref() else {
+            return false;
+        };
+        if form.prefix.is_some() {
+            return false;
+        }
+        [form.suffix, form.suffix2]
+            .into_iter()
+            .flatten()
+            .any(|idx| {
+                !self.aff.suffixes[idx].add.is_empty()
+                    && self.aff.suffixes[idx].flags.contains(only_in_compound)
+            })
+    }
+
     /// Compounds by COMPOUNDFLAG/COMPOUNDBEGIN/…(the gem's
-    /// `compounds_by_flags`).
-    fn compounds_by_flags(
-        &self,
-        word_rest: &str,
-        captype: CapType,
-        depth: usize,
-    ) -> Vec<Vec<Form>> {
+    /// `compounds_by_flags` over `each_compound_junction`).
+    fn compounds_by_flags(&self, word_rest: &str, captype: CapType, depth: usize) -> Vec<Compound> {
         let mut out = Vec::new();
         let compound_min = self.aff.compoundmin.unwrap_or(3);
         let permit: Vec<String> = self.aff.compoundpermitflag.clone().into_iter().collect();
@@ -581,7 +652,7 @@ impl Lookuper {
                 &[],
                 &forbid,
             ) {
-                out.push(vec![form]);
+                out.push(Compound::plain(vec![form]));
             }
         }
 
@@ -607,40 +678,9 @@ impl Lookuper {
         };
 
         for pos in compound_min..(length - compound_min + 1) {
-            let beg = first_chars(word_rest, pos as usize);
-            let rest = drop_first_chars(word_rest, pos as usize);
-
-            for form in self.affix_forms(
-                beg,
-                captype,
-                true,
-                false,
-                Some(compoundpos),
-                &prefix_flags,
-                &permit,
-                &forbid,
-            ) {
-                for partial in self.compounds_by_flags(rest, captype, depth + 1) {
-                    let mut compound = Vec::with_capacity(partial.len() + 1);
-                    compound.push(form.clone());
-                    compound.extend(partial);
-                    out.push(compound);
-                }
-            }
-
-            // SIMPLIFIEDTRIPLE handling.
-            if self.aff.simplifiedtriple
-                && !beg.is_empty()
-                && !rest.is_empty()
-                && beg.chars().next_back() == rest.chars().next()
-            {
-                let beg_tripled: String = beg
-                    .chars()
-                    .chain(std::iter::once(beg.chars().next_back().unwrap()))
-                    .collect();
-
+            for junction in self.each_compound_junction(word_rest, pos as usize) {
                 for form in self.affix_forms(
-                    &beg_tripled,
+                    &junction.left,
                     captype,
                     true,
                     false,
@@ -649,13 +689,30 @@ impl Lookuper {
                     &permit,
                     &forbid,
                 ) {
-                    for partial in self.compounds_by_flags(rest, captype, depth + 1) {
-                        let mut compound = Vec::with_capacity(partial.len() + 1);
-                        let mut form = form.clone();
-                        form.text = beg.to_owned();
-                        compound.push(form);
-                        compound.extend(partial);
-                        out.push(compound);
+                    for partial in self.compounds_by_flags(&junction.right, captype, depth + 1) {
+                        // A junction a replacement rebuilt must still be
+                        // sanctioned by the pattern that rebuilt it.
+                        if let Some(pattern) = junction.pattern
+                            && !self.pattern_matches(pattern, &form, &partial.parts[0])
+                        {
+                            continue;
+                        }
+
+                        let mut part = form.clone();
+                        if let Some(text) = &junction.left_text {
+                            part.text = text.clone();
+                        }
+                        let mut parts = Vec::with_capacity(partial.parts.len() + 1);
+                        parts.push(part);
+                        parts.extend(partial.parts.iter().cloned());
+                        let mut junction_patterns =
+                            Vec::with_capacity(partial.junction_patterns.len() + 1);
+                        junction_patterns.push(junction.pattern);
+                        junction_patterns.extend(partial.junction_patterns.iter().copied());
+                        out.push(Compound {
+                            parts,
+                            junction_patterns,
+                        });
                     }
                 }
             }
@@ -663,15 +720,73 @@ impl Lookuper {
         out
     }
 
+    /// Every reading of the cut of `word_rest` at char position `pos` worth
+    /// trying as a compound boundary (the gem's `each_compound_junction`
+    /// for one position).
+    ///
+    /// The window is `COMPOUNDMIN` either side of the cut, measured on the
+    /// word as written — Hunspell fixes it before trying any replacement,
+    /// so a replacement can stand for members longer than the text it
+    /// replaced (the `hunspell.5` warning about COMPOUNDMIN and compound
+    /// alternation).
+    fn each_compound_junction(&self, word_rest: &str, pos: usize) -> Vec<Junction> {
+        let beg = first_chars(word_rest, pos).to_owned();
+        let rest = drop_first_chars(word_rest, pos).to_owned();
+        let mut junctions = vec![Junction {
+            left: beg.clone(),
+            right: rest.clone(),
+            left_text: None,
+            pattern: None,
+        }];
+
+        // SIMPLIFIEDTRIPLE: the seam letter may have been typed once.
+        if self.aff.simplifiedtriple
+            && !beg.is_empty()
+            && !rest.is_empty()
+            && beg.chars().next_back() == rest.chars().next()
+        {
+            let doubled: String = beg
+                .chars()
+                .chain(std::iter::once(beg.chars().next_back().unwrap()))
+                .collect();
+            junctions.push(Junction {
+                left: doubled,
+                right: rest.clone(),
+                left_text: Some(beg.clone()),
+                pattern: None,
+            });
+        }
+
+        // CHECKCOMPOUNDPATTERN replacements: a simplified spelling stands
+        // for the junction between the two expanded members.
+        for (idx, pattern) in self.aff.checkcompoundpatterns.iter().enumerate() {
+            let Some(replacement) = pattern.replacement.as_deref() else {
+                continue;
+            };
+            let repl_len = replacement.chars().count();
+            if slice_chars(word_rest, pos, repl_len) != replacement {
+                continue;
+            }
+            junctions.push(Junction {
+                left: format!("{}{}", beg, pattern.left_stem),
+                right: format!(
+                    "{}{}",
+                    pattern.right_stem,
+                    drop_first_chars(word_rest, pos + repl_len)
+                ),
+                left_text: None,
+                pattern: Some(idx),
+            });
+        }
+
+        junctions
+    }
+
     /// Compounds by COMPOUNDRULE (the gem's `compounds_by_rules`).
     /// `prev_parts` are dictionary entry indexes of the parts chosen so
-    /// far; `rules` the indexes of still-matching compound rules.
-    fn compounds_by_rules(
-        &self,
-        word_rest: &str,
-        prev_parts: &[usize],
-        rules: &[usize],
-    ) -> Vec<Vec<Form>> {
+    /// far; full and partial matches always run against every rule (the
+    /// gem's `rules` parameter is dead code — mirrored).
+    fn compounds_by_rules(&self, word_rest: &str, prev_parts: &[usize]) -> Vec<Compound> {
         let mut out = Vec::new();
         let compound_min = self.aff.compoundmin.unwrap_or(3);
         let compound_word_max = self.aff.compoundwordmax;
@@ -685,11 +800,13 @@ impl Lookuper {
                     .iter()
                     .map(|&idx| self.dic.entries[idx].flags.clone())
                     .collect();
-                if rules
+                if self
+                    .aff
+                    .compoundrules
                     .iter()
-                    .any(|&rule| self.aff.compoundrules[rule].full_match(&flag_sets))
+                    .any(|rule| rule.full_match(&flag_sets))
                 {
-                    out.push(vec![Form::whole(word_rest)]);
+                    out.push(Compound::plain(vec![Form::whole(word_rest)]));
                 }
             }
         }
@@ -713,44 +830,71 @@ impl Lookuper {
                     .iter()
                     .map(|&idx| self.dic.entries[idx].flags.clone())
                     .collect();
-                let matching: Vec<usize> = rules
-                    .iter()
-                    .copied()
+                let matching: Vec<usize> = (0..self.aff.compoundrules.len())
                     .filter(|&rule| self.aff.compoundrules[rule].partial_match(&flag_sets))
                     .collect();
                 if matching.is_empty() {
                     continue;
                 }
-                for partial in self.compounds_by_rules(
-                    drop_first_chars(word_rest, pos as usize),
-                    &parts,
-                    &matching,
-                ) {
-                    let mut compound = Vec::with_capacity(partial.len() + 1);
-                    compound.push(Form::whole(beg));
-                    compound.extend(partial);
-                    out.push(compound);
+                for partial in
+                    self.compounds_by_rules(drop_first_chars(word_rest, pos as usize), &parts)
+                {
+                    let mut compound_parts = Vec::with_capacity(partial.parts.len() + 1);
+                    compound_parts.push(Form::whole(beg));
+                    compound_parts.extend(partial.parts.iter().cloned());
+                    let mut junction_patterns = partial.junction_patterns.clone();
+                    junction_patterns.insert(0, None);
+                    out.push(Compound {
+                        parts: compound_parts,
+                        junction_patterns,
+                    });
                 }
             }
         }
         out
     }
 
-    /// Compound rejection predicate (the gem's `is_bad_compound`).
-    fn is_bad_compound(&self, compound: &[Form], captype: CapType) -> bool {
+    /// The gem's `CompoundPattern#match?` over two compound parts.
+    fn pattern_matches(&self, pattern: usize, left: &Form, right: &Form) -> bool {
+        let pattern = &self.aff.checkcompoundpatterns[pattern];
+        let left_flags = self.form_flags(left);
+        let right_flags = self.form_flags(right);
+        pattern.matches(
+            PatternPart {
+                text: &left.text,
+                stem: &left.stem,
+                flags: &left_flags,
+            },
+            PatternPart {
+                text: &right.text,
+                stem: &right.stem,
+                flags: &right_flags,
+            },
+        )
+    }
+
+    /// Compound rejection predicate (the gem's `is_bad_compound` +
+    /// `CompoundChecks`).
+    ///
+    /// A junction a CHECKCOMPOUNDPATTERN replacement rebuilt is exempt from
+    /// the seam checks (triple, case, pattern) — the letters meeting there
+    /// are ones the reader never typed (Hunspell guards with `scpd == 0`).
+    fn is_bad_compound(&self, compound: &Compound, captype: CapType) -> bool {
         // FORCEUCASE.
         if let Some(forceucase) = self.aff.forceucase.as_deref()
             && captype != CapType::All
             && captype != CapType::Init
-            && let Some(last) = compound.last()
+            && let Some(last) = compound.parts.last()
             && self.dic.has_flag(&last.text, forceucase, false)
         {
             return true;
         }
 
-        for idx in 0..compound.len().saturating_sub(1) {
-            let left = &compound[idx];
-            let right = &compound[idx + 1];
+        let last_junction = compound.parts.len().saturating_sub(1);
+        for idx in 0..last_junction {
+            let left = &compound.parts[idx];
+            let right = &compound.parts[idx + 1];
+            let junction_pattern = compound.junction_pattern(idx);
 
             // COMPOUNDFORBIDFLAG.
             if let Some(forbid) = self.aff.compoundforbidflag.as_deref()
@@ -759,55 +903,16 @@ impl Lookuper {
                 return true;
             }
 
-            // "left right" existing as a single (possibly affixed) entry.
-            let joined = format!("{} {}", left.text, right.text);
-            if !self
-                .affix_forms(&joined, captype, true, false, None, &[], &[], &[])
-                .is_empty()
+            // CHECKCOMPOUNDTRIPLE.
+            if self.aff.checkcompoundtriple
+                && junction_pattern.is_none()
+                && tripled_at_seam(&left.text, &right.text)
             {
                 return true;
             }
 
-            // CHECKCOMPOUNDREP.
-            if self.aff.checkcompoundrep {
-                for candidate in self.replchars(&format!("{}{}", left.text, right.text)) {
-                    if !self
-                        .affix_forms(&candidate, captype, true, false, None, &[], &[], &[])
-                        .is_empty()
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            // CHECKCOMPOUNDTRIPLE.
-            if self.aff.checkcompoundtriple {
-                let left_chars: Vec<char> = left.text.chars().collect();
-                let right_chars: Vec<char> = right.text.chars().collect();
-                if right_chars.is_empty() || left_chars.is_empty() {
-                    continue;
-                }
-                let case_a: Vec<char> = left_chars[left_chars.len().saturating_sub(2)..]
-                    .iter()
-                    .copied()
-                    .chain(std::iter::once(right_chars[0]))
-                    .collect();
-                let case_b: Vec<char> = std::iter::once(left_chars[left_chars.len() - 1])
-                    .chain(right_chars.iter().take(2).copied())
-                    .collect();
-                let uniq = |chars: &[char]| {
-                    let mut sorted = chars.to_vec();
-                    sorted.sort_unstable();
-                    sorted.dedup();
-                    sorted.len() == 1
-                };
-                if uniq(&case_a) || uniq(&case_b) {
-                    return true;
-                }
-            }
-
             // CHECKCOMPOUNDCASE.
-            if self.aff.checkcompoundcase {
+            if self.aff.checkcompoundcase && junction_pattern.is_none() {
                 let right_c = right.text.chars().next();
                 let left_c = left.text.chars().next_back();
                 if let (Some(right_c), Some(left_c)) = (right_c, left_c)
@@ -819,27 +924,99 @@ impl Lookuper {
                 }
             }
 
-            // CHECKCOMPOUNDPATTERN.
-            if self.aff.checkcompoundpatterns.iter().any(|pattern| {
-                pattern.matches(
-                    &self.form_stem(left),
-                    &self.form_flags(left),
-                    left.is_base(),
-                    &self.form_stem(right),
-                    &self.form_flags(right),
-                    right.is_base(),
-                )
-            }) {
-                return true;
+            // CHECKCOMPOUNDPATTERN: matched against the members as
+            // written; a rebuilt junction is exempt from every pattern.
+            if junction_pattern.is_none() {
+                let left_flags = self.form_flags(left);
+                let right_flags = self.form_flags(right);
+                if self.aff.checkcompoundpatterns.iter().any(|pattern| {
+                    pattern.matches(
+                        PatternPart {
+                            text: &left.text,
+                            stem: &left.stem,
+                            flags: &left_flags,
+                        },
+                        PatternPart {
+                            text: &right.text,
+                            stem: &right.stem,
+                            flags: &right_flags,
+                        },
+                    )
+                }) {
+                    return true;
+                }
             }
 
             // CHECKCOMPOUNDDUP.
-            if self.aff.checkcompounddup && left.text == right.text && idx == compound.len() - 2 {
+            if self.aff.checkcompounddup && left.text == right.text && idx == last_junction - 1 {
                 return true;
             }
         }
 
+        self.misreads_as_other_words(compound, captype)
+    }
+
+    /// Whether some run of adjacent members reads as other words entirely
+    /// (the gem's `misreads_as_other_words?`): one word someone mistyped
+    /// (CHECKCOMPOUNDREP) or two words someone forgot to space.
+    ///
+    /// Checked over every contiguous run, not just the whole compound or
+    /// the pairwise seams: a suffix like "forbiddenroot" reads as the
+    /// entry "forbidden root" though no prefix does, and "szervíz" is a
+    /// prefix that REP rewrites while its complement is not.
+    fn misreads_as_other_words(&self, compound: &Compound, captype: CapType) -> bool {
+        let faults = self.aff.checkcompoundrep && !self.aff.rep.is_empty();
+        let pairs = self.dictionary_has_word_pairs;
+        if !faults && !pairs {
+            return false;
+        }
+
+        let parts = &compound.parts;
+        for first in 0..parts.len().saturating_sub(1) {
+            let mut text = parts[first].text.clone();
+            for (last, right) in parts.iter().enumerate().skip(first + 1) {
+                let right = &right.text;
+                text = match compound.junction_pattern(last - 1) {
+                    Some(pattern) => self.aff.checkcompoundpatterns[pattern].surface(&text, right),
+                    None => format!("{text}{right}"),
+                };
+                if faults && self.typical_fault(&text, captype) {
+                    return true;
+                }
+                if pairs && self.written_as_word_pair(&text, captype) {
+                    return true;
+                }
+            }
+        }
         false
+    }
+
+    /// Whether the run is a single word someone mistyped (the gem's
+    /// `typical_fault?`, Hunspell's `cpdrep_check`): every REP pattern
+    /// tried at every occurrence, any rewritten form the dictionary knows
+    /// faults the compound.
+    fn typical_fault(&self, word: &str, captype: CapType) -> bool {
+        self.replchars(word).into_iter().any(|candidate| {
+            !self
+                .affix_forms(&candidate, captype, true, false, None, &[], &[], &[])
+                .is_empty()
+        })
+    }
+
+    /// Whether the run is two words run together (the gem's
+    /// `written_as_word_pair?`, Hunspell's `cpdwordpair_check`): a space
+    /// tried at every position, not only where two members happen to meet.
+    fn written_as_word_pair(&self, word: &str, captype: CapType) -> bool {
+        let length = word.chars().count();
+        if length <= 2 {
+            return false;
+        }
+        (1..length).any(|i| {
+            let candidate = format!("{} {}", first_chars(word, i), drop_first_chars(word, i));
+            !self
+                .affix_forms(&candidate, captype, true, false, None, &[], &[], &[])
+                .is_empty()
+        })
     }
 
     /// The gem's `Permutations.replchars` (string candidates only — the
@@ -900,15 +1077,6 @@ impl Lookuper {
         out
     }
 
-    /// Stem for pattern matching: the dictionary stem when attached, else
-    /// the form's stem.
-    fn form_stem(&self, form: &Form) -> String {
-        match form.in_dictionary {
-            Some(idx) => self.dic.entries[idx].stem.clone(),
-            None => form.stem.clone(),
-        }
-    }
-
     /// Combined flags: dictionary entry + prefix/suffix continuation flags
     /// (secondary affixes contribute none — the gem's `AffixForm#flags`).
     fn form_flags(&self, form: &Form) -> BTreeSet<String> {
@@ -959,6 +1127,26 @@ fn is_number(word: &str) -> bool {
 fn char_upper_equals_self(c: char) -> bool {
     let mut upper = c.to_uppercase();
     upper.next() == Some(c) && upper.next().is_none()
+}
+
+/// Do three of the same letter meet at this seam? (the gem's
+/// `tripled_at_seam?`): the two characters either side and one more
+/// beyond, each reach guarded by a bounds check — a single-character
+/// member has nothing beyond it.
+fn tripled_at_seam(left: &str, right: &str) -> bool {
+    let Some(seam) = left.chars().next_back() else {
+        return false;
+    };
+    if !right.starts_with(seam) {
+        return false;
+    }
+    (left.chars().count() > 1 && left.chars().nth(left.chars().count() - 2) == Some(seam))
+        || (right.chars().count() > 1 && right.chars().nth(1) == Some(seam))
+}
+
+/// Ruby's `string[pos, len]` by characters.
+fn slice_chars(text: &str, pos: usize, len: usize) -> &str {
+    first_chars(drop_first_chars(text, pos), len)
 }
 
 fn first_chars(text: &str, n: usize) -> &str {
