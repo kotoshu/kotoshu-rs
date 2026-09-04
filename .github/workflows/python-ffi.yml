@@ -1,0 +1,78 @@
+# Python FFI CI (P4d: REAL).
+#
+# The `python` feature attaches pyo3 (crates.io 0.29) behind the feature
+# flag. This job builds the kotoshu_native wheel (kotoshu-python member —
+# the maturin shim over ffi::python) in a venv and runs the Python smoke
+# test against the real engine and the synced fixture dictionaries, under
+# Python 3.12. The matrix grows to more interpreters at the P4 gate
+# (plan 66), like the ruby job's 3.2/3.3/3.4/4.0-head.
+#
+# Publication of the wheel is deliberately NOT here: the PyPI token is
+# blocked (plan 67 M5); kotoshu-python/RELEASING.md carries the procedure
+# for when it exists.
+
+name: Python FFI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "kotoshu/Cargo.toml"
+      - "kotoshu-python/**"
+      - "scripts/python_smoke.sh"
+      - "scripts/python_smoke.py"
+      - ".github/workflows/python-ffi.yml"
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  python-ffi:
+    name: Python FFI smoke (${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Make the setup-python libpython discoverable at runtime
+        # pyo3 links test binaries against the probed libpython; on Linux
+        # the loader needs its directory on LD_LIBRARY_PATH (the python
+        # twin of the ruby job's libruby step).
+        run: echo "LD_LIBRARY_PATH=$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')" >> "$GITHUB_ENV"
+      - name: Clippy (python feature)
+        run: |
+          cargo clippy --all-targets -p kotoshu --no-default-features --features python -- -D warnings
+          cargo clippy --all-targets -p kotoshu-python --features python -- -D warnings
+      - name: Unit + conformance tests (python feature)
+        run: cargo test --no-default-features --features python
+      - name: Sync gem conformance vectors and fixtures
+        run: |
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
+      - name: Build the wheel and run the smoke test
+        run: scripts/python_smoke.sh
+      - name: Report wheel size
+        run: ls -lh target/wheels/kotoshu_native-*.whl
