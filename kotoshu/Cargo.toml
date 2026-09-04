@@ -27,10 +27,15 @@ crate-type = ["rlib"]
 # kotoshu's matrix is 3.3/3.4 today, where 0.8 is verified by the
 # ruby-ffi smoke. When the matrix grows to 4.0-head (P4 gate), mirror the
 # parsanol policy if the released line misbehaves.
+#
+# pyo3 (python feature) is the released 0.29 line from crates.io (0.29.2
+# verified by the python-ffi smoke); no git revs or patches — same policy
+# as magnus, relaxed only if a future interpreter needs it.
 [features]
 default = []
 ruby = ["dep:magnus"]
 wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:console_error_panic_hook"]
+python = ["dep:pyo3"]
 onnx = ["dep:ort", "dep:serde", "dep:serde_json"]
 resources = ["dep:serde", "dep:serde_json", "dep:sha2"]
 parallel = []
@@ -52,6 +57,9 @@ magnus = { version = "0.8", optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
+# python (P4d): the pyo3 surface lives in ffi/python; the kotoshu-python
+# member's #[pymodule] forwards to ffi::python::register.
+pyo3 = { version = "0.29", optional = true }
 
 # serde_json is a DEV dependency for the default build too (conformance-vector
 # runner); `float_roundtrip` is load-bearing: without it serde_json's fast

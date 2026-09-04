@@ -6,6 +6,7 @@
 //! - [`c`] — C ABI (always available)
 //! - [`ruby`] — magnus bindings (feature `ruby`)
 //! - [`wasm`] — wasm-bindgen bindings (feature `wasm`; lands P4)
+//! - [`python`] — pyo3 bindings (feature `python`; lands P4)
 
 pub mod c;
 pub mod registry;
@@ -16,3 +17,6 @@ pub mod ruby;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;
+
+#[cfg(feature = "python")]
+pub mod python;
