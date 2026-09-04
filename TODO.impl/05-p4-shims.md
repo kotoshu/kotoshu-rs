@@ -71,8 +71,36 @@ feature and the activated `ruby-ffi.yml`. The gem-side ext scaffold is
   (rb_sys/mkmf normally supplies it; this build is outside extconf).
 - `ruby-ffi.yml` is real: clippy + `cargo test --features ruby` (full
   2630-vector conformance pack) on Ruby 3.3/3.4, then the smoke.
-- Remaining in this phase: wasm feature (blocked on npm credentials per
-  plan 67), Python wheel, CLI/LSP distribution — and P4b gem-side
+- **P4c build half done** (2026-09-04, branch `feat/p4c-wasm`) — the
+  `wasm` feature is real; only the npm publish is left (credentials-
+  blocked, below).
+  - `kotoshu/src/ffi/wasm/`: the `KotoshuWasm` class (wasm-bindgen) —
+    `VERSION` (crate version), `new(aff_src, dic_src)` over STRING
+    contents (wasm has no fs; byte-symmetric with a path load through the
+    new `Dictionary::load_from_sources` / `Lookuper::from_bytes`),
+    `correct(word)`, `suggest(word, limit = 5)` returning plain objects
+    of exactly the conformance `SUGGESTION_KEYS` fields,
+    `Result<_, JsError>` for graceful errors, console_error_panic_hook at
+    module start and in the constructor (idempotent) so panic messages
+    are never swallowed. wasm-bindgen/js-sys types stop at `ffi/wasm`.
+  - `kotoshu-wasm/` member: thin cdylib re-exporting the core surface —
+    the `tests/ruby_ext` shim pattern promoted to a workspace member,
+    with its OWN opt-in `wasm` feature so default workspace builds stay
+    dependency-free (P0 policy; parsanol has no separate wasm member —
+    deviation, it wasm-pack builds its single core crate). npm name
+    `@kotoshu/wasm` (wasm-pack cannot express scopes; the build script
+    rewrites package.json), version 0.1.0 PLACEHOLDER — owner decision.
+    `pkg/` gitignored; `RELEASING.md` documents the blocked publish and
+    the exact commands for when credentials exist.
+  - `scripts/wasm_build.sh` (wasm-pack --target bundler default, `web`
+    documented via WASM_PACK_TARGET) and `scripts/wasm_node_smoke.mjs`
+    (real fixture strings via sync_conformance, frozen `hlelo` →
+    `hello/1/1.0/edit_distance` row, OOV word, error surface — the Node
+    twin of the Ruby smoke).
+  - `wasm.yml` real: wasm32-unknown-unknown build + wasm-pack + the Node
+    smoke on synced fixtures; no publish step (deliberately).
+- Remaining in this phase: the `@kotoshu/wasm` npm publish itself
+  (owner credentials, plan 67 M5), Python wheel, CLI/LSP distribution — and P4b gem-side
   (`ext/kotoshu_native`, `extconf.rb`, `KOTOSHU_BACKEND`,
   `rake compat:*`), which needs from this PR only the
   `ffi::ruby::init` signature above and the suggestion-row shape.
