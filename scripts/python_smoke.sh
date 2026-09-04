@@ -21,17 +21,23 @@ WHEELS_DIR="$ROOT/target/wheels"
 "$PYTHON" --version
 
 # The venv the wheel is built against and installed into (under target/,
-# never committed). Reused across runs; recreate by deleting it.
-if [ ! -x "$VENV/bin/python" ]; then
+# never committed). Reused across runs; recreate by deleting it. A cached
+# venv can outlive its interpreter (setup-python patch bumps make the
+# bin/python symlink and the maturin launcher's shebang dangle), so both
+# are validated by executing them, not by testing file existence — bash
+# reports a dead shebang as "No such file or directory".
+if ! "$VENV/bin/python" -c '' >/dev/null 2>&1; then
   "$PYTHON" -m venv "$VENV"
 fi
 VENV_PY="$VENV/bin/python"
 "$VENV_PY" -m pip install --quiet --upgrade pip
 
-# maturin from the venv when absent (a system maturin would also do — this
-# just pins the tool to the interpreter under test).
-if [ ! -x "$VENV/bin/maturin" ]; then
-  "$VENV_PY" -m pip install --quiet 'maturin>=1.5,<2.0'
+# maturin from the venv when absent or no longer runnable (a system
+# maturin would also do — this just pins the tool to the interpreter
+# under test). --force-reinstall because a stale dist-info makes a plain
+# install a no-op that would leave the broken launcher in place.
+if ! "$VENV/bin/maturin" --version >/dev/null 2>&1; then
+  "$VENV_PY" -m pip install --quiet --force-reinstall 'maturin>=1.5,<2.0'
 fi
 "$VENV/bin/maturin" --version
 
