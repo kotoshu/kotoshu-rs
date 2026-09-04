@@ -41,3 +41,7 @@ CLAUDE.local.md
 # wasm-pack output for @kotoshu/wasm — a build artifact, never committed
 # (see kotoshu-wasm/RELEASING.md for the blocked publish)
 /kotoshu-wasm/pkg/
+
+# Python smoke artifacts: the maturin venv and bytecode caches never commit
+__pycache__/
+*.pyc
