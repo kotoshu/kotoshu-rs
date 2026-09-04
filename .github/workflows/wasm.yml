@@ -1,38 +1,64 @@
-# WASM CI.
-#
-# P0 smoke check only: the `wasm` feature is declared without its
-# wasm-bindgen dependency yet. This workflow ACTIVATES WHEN WASM-BINDGEN
-# LANDS (P4, plan 66): wasm32-unknown-unknown build, wasm-pack, tests run
-# natively, and publication of `@kotoshu/wasm` (npm publish blocked on org
-# credentials — plan 67 M5).
-
+# WASM CI (P4c, plan 66): the `wasm` feature is real — wasm32 build, the
+# wasm-pack package build, and a Node smoke test driving the REAL engine
+# over the synced gem fixtures. No browsers required: the Node smoke covers
+# the exported surface (`wasm-pack test --node` is optional — see
+# kotoshu-wasm/RELEASING.md). Publication of @kotoshu/wasm is deliberately
+# NOT here: npm credentials are blocked (plan 67 M5); RELEASING.md carries
+# the procedure for when they exist.
 name: WASM
-
 on:
   push:
     branches: [main]
     paths:
-      - "**.rs"
-      - "Cargo.toml"
-      - ".github/workflows/wasm.yml"
+    - "**.rs"
+    - "Cargo.toml"
+    - "Cargo.lock"
+    - "kotoshu-wasm/**"
+    - "scripts/wasm_build.sh"
+    - "scripts/wasm_node_smoke.mjs"
+    - ".github/workflows/wasm.yml"
   pull_request:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
 jobs:
   wasm:
-    name: WASM (activates when wasm-bindgen lands)
+    name: wasm32 build + wasm-pack + Node smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-      - name: Check wasm feature compiles
-        run: cargo check --no-default-features --features wasm
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+        targets: wasm32-unknown-unknown
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: true
+    - uses: actions/setup-node@v4
+      with:
+        # 24: the bundler-glue smoke imports the .wasm as an ES module
+        # (WASM ESM integration — experimental, enabled by default on 24).
+        node-version: "24"
+    - name: Install wasm-pack (official npm distribution)
+      run: npm install -g wasm-pack
+    - name: Clippy (wasm feature, native check — parsanol pattern)
+      run: |
+        cargo clippy --all-targets -p kotoshu --features wasm -- -D warnings
+        cargo clippy --all-targets -p kotoshu-wasm --features wasm -- -D warnings
+    - name: Build for wasm32-unknown-unknown
+      run: cargo build -p kotoshu-wasm --features wasm --target wasm32-unknown-unknown --release
+    - name: Sync gem conformance vectors and fixtures
+      run: |
+        git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
+        KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
+    - name: Build the @kotoshu/wasm package payload (wasm-pack, bundler)
+      run: scripts/wasm_build.sh
+    - name: Node smoke test (real fixtures, frozen vectors)
+      run: node scripts/wasm_node_smoke.mjs
+    - name: Report wasm binary size
+      run: ls -lh kotoshu-wasm/pkg/kotoshu_wasm_bg.wasm
