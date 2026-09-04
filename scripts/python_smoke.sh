@@ -21,12 +21,14 @@ WHEELS_DIR="$ROOT/target/wheels"
 "$PYTHON" --version
 
 # The venv the wheel is built against and installed into (under target/,
-# never committed). Reused across runs; recreate by deleting it. A cached
-# venv can outlive its interpreter (setup-python patch bumps make the
-# bin/python symlink and the maturin launcher's shebang dangle), so both
-# are validated by executing them, not by testing file existence — bash
-# reports a dead shebang as "No such file or directory".
-if ! "$VENV/bin/python" -c '' >/dev/null 2>&1; then
+# never committed). Reused across runs; recreate by deleting it. A venv
+# restored from the CI cargo cache can lose its pyvenv.cfg — the python
+# then silently behaves as the system interpreter (pip "succeeds" while
+# installing maturin into /opt/hostedtoolcache, and $VENV/bin/maturin
+# never appears) — so validate that it is still a venv by checking
+# sys.prefix, and that maturin still runs, rather than file existence.
+if ! "$VENV/bin/python" -c 'import sys; sys.exit(sys.prefix == sys.base_prefix)' >/dev/null 2>&1; then
+  rm -rf "$VENV"
   "$PYTHON" -m venv "$VENV"
 fi
 VENV_PY="$VENV/bin/python"
