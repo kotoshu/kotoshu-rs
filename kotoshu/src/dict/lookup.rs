@@ -77,19 +77,25 @@ impl Lookuper {
     pub fn load(aff_path: &Path, dic_path: &Path) -> Result<Self, LoadError> {
         let aff_bytes = std::fs::read(aff_path)?;
         let dic_bytes = std::fs::read(dic_path)?;
-        let encoding = encoding::detect(&aff_bytes).map_err(LoadError::Aff)?;
+        Self::from_bytes(&aff_bytes, &dic_bytes)
+    }
 
-        let aff_lines = encoding::decode_lines(&aff_bytes, encoding);
+    /// Build from in-memory `.aff`/`.dic` sources — [`Lookuper::load`]'s
+    /// pipeline on bytes the host already holds: the wasm binding has no
+    /// filesystem to read paths from (plan 66 P4c). Byte-symmetric — a
+    /// caller handing over each file's exact contents gets results
+    /// identical to a path load.
+    pub(super) fn from_bytes(aff_bytes: &[u8], dic_bytes: &[u8]) -> Result<Self, LoadError> {
+        let encoding = encoding::detect(aff_bytes).map_err(LoadError::Aff)?;
+        let aff_lines = encoding::decode_lines(aff_bytes, encoding);
         let mut aff = parse_aff_lines(aff_lines).map_err(LoadError::Aff)?;
         let flag_format = aff.flag_format;
         let aliases = std::mem::take(&mut aff.af_aliases);
-
-        let dic_lines = encoding::decode_lines(&dic_bytes, encoding);
+        let dic_lines = encoding::decode_lines(dic_bytes, encoding);
         let (dic, ph_reps) =
             Dic::parse(&dic_lines, flag_format, &aliases, &aff.casing, &aff.ignore);
         aff.af_aliases = aliases;
         aff.rep.extend(ph_reps);
-
         Ok(Self { aff, dic })
     }
 
@@ -1032,4 +1038,26 @@ fn find_break_match(
         start += 1;
     }
     None
+}
+
+#[cfg(test)]
+mod from_bytes_tests {
+    use super::*;
+
+    /// A minimal real dictionary: one bare stem, one with flags.
+    const AFF: &str = "SET UTF-8\nTRY esethntoaiolrd\n";
+    const DIC: &str = "2\nhello\nworld/MS\n";
+
+    /// The wasm entry path (`Dictionary::load_from_sources`) lands here;
+    /// byte-symmetric with `Lookuper::load` by construction — load reads
+    /// the files, then calls `from_bytes`.
+    #[test]
+    fn loads_and_answers_from_in_memory_sources() {
+        let lookuper = Lookuper::from_bytes(AFF.as_bytes(), DIC.as_bytes()).unwrap();
+        assert!(lookuper.call("hello"));
+        assert!(lookuper.call("world"));
+        assert!(!lookuper.call("ruby"));
+        let words: Vec<&str> = lookuper.words().iter().map(String::as_str).collect();
+        assert_eq!(words, ["hello", "world"]);
+    }
 }

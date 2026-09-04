@@ -35,6 +35,18 @@ impl Dictionary {
         lookup::Lookuper::load(aff_path, dic_path).map(|lookup| Self { lookup })
     }
 
+    /// Load a dictionary from in-memory `.aff`/`.dic` source text.
+    ///
+    /// Byte-symmetric with [`Dictionary::load`]: the sources are decoded
+    /// per the `.aff` `SET` line exactly as file contents would be, so a
+    /// host handing over each file's text gets results identical to a path
+    /// load. The wasm binding (`ffi::wasm`, feature `wasm`) constructs
+    /// dictionaries this way — wasm has no filesystem.
+    pub fn load_from_sources(aff_source: &str, dic_source: &str) -> Result<Self, LoadError> {
+        lookup::Lookuper::from_bytes(aff_source.as_bytes(), dic_source.as_bytes())
+            .map(|lookup| Self { lookup })
+    }
+
     /// Whether `word` is spelled correctly per this dictionary.
     ///
     /// Covers the gem's full lookup path: capitalization variants, affix
