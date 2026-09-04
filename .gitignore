@@ -37,3 +37,7 @@ CLAUDE.local.md
 # its lock file is a test artifact (the pinned core lock lives at the root).
 /tests/ruby_ext/Cargo.lock
 /tests/ruby_ext/target/
+
+# wasm-pack output for @kotoshu/wasm — a build artifact, never committed
+# (see kotoshu-wasm/RELEASING.md for the blocked publish)
+/kotoshu-wasm/pkg/
