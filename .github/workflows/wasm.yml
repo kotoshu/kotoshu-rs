@@ -14,8 +14,10 @@ on:
     - "Cargo.toml"
     - "Cargo.lock"
     - "kotoshu-wasm/**"
+    - "kotoshu/tests/fixtures/models/**"
     - "scripts/wasm_build.sh"
     - "scripts/wasm_node_smoke.mjs"
+    - "scripts/make_model_fixture.py"
     - ".github/workflows/wasm.yml"
   pull_request:
 concurrency:

@@ -5,10 +5,14 @@
 //
 // Usage: scripts/wasm_build.sh && node scripts/wasm_node_smoke.mjs
 // (KOTOSHU_WASM_PKG overrides the pkg dir; the fixtures must be synced
-// first — scripts/sync_conformance.sh — exactly like the Ruby smoke.)
+// first — scripts/sync_conformance.sh — exactly like the Ruby smoke.
+// The MODEL fixture is checked in at kotoshu/tests/fixtures/models/,
+// derived from the real registry en/mini tier by
+// scripts/make_model_fixture.py; see its LICENSE-NOTE.md.)
 //
 // Expectations marked "conformance vector" are frozen by the gem's exported
-// vectors (tests/fixtures/vectors.jsonl), not hand-written.
+// vectors (tests/fixtures/vectors.jsonl), not hand-written. Model-rerank
+// expectations are frozen by the fixture generator's reference cosines.
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -18,6 +22,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pkgDir = process.env.KOTOSHU_WASM_PKG ?? path.join(root, "kotoshu-wasm", "pkg");
 const fixturesDir =
   process.env.KOTOSHU_FIXTURES_DIR ?? path.join(root, "tests", "fixtures");
+const modelsDir =
+  process.env.KOTOSHU_MODEL_FIXTURES_DIR ??
+  path.join(root, "kotoshu", "tests", "fixtures", "models");
 
 let failures = 0;
 let assertions = 0;
@@ -124,6 +131,73 @@ try {
   assert(
     "the rejection carries the Rust message",
     typeof threw?.message === "string" && threw.message.length > 0,
+  );
+
+  // --- Model rerank surface (plan 85) -------------------------------------
+  // The fixture is a 40-word truncation of the real registry v1.0.1
+  // en/mini tier (int8-per-row, real FastText vectors). Numbers below
+  // are the generator's reference cosines, frozen.
+  const { loadModel, rerank } = mod;
+  assert("loadModel is exported", typeof loadModel === "function");
+  assert("rerank is exported", typeof rerank === "function");
+
+  const modelBytes = new Uint8Array(
+    await readFile(path.join(modelsDir, "en-mini-truncated.onnx")),
+  );
+  const vocabBytes = new Uint8Array(
+    await readFile(path.join(modelsDir, "en-mini-truncated.vocab.json")),
+  );
+  const model = loadModel(modelBytes, vocabBytes);
+  assert("loadModel returns a KotoshuModel handle", typeof model === "object");
+  assert("the handle exposes free()", typeof model.free === "function");
+
+  const near = (expected, actual, tolerance = 1e-4) =>
+    assert(
+      `rerank ≈ ${expected} (got ${actual})`,
+      Number.isFinite(actual) && Math.abs(actual - expected) < tolerance,
+    );
+
+  // Single-token contexts are plain cosines: dog is a much nearer
+  // neighbor of cat than computer is.
+  near(0.707432, rerank(model, "cat", "dog"));
+  near(0.187228, rerank(model, "cat", "computer"));
+  assert(
+    "rerank orders the sensible neighbor first",
+    rerank(model, "cat", "dog") > rerank(model, "cat", "computer"),
+  );
+  // Tokenizer parity through wasm: punctuation stripped, lookups
+  // downcased.
+  assert(
+    "context punctuation is stripped",
+    rerank(model, "cat", "dog!") === rerank(model, "cat", "dog"),
+  );
+  assert(
+    "cased words resolve through the lowercase fallback",
+    rerank(model, "CAT", "Dog") === rerank(model, "cat", "dog"),
+  );
+
+  // Sentence contexts: the more-sensible context scores higher — the
+  // same ordering the gem's context boost produces.
+  const animal = rerank(model, "puppy", "the dog and the cat");
+  const machine = rerank(model, "puppy", "the computer and the keyboard");
+  near(0.340374, animal);
+  near(0.126196, machine);
+  assert("the animal context beats the machine context", animal > machine);
+
+  // Honest zeros for OOV on either side (the gem's `(sim || 0.0)`).
+  assertEqual("OOV word scores 0", 0, rerank(model, "florbington", "dog"));
+  assertEqual("all-OOV context scores 0", 0, rerank(model, "cat", "zzz qqq"));
+
+  let modelThrew = null;
+  try {
+    loadModel(new Uint8Array(1024).fill(0x42), vocabBytes);
+  } catch (error) {
+    modelThrew = error;
+  }
+  assert("loadModel rejects malformed model bytes", modelThrew instanceof Error);
+  assert(
+    "the model rejection carries the Rust message",
+    typeof modelThrew?.message === "string" && modelThrew.message.length > 0,
   );
 } catch (error) {
   failures += 1;

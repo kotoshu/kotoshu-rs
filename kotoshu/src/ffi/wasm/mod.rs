@@ -17,7 +17,7 @@
 //! # Exposed API
 //!
 //! ```js
-//! import init, { KotoshuWasm } from "@kotoshu/wasm";
+//! import init, { KotoshuWasm, loadModel, rerank } from "@kotoshu/wasm";
 //! await init(); // or: await init(wasmBytes)
 //!
 //! KotoshuWasm.VERSION; // => "0.1.0" (kotoshu crate version)
@@ -29,6 +29,12 @@
 //! dictionary.suggest("hlelo", 5); // => [{ word: "hello", distance: 1,
 //!                                 //      confidence: 1.0,
 //!                                 //      source: "edit_distance" }, ...]
+//!
+//! // Semantic reranking (plan 85): the tier artifact pair, fetched by
+//! // the host, passed as bytes.
+//! const model = loadModel(onnxBytes, vocabJsonBytes); // => KotoshuModel
+//! rerank(model, "puppy", "the dog and the cat");      // => f32 in [-1, 1]
+//! model.free(); // optional: release before GC
 //! ```
 //!
 //! `suggest` returns one plain object per suggestion with exactly the four
@@ -39,8 +45,33 @@
 //! row shape `ffi::ruby` hashes and the frozen vectors use. `limit` may be
 //! omitted (defaults to 5, the gem's `Spellchecker#suggest` default).
 //!
-//! Engine failures reject the constructor with a `JsError` carrying the
-//! Rust message. Panics surface on `console.error` verbatim via
+//! # Model reranking
+//!
+//! `loadModel`/`rerank` expose the int8-per-row embedding tiers (the
+//! `mini`/`fluency` artifacts) in pure Rust — no onnxruntime, which a
+//! browser cannot host; `kotoshu::rerank::int8_model` walks the ONNX
+//! protobuf directly and dequantizes rows on the fly. The dictionary
+//! surface above is untouched by this.
+//!
+//! `rerank(model, word, context)` scores `word` against `context` (free
+//! text) as the MEAN cosine over the in-vocabulary tokens — the gem's
+//! `context_boost` (`0.02 × Σ cosine` over a ±3-word window) is a
+//! positive multiple of that mean for any fixed context, so ranking by
+//! this score orders candidates exactly as the gem's boost does; the
+//! mean additionally stays comparable across contexts of different
+//! length. Out-of-vocabulary words — either side — score `0.0` (the
+//! gem's `(sim || 0.0)`). The playground derives the gem-shaped
+//! adjusted confidence in JS: `min(confidence + 0.02 × n × score, 1.0)`
+//! where `n` is the in-vocab token count.
+//!
+//! Memory: a `KotoshuModel` holds ≈ the tier file's size (mini ≈ 3 MB,
+//! fluency ≈ 15 MB — int8 matrix + f32 row scales + vocab map) in wasm
+//! linear memory; rows dequantize into ~1.2 KB scratch vectors, never a
+//! full fp32 matrix. The memory is freed by ordinary `Drop` when the
+//! JS handle is garbage-collected, deterministically on `model.free()`.
+//!
+//! Engine failures reject the constructor / `loadModel` with a `JsError`
+//! carrying the Rust message. Panics surface on `console.error` verbatim via
 //! console_error_panic_hook, installed at module start and again in the
 //! constructor (`set_once` is idempotent) — panic messages are never
 //! swallowed.
@@ -137,4 +168,34 @@ impl KotoshuWasm {
             })
             .collect()
     }
+}
+
+/// One loaded embedding tier: the wasm twin of the `onnx` feature's
+/// ort provider — same artifacts, scored in pure Rust. Handle-shaped:
+/// opaque on the JS side, freed by GC or `free()` (see the module docs
+/// for the memory footprint).
+#[wasm_bindgen]
+pub struct KotoshuModel {
+    model: crate::rerank::int8_model::Int8Model,
+}
+
+/// Load an int8-per-row embedding tier from the byte CONTENTS of its
+/// `.onnx` artifact and `.vocab.json` sibling (wasm has no filesystem;
+/// the host fetches the pair — mini ≈ 3 MB, fluency ≈ 15 MB).
+/// Failures reject with the Rust error message.
+#[wasm_bindgen(js_name = "loadModel")]
+pub fn load_model(model_bytes: &[u8], vocab_bytes: &[u8]) -> Result<KotoshuModel, JsError> {
+    console_error_panic_hook::set_once();
+    crate::rerank::int8_model::Int8Model::parse(model_bytes, vocab_bytes)
+        .map(|model| KotoshuModel { model })
+        .map_err(|error| JsError::new(&error.to_string()))
+}
+
+/// Score `word` against `context` (free text): the mean cosine over the
+/// in-vocabulary context tokens, in `[-1, 1]` — `0.0` when the word or
+/// every token is out of vocabulary. Ranking by this score orders
+/// candidates as the gem's context boost does; see the module docs.
+#[wasm_bindgen]
+pub fn rerank(model: &KotoshuModel, word: &str, context: &str) -> f32 {
+    model.model.context_score(word, context)
 }

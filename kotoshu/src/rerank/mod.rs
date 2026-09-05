@@ -39,6 +39,9 @@ pub mod oov;
 #[cfg(feature = "onnx")]
 pub mod onnx;
 
+#[cfg(feature = "model")]
+pub mod int8_model;
+
 use crate::suggest::Suggestion;
 
 /// Host-supplied word vectors (the inference seam; plan 66: one trait,
@@ -291,10 +294,21 @@ impl CosineReranker {
     }
 }
 
+/// Lowercased word tokens of free text, up to `cap` — the same
+/// normalization [`Context::surrounding_words`] applies, for callers
+/// that hold one context string instead of a before/current/after
+/// split (the wasm context score, [`crate::rerank::int8_model`]).
+pub fn context_tokens(text: &str, cap: usize) -> Vec<String> {
+    tokenize(text)
+        .take(cap)
+        .map(|word| word.to_lowercase())
+        .collect()
+}
+
 /// Vocabulary lookup with a lowercase fallback: exact form first (the
 /// vocabularies keep cased entries such as "NASA"), then the lowercased
 /// form (the gem downcases at tokenize time).
-fn lookup(provider: &dyn EmbeddingProvider, word: &str) -> Option<Vec<f32>> {
+pub(crate) fn lookup(provider: &dyn EmbeddingProvider, word: &str) -> Option<Vec<f32>> {
     provider
         .embedding(word)
         .or_else(|| provider.embedding(&word.to_lowercase()))
@@ -391,6 +405,16 @@ mod tests {
             context.surrounding_words(10),
             ["can't", "don't", "co-operate", "42"]
         );
+    }
+
+    #[test]
+    fn context_tokens_normalizes_and_caps_free_text() {
+        assert_eq!(
+            context_tokens("He SAID, quite loudly!", 8),
+            ["he", "said", "quite", "loudly"]
+        );
+        assert_eq!(context_tokens("a b c d", 2), ["a", "b"]);
+        assert_eq!(context_tokens("!!!", 4), Vec::<String>::new());
     }
 
     #[test]
