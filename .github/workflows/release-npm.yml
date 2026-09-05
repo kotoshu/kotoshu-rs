@@ -1,0 +1,40 @@
+name: Release npm (@kotoshu/wasm)
+
+# Trusted publishing: keyless OIDC. Requires the owner-side registration
+# on npmjs.com — package @kotoshu/wasm → Settings → Trusted Publishing:
+#   Repository: kotoshu/kotoshu-rs | Workflow: release-npm.yml | Environment: npm
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["@kotoshu/wasm-v*"]
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token that replaces the npm token
+
+concurrency:
+  group: release-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: jetli/wasm-pack-action@v0.4.0
+      - name: Sync conformance fixtures (engine self-test before shipping)
+        run: ./scripts/sync_conformance.sh
+      - name: Node smoke against the built package
+        run: |
+          ./scripts/wasm_build.sh
+          node scripts/wasm_node_smoke.mjs
+      - name: Publish with provenance
+        run: npm publish --access public --provenance
+        working-directory: kotoshu-wasm/pkg
+        env:
+          NODE_AUTH_TOKEN: "" # explicit: trusted publishing only, no token
