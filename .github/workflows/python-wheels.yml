@@ -16,6 +16,10 @@
 # publish, so the release matrix is exactly this CI matrix (single source
 # of truth). Paths gating keeps the 16-job matrix off unrelated PRs;
 # workflow_dispatch runs it in full.
+#
+# NOTE: maturin runs with working-directory: kotoshu-python, so --out
+# ../dist puts every artifact at the repo-root dist/ where the report,
+# smoke and upload steps (and the release publish job) expect them.
 
 name: Python wheels
 
@@ -67,7 +71,7 @@ jobs:
       - name: Build cp310-cp313 wheels in the manylinux container
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist -i 3.10 3.11 3.12 3.13
+          args: --release --out ../dist -i 3.10 3.11 3.12 3.13
           manylinux: auto
           sccache: "true"
           working-directory: kotoshu-python
@@ -141,7 +145,7 @@ jobs:
       - name: Build the wheel for CPython ${{ matrix.python }}
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist
+          args: --release --out ../dist
           sccache: "true"
           working-directory: kotoshu-python
       - name: Report wheel
@@ -169,7 +173,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist
+          args: --out ../dist
           working-directory: kotoshu-python
       - name: Report sdist
         run: ls -lh dist
