@@ -10,18 +10,25 @@ standing decision; the ledger records what IS.
 |---|---|---|---|
 | `kotoshu` (pure Python client) | 0.1.0 | PyPI | **LIVE** — pypi.org/project/kotoshu/0.1.0/ |
 | `kotoshu-native` (maturin wheel, module `kotoshu_native`) | 0.1.0 | PyPI | **LIVE** — pypi.org/project/kotoshu-native/0.1.0/ (sdist + cp310 macOS arm64 wheel; more platforms via CI later) |
-| `@kotoshu/wasm` | 0.1.0 | npm | **BUILT, BLOCKED** — kotoshu-wasm/pkg/ ready; npm token invalid (E401) + org `kotoshu` not yet created |
-| `@kotoshu/client` (JS) | 0.1.0 | npm | **BUILT, BLOCKED** — dist/ ready, smoke 7/7 |
-| `kotoshu` gem | **0.7.0** | RubyGems | **LIVE** (2026-09-05) — rubygems.org/gems/kotoshu/versions/0.7.0; the universal-kotoshu cut: tiers+registry, native ext, conformance export, cascade, correctness wave. Git tag not pushed (owner action). |
-| kotoshu-rs crates | 0.1.0 | crates.io | **BLOCKED** — no cargo token on this machine (`cargo login` needed, owner) |
+| `@kotoshu/wasm` | 0.1.0 | npm | **LIVE** (2026-09-05, owner-published). Keyless CI publish wired: release-npm.yml, tag `@kotoshu/wasm-v*` |
+| `@kotoshu/client` (JS) | 0.1.0 | npm | **LIVE** (2026-09-05, owner-published). Keyless CI publish wired: kotoshu-js release.yml |
+| `kotoshu` gem | **0.7.0** | RubyGems | **LIVE** (2026-09-05) — rubygems.org/gems/kotoshu/versions/0.7.0; the universal-kotoshu cut: tiers+registry, native ext, conformance export, cascade, correctness wave. Git tag not pushed (owner action). Trusted publishing wired both sides (gem repo release.yml + rubygems.org registration). |
+| kotoshu-rs `kotoshu` crate | 0.1.0 | crates.io | **LIVE** (2026-09-05, owner-published from ~/.cargo/credentials.toml). Keyless CI publish wired: release-crate.yml, tag `kotoshu-v*` |
 
-## npm unblock (owner, two steps)
+## Trusted publishing (keyless OIDC) registrations
 
-1. Create the org: npmjs.com/org/create → `kotoshu`; then `npm login`
-   (the current token returns E401).
-2. Publish (or hand back):
-   - `cd kotoshu-rs/kotoshu-wasm/pkg && npm publish --access public`
-   - `cd ../kotoshu-js && npm publish --access public`
+| Registry | Package | Repo/workflow | Environment | Owner-side |
+|---|---|---|---|---|
+| npm | `@kotoshu/wasm` | kotoshu/kotoshu-rs · release-npm.yml | none | done |
+| npm | `@kotoshu/client` | kotoshu/kotoshu-js · release.yml | none | done |
+| RubyGems | `kotoshu` gem | kotoshu/kotoshu · release.yml | per gem registration | done |
+| crates.io | `kotoshu` crate | kotoshu/kotoshu-rs · release-crate.yml | none | **pending** — crate Settings → Trusted Publishing → Add: GitHub, owner `kotoshu`, repo `kotoshu-rs`, workflow `release-crate.yml`, no environment |
+
+crates.io trusted publishing (RFC 3691): CI exchanges the GitHub OIDC
+token via `rust-lang/crates-io-auth-action@v1` for a 30-minute
+`CARGO_REGISTRY_TOKEN`; no long-lived token stored anywhere. First
+publish of a crate must use a token (done for 0.1.0) — keyless covers
+0.1.1+.
 
 ## Version policy
 
@@ -32,5 +39,8 @@ crate publishing remain explicit owner actions.
 
 ## Status
 
-**In progress** — PyPI complete; npm blocked on credentials; crates.io
-deliberately owner-gated.
+**Published** — all six packages live on their registries; keyless CI
+publish paths wired for npm, RubyGems, and crates.io. Remaining
+trusted-publishing migrations if wanted: PyPI
+(pypa/gh-action-pypi-publish + owner registration at
+pypi.org/manage/account/publishing).
