@@ -22,7 +22,7 @@ standing decision; the ledger records what IS.
 | npm | `@kotoshu/wasm` | kotoshu/kotoshu-rs · release-npm.yml | none | done |
 | npm | `@kotoshu/client` | kotoshu/kotoshu-js · release.yml | none | done |
 | RubyGems | `kotoshu` gem | kotoshu/kotoshu · release.yml | per gem registration | done |
-| crates.io | `kotoshu` crate | kotoshu/kotoshu-rs · release-crate.yml | none | **pending** — crate Settings → Trusted Publishing → Add: GitHub, owner `kotoshu`, repo `kotoshu-rs`, workflow `release-crate.yml`, no environment |
+| crates.io | `kotoshu` crate | kotoshu/kotoshu-rs · release-crate.yml | none | done (2026-09-05) — OIDC exchange verified via smoke dispatch; publish reached crates.io and was rejected only as a duplicate of 0.1.0 |
 
 crates.io trusted publishing (RFC 3691): CI exchanges the GitHub OIDC
 token via `rust-lang/crates-io-auth-action@v1` for a 30-minute
