@@ -1,0 +1,180 @@
+# Python wheel matrix for the `kotoshu-native` wheel (plan 93).
+#
+# One job per platform builds the maturin wheel for CPython 3.10-3.13:
+#   linux x86_64 + aarch64 — one job per arch inside the manylinux container
+#                            (all four interpreters in a single build;
+#                            aarch64 runs on GitHub's native arm64 runner,
+#                            no cross toolchain)
+#   macOS x86_64 + arm64   — host builds, one wheel per interpreter
+#   windows x64            — host builds, one wheel per interpreter
+# Every wheel is smoke-tested (pip install + scripts/python_wheel_smoke.py:
+# import, VERSION, real Dictionary.load/correct/suggest over a minimal
+# dictionary) before its artifact is uploaded. The deep conformance smoke
+# over the gem fixtures stays in python-ffi.yml (bash-only fixture sync).
+#
+# Reusable: release-pypi.yml calls this workflow for the tag-triggered
+# publish, so the release matrix is exactly this CI matrix (single source
+# of truth). Paths gating keeps the 16-job matrix off unrelated PRs;
+# workflow_dispatch runs it in full.
+
+name: Python wheels
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "kotoshu-python/**"
+      - "kotoshu/Cargo.toml"
+      - "kotoshu/src/ffi/python/**"
+      - "Cargo.lock"
+      - "scripts/python_wheel_smoke.py"
+      - ".github/workflows/python-wheels.yml"
+  pull_request:
+    paths:
+      - "kotoshu-python/**"
+      - "kotoshu/Cargo.toml"
+      - "kotoshu/src/ffi/python/**"
+      - "Cargo.lock"
+      - "scripts/python_wheel_smoke.py"
+      - ".github/workflows/python-wheels.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  wheels-linux:
+    name: wheels (manylinux ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            os: ubuntu-latest
+          - arch: aarch64
+            os: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build cp310-cp313 wheels in the manylinux container
+        uses: PyO3/maturin-action@v1
+        with:
+          args: --release --out dist -i 3.10 3.11 3.12 3.13
+          manylinux: auto
+          sccache: "true"
+          working-directory: kotoshu-python
+      - name: Report wheels
+        run: ls -lh dist
+      - uses: astral-sh/setup-uv@v5
+      - name: Smoke every wheel (pip install + import + engine call)
+        run: |
+          set -euo pipefail
+          for py in 3.10 3.11 3.12 3.13; do
+            venv="$RUNNER_TEMP/venv-$py"
+            echo "=== smoke: python $py ==="
+            uv venv --python "$py" "$venv"
+            uv pip install --python "$venv/bin/python" --no-index --find-links dist kotoshu-native
+            "$venv/bin/python" scripts/python_wheel_smoke.py
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-manylinux-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error
+
+  wheels-host:
+    name: wheels (${{ matrix.artifact }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            python: "3.10"
+            artifact: macos-x86_64-py310
+          - os: macos-15-intel
+            python: "3.11"
+            artifact: macos-x86_64-py311
+          - os: macos-15-intel
+            python: "3.12"
+            artifact: macos-x86_64-py312
+          - os: macos-15-intel
+            python: "3.13"
+            artifact: macos-x86_64-py313
+          - os: macos-15
+            python: "3.10"
+            artifact: macos-arm64-py310
+          - os: macos-15
+            python: "3.11"
+            artifact: macos-arm64-py311
+          - os: macos-15
+            python: "3.12"
+            artifact: macos-arm64-py312
+          - os: macos-15
+            python: "3.13"
+            artifact: macos-arm64-py313
+          - os: windows-latest
+            python: "3.10"
+            artifact: windows-x64-py310
+          - os: windows-latest
+            python: "3.11"
+            artifact: windows-x64-py311
+          - os: windows-latest
+            python: "3.12"
+            artifact: windows-x64-py312
+          - os: windows-latest
+            python: "3.13"
+            artifact: windows-x64-py313
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Build the wheel for CPython ${{ matrix.python }}
+        uses: PyO3/maturin-action@v1
+        with:
+          args: --release --out dist
+          sccache: "true"
+          working-directory: kotoshu-python
+      - name: Report wheel
+        run: ls -lh dist
+        shell: bash
+      - name: Smoke the wheel (pip install + import + engine call)
+        run: |
+          python -m pip install --no-index --find-links dist kotoshu-native
+          python scripts/python_wheel_smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.artifact }}
+          path: dist/
+          if-no-files-found: error
+
+  sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build the sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+          working-directory: kotoshu-python
+      - name: Report sdist
+        run: ls -lh dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist/
+          if-no-files-found: error

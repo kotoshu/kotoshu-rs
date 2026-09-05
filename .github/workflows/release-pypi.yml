@@ -1,0 +1,55 @@
+# Trusted publishing: keyless OIDC (the PyPI twin of release-crate.yml
+# and release-npm.yml). NO token secret anywhere — the workflow exchanges
+# a GitHub OIDC token for the upload.
+#
+# OWNER REGISTRATION (one-time; the workflow file must exist on the
+# default branch first — merge before registering):
+#   https://pypi.org/manage/project/kotoshu-native/settings/publishing/
+#     PyPI project: kotoshu-native (already live at 0.1.0, so this is a
+#                   project-level publisher, not a pending one)
+#     Owner: kotoshu | Repository: kotoshu-rs
+#     Workflow filename: release-pypi.yml | Environment name: none (blank)
+#
+# Tag convention (matches kotoshu-v* for crates and @kotoshu/wasm-v* for
+# npm): the distribution name plus -v, e.g. kotoshu-native-v0.2.0. The
+# version itself is set by the owner in kotoshu-python/pyproject.toml and
+# Cargo.toml (kept in sync) BEFORE tagging.
+
+name: Release PyPI (kotoshu-native)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["kotoshu-native-v*"]
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token that replaces the PyPI API token
+
+concurrency:
+  group: release-pypi
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # The full wheel matrix + sdist, each wheel smoke-tested before its
+    # artifact lands — exactly what CI validates (single source of truth).
+    uses: ./.github/workflows/python-wheels.yml
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist/
+          merge-multiple: true
+      - name: Report what will be published
+        run: ls -lh dist
+      - name: Publish to PyPI (attestations on, keyless)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+          attestations: true
