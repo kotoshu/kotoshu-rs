@@ -1,0 +1,31 @@
+name: Release crate (crates.io)
+
+# Trusted publishing: keyless OIDC (RFC 3691). Requires the owner-side
+# registration on crates.io — crate kotoshu → Settings → Trusted Publishing:
+#   Repository owner: kotoshu | Repository name: kotoshu-rs
+#   Workflow filename: release-crate.yml | Environment: none
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["kotoshu-v*"]
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token that replaces the cargo token
+
+concurrency:
+  group: release-crate
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - name: Publish kotoshu
+        run: cargo publish -p kotoshu
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

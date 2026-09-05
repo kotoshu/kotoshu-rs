@@ -2,7 +2,7 @@ name: Release npm (@kotoshu/wasm)
 
 # Trusted publishing: keyless OIDC. Requires the owner-side registration
 # on npmjs.com — package @kotoshu/wasm → Settings → Trusted Publishing:
-#   Repository: kotoshu/kotoshu-rs | Workflow: release-npm.yml | Environment: npm
+#   Repository: kotoshu/kotoshu-rs | Workflow: release-npm.yml (no environment)
 
 on:
   workflow_dispatch:
@@ -20,7 +20,6 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: npm
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
