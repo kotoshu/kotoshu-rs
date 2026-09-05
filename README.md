@@ -39,13 +39,17 @@ the `ruby` and `wasm` features and the new `python` feature in
   is released for loads and lookups. The `kotoshu-python` workspace
   member (thin `#[pymodule]` cdylib re-export, its own opt-in `python`
   feature) is the maturin wheel: distribution `kotoshu-native`, module
-  `kotoshu_native`, version 0.1.0 PLACEHOLDER (first release is an owner
-  decision; publish blocked on PyPI credentials —
-  `kotoshu-python/RELEASING.md`, which also documents how the PyPI
-  `kotoshu` package will consume the wheel), built and smoked by
-  `scripts/python_smoke.sh` + `scripts/python_smoke.py` (real fixtures,
-  frozen `hlelo` row); CI runs the whole chain (`python-ffi.yml`,
-  Python 3.12).
+  `kotoshu_native`, 0.1.0 LIVE on PyPI (owner-published). CI builds and
+  smoke-tests the wheel matrix — cp310–cp313 on linux x86_64/aarch64
+  (manylinux), macOS x86_64/arm64 and windows x64 — via
+  `python-wheels.yml`, published keyless by `release-pypi.yml` behind the
+  `kotoshu-native-v*` tag; the procedure and the owner-side PyPI
+  trusted-publisher registration live in `kotoshu-python/RELEASING.md`,
+  which also documents how the PyPI `kotoshu` package consumes the wheel.
+  Conformance chain: `scripts/python_smoke.sh` +
+  `scripts/python_smoke.py` (real fixtures, frozen `hlelo` row) in
+  `python-ffi.yml` (Python 3.12); per-wheel install smoke:
+  `scripts/python_wheel_smoke.py` in the matrix.
 - `wasm` feature (P4c): the `KotoshuWasm` JS class in `ffi/wasm` over
   wasm-bindgen — `VERSION`, `new(affSrc, dicSrc)` taking source STRING
   contents (wasm has no fs; byte-symmetric with a path load via the new
@@ -143,7 +147,10 @@ scripts/            sync_conformance.sh (vectors + fixture dictionaries from the
 wasm_build.sh (wasm-pack package build for @kotoshu/wasm),
 wasm_node_smoke.mjs (Node smoke test over real fixtures),
 python_smoke.sh + python_smoke.py (venv + maturin wheel + Python smoke)
-.github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, python-ffi.yml, release-plz.yml
+.github/workflows/  ci.yml, ruby-ffi.yml, wasm.yml, python-ffi.yml,
+                    python-wheels.yml (kotoshu-native wheel matrix),
+                    release-plz.yml, release-crate.yml, release-npm.yml,
+                    release-pypi.yml (keyless kotoshu-native publish)
 ```
 
 ## Features
@@ -157,7 +164,7 @@ core has zero third-party dependencies. Optional deps attach per phase:
 | `resources`| serde/serde_json + sha2 (P3) | registry parse, sha256 verify, model cache |
 | `ruby`     | magnus 0.8 (P4) | `Kotoshu::Native` bindings inside the core; the gem's ext cdylib forwards to `ffi::ruby::init` |
 | `wasm`     | wasm-bindgen/js-sys/console_error_panic_hook (P4) | `KotoshuWasm` JS class in `ffi/wasm` (in-memory sources, conformance-row shape); the `kotoshu-wasm` member packages it as `@kotoshu/wasm` (publish blocked on npm credentials) |
-| `python`   | pyo3 0.29 (P4) | `kotoshu_native` module in `ffi/python` (`Dictionary.load`/`correct`/`suggest`, conformance-row dicts, GIL released for engine calls); the `kotoshu-python` member builds the `kotoshu-native` maturin wheel (publish blocked on PyPI credentials) |
+| `python`   | pyo3 0.29 (P4) | `kotoshu_native` module in `ffi/python` (`Dictionary.load`/`correct`/`suggest`, conformance-row dicts, GIL released for engine calls); the `kotoshu-python` member builds the `kotoshu-native` maturin wheel (0.1.0 live on PyPI; wheel matrix in `python-wheels.yml`, keyless publish in `release-pypi.yml`) |
 | `parallel` | rayon (P2) | parallel batch checking |
 | `logging`  | log (P2, deferred from P1) | diagnostics |
 
@@ -203,11 +210,13 @@ dictionary.suggest("hlelo", 5)
 Same engine, same frozen conformance vectors, same suggestion-row shape as
 the Ruby gem, the C ABI and the WASM build; every failure raises
 `kotoshu_native.KotoshuNativeError` with the Rust message. The wheel
-(distribution `kotoshu-native`, module `kotoshu_native`) is destined for
-the PyPI `kotoshu` package owned by the kotoshu-python repository; that
-integration and the publish itself are owner-gated — see
-`kotoshu-python/RELEASING.md`. Build and smoke locally with
-`scripts/python_smoke.sh` (venv + maturin + the frozen `hlelo` row).
+(distribution `kotoshu-native`, module `kotoshu_native`) is 0.1.0 LIVE on
+PyPI; CI builds the cp310–cp313 matrix (linux x86_64/aarch64, macOS
+x86_64/arm64, windows x64) and publishes keyless behind the
+`kotoshu-native-v*` tag — see `kotoshu-python/RELEASING.md` for the
+procedure and the one-time owner-side trusted-publisher registration.
+Build and smoke locally with `scripts/python_smoke.sh` (venv + maturin +
+the frozen `hlelo` row).
 
 ## MSRV
 
