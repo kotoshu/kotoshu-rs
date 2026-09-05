@@ -340,12 +340,6 @@ fn text(bytes: &[u8]) -> Result<&str, String> {
     std::str::from_utf8(bytes).map_err(|_| "string field is not UTF-8".to_owned())
 }
 
-/// One little-endian fixed32 as f32 (`chunks_exact(4)` always yields
-/// exactly four bytes; `try_into` is therefore infallible).
-fn fixed32_le(chunk: &[u8]) -> f32 {
-    f32::from_le_bytes(chunk.try_into().expect("chunks_exact yields 4 bytes"))
-}
-
 /// One decoded `StringStringEntryProto`.
 fn metadata_entry(buf: &[u8]) -> Result<(String, String), String> {
     let mut reader = Reader::new(buf);
@@ -408,7 +402,12 @@ fn parse_tensor(buf: &[u8]) -> Result<Tensor<'_>, String> {
                 if packed.len() % 4 != 0 {
                     return Err("packed float_data is not a multiple of 4 bytes".to_owned());
                 }
-                tensor.float_data = packed.chunks_exact(4).map(fixed32_le).collect();
+                tensor.float_data = packed
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .map(|chunk| f32::from_le_bytes(*chunk))
+                    .collect();
             }
             (field::TENSOR_FLOAT_DATA, 5) => {
                 let bytes = reader.take(4)?;
@@ -556,7 +555,13 @@ fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
                 rows * 4
             )));
         }
-        scale.raw_data.chunks_exact(4).map(fixed32_le).collect()
+        scale
+            .raw_data
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|chunk| f32::from_le_bytes(*chunk))
+            .collect()
     } else if scale.float_data.len() == rows {
         scale.float_data.clone()
     } else {
