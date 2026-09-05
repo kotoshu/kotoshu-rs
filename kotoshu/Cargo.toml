@@ -34,10 +34,16 @@ crate-type = ["rlib"]
 [features]
 default = []
 ruby = ["dep:magnus"]
-wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:console_error_panic_hook"]
+wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:console_error_panic_hook", "model"]
 python = ["dep:pyo3"]
 onnx = ["dep:ort", "dep:serde", "dep:serde_json"]
 resources = ["dep:serde", "dep:serde_json", "dep:sha2"]
+# Pure-Rust int8-per-row tier reader (rerank::int8_model): the tier
+# artifacts without a runtime — no ort, so it also builds for
+# wasm32-unknown-unknown (the wasm feature attaches it). serde/serde_json
+# are only for the .vocab.json sibling, the same payloads the onnx and
+# resources features already use.
+model = ["dep:serde", "dep:serde_json"]
 parallel = []
 logging = []
 

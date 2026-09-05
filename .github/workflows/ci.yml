@@ -70,6 +70,10 @@ jobs:
         run: cargo build --verbose
       - name: Test
         run: cargo test --verbose
+      # The int8 tier reader (rerank::int8_model) + its checked-in
+      # real-derived fixture (plan 85) — feature `model`, no runtime deps.
+      - name: Test model feature
+        run: cargo test --verbose --features model
       # The ruby feature's build/test/smoke lives in ruby-ffi.yml (needs a
       # Ruby toolchain since P4 attached magnus); wasm in wasm.yml.
 

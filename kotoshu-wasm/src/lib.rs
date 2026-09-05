@@ -14,7 +14,9 @@
 //! publish procedure — blocked on npm org credentials (plan 67 M5).
 
 /// The JS surface: the `KotoshuWasm` class (`VERSION`, constructor over
-/// source strings, `correct`, `suggest`). Feature-gated like everything
-/// wasm — see `kotoshu::ffi::wasm` for the API it exposes.
+/// source strings, `correct`, `suggest`) plus the model-rerank pair
+/// (`loadModel`, `rerank` over a `KotoshuModel` handle — plan 85).
+/// Feature-gated like everything wasm — see `kotoshu::ffi::wasm` for
+/// the API it exposes.
 #[cfg(feature = "wasm")]
-pub use kotoshu::ffi::wasm::KotoshuWasm;
+pub use kotoshu::ffi::wasm::{KotoshuModel, KotoshuWasm, load_model, rerank};
