@@ -6,10 +6,22 @@
 /// Soundex code (letter + three digits). Ported quirk-for-quirk: the
 /// first letter is kept verbatim, `H`/`W` (code `"0"`) never reset the
 /// previous-code memory, and non-ASCII letters are stripped after
-/// upcasing.
+/// upcasing. Test-only string form of [`soundex_key`] — the sweep
+/// compares keys and allocates nothing.
+#[cfg(test)]
 pub fn soundex(word: &str) -> String {
+    match soundex_key(word) {
+        Some(key) => key.iter().collect(),
+        None => String::new(),
+    }
+}
+
+/// The code as a fixed 4-char key — `None` is the empty code. Same
+/// algorithm as [`soundex`]; the strategy loop compares one key per
+/// dictionary word, so this path allocates nothing.
+pub fn soundex_key(word: &str) -> Option<[char; 4]> {
     if word.is_empty() {
-        return String::new();
+        return None;
     }
     // Ruby: word.upcase.gsub(/[^A-Z]/, "")
     let letters: Vec<char> = word
@@ -18,31 +30,28 @@ pub fn soundex(word: &str) -> String {
         .filter(|c| c.is_ascii_uppercase())
         .collect();
     if letters.is_empty() {
-        return String::new();
+        return None;
     }
 
     let first_letter = letters[0];
     let rest = &letters[1..];
 
-    let mut code = String::from(first_letter);
+    let mut code = [first_letter, '0', '0', '0'];
+    let mut len = 1usize;
     let mut prev_code = soundex_encode(first_letter);
     let mut i = 0;
-    while code.chars().count() < 4 && i < rest.len() {
+    while len < 4 && i < rest.len() {
         let encoded = soundex_encode(rest[i]);
         if encoded != '0' && encoded != prev_code {
-            code.push(encoded);
+            code[len] = encoded;
+            len += 1;
         }
         if encoded != '0' {
             prev_code = encoded;
         }
         i += 1;
     }
-
-    // code.ljust(4, "0")[0...4]
-    while code.chars().count() < 4 {
-        code.push('0');
-    }
-    code.chars().take(4).collect()
+    Some(code)
 }
 
 /// Soundex digit for one letter (`"0"` = uncoded).

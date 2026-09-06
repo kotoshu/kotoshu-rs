@@ -104,10 +104,14 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
     }
 
     let words = dictionary.words();
+    // Built once per sweep: the keyboard strategy looks up one variant at
+    // a time and its two-round variant set reaches tens of thousands of
+    // lookups, each of which used to scan the whole dictionary.
+    let index = WordIndex::build(words);
     let mut pool: Vec<Candidate> = Vec::new();
     pool.extend(edit_distance_strategy(dictionary, word, words));
     pool.extend(phonetic_strategy(word, words));
-    pool.extend(keyboard_proximity_strategy(word, words));
+    pool.extend(keyboard_proximity_strategy(word, &index));
     pool.extend(ngram_strategy(word, words));
 
     rank::suggestion_set(pool, limit)
@@ -132,6 +136,7 @@ fn edit_distance_strategy(dictionary: &Dictionary, word: &str, words: &[String])
     let length_max = target_length + EDIT_MAX_DISTANCE;
 
     let mut candidates: Vec<(String, usize, f64)> = Vec::new();
+    let mut dict_chars: Vec<char> = Vec::with_capacity(32);
     for dict_word in words {
         if dict_word == word {
             continue;
@@ -141,7 +146,8 @@ fn edit_distance_strategy(dictionary: &Dictionary, word: &str, words: &[String])
         if dict_len < length_min || dict_len > length_max {
             continue;
         }
-        let dict_chars: Vec<char> = dict_word.chars().collect();
+        dict_chars.clear();
+        dict_chars.extend(dict_word.chars());
         let Some(distance) =
             edit_distance::damerau_with_threshold(&word_chars, &dict_chars, EDIT_MAX_DISTANCE)
         else {
@@ -373,18 +379,20 @@ fn typo_pattern_bonus(original: &[char], suggestion: &[char]) -> u32 {
 // ---------------------------------------------------------------------------
 
 fn phonetic_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
-    let word_code = phonetic::soundex(word);
+    let word_code = phonetic::soundex_key(word);
     let word_chars: Vec<char> = word.chars().collect();
 
     let mut results: Vec<(&str, usize)> = Vec::new();
+    let mut dict_chars: Vec<char> = Vec::with_capacity(32);
     for dict_word in words {
         if dict_word == word {
             continue;
         }
-        if phonetic::soundex(dict_word) != word_code {
+        if phonetic::soundex_key(dict_word) != word_code {
             continue;
         }
-        let dict_chars: Vec<char> = dict_word.chars().collect();
+        dict_chars.clear();
+        dict_chars.extend(dict_word.chars());
         // Damerau-Levenshtein (the gem delegates to
         // `Algorithms::EditDistance`): an adjacent transposition costs 1.
         let Some(distance) =
@@ -422,7 +430,7 @@ fn phonetic_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
 // KeyboardProximityStrategy
 // ---------------------------------------------------------------------------
 
-fn keyboard_proximity_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
+fn keyboard_proximity_strategy(word: &str, index: &WordIndex<'_>) -> Vec<Candidate> {
     let word_chars: Vec<char> = word.chars().collect();
     let variants = keyboard_variants(word, STRATEGY_MAX_DISTANCE);
 
@@ -430,7 +438,7 @@ fn keyboard_proximity_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
     let mut order: Vec<String> = Vec::new();
     let mut distances: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for variant in &variants {
-        let Some(dict_word) = find_word(words, variant) else {
+        let Some(dict_word) = index.find(variant) else {
             continue;
         };
         if dict_word == word {
@@ -562,18 +570,59 @@ fn keyboard_variants(word: &str, max_distance: usize) -> Vec<String> {
 /// `KeyboardProximityStrategy#find_word` — exact match first, then
 /// case-insensitive (the word list is lowercased, so the fallback is a
 /// formality — kept for shape).
-fn find_word<'a>(words: &'a [String], word: &str) -> Option<&'a str> {
-    if word.is_empty() {
-        return None;
+/// Exact and case-insensitive word lookup over the dictionary word list,
+/// built once per sweep — `find_word` used to scan the whole list (with a
+/// `to_lowercase` allocation per word on the case-insensitive branch) per
+/// keyboard variant, and the variant set reaches tens of thousands.
+///
+/// Semantics are `find_word` exactly: the exact match wins over the
+/// case-insensitive one, and among words sharing a lowercase form the
+/// FIRST in list order wins.
+struct WordIndex<'a> {
+    exact: std::collections::HashSet<&'a str>,
+    /// Keys are the lowercase forms: borrowed when a word already is its
+    /// own lowercase form (the overwhelming case — nothing is allocated),
+    /// owned otherwise.
+    lowered: std::collections::HashMap<std::borrow::Cow<'a, str>, &'a str>,
+}
+
+impl<'a> WordIndex<'a> {
+    fn build(words: &'a [String]) -> Self {
+        let mut index = Self {
+            exact: std::collections::HashSet::with_capacity(words.len()),
+            lowered: std::collections::HashMap::with_capacity(words.len()),
+        };
+        for word in words {
+            index.exact.insert(word.as_str());
+            let key = if is_lowercase_identity(word) {
+                std::borrow::Cow::Borrowed(word.as_str())
+            } else {
+                std::borrow::Cow::<str>::Owned(word.to_lowercase())
+            };
+            index.lowered.entry(key).or_insert(word.as_str());
+        }
+        index
     }
-    if let Some(exact) = words.iter().find(|w| w.as_str() == word) {
-        return Some(exact);
+
+    fn find(&self, word: &str) -> Option<&'a str> {
+        if word.is_empty() {
+            return None;
+        }
+        if let Some(exact) = self.exact.get(word) {
+            return Some(exact);
+        }
+        let lowered = word.to_lowercase();
+        self.lowered.get(lowered.as_str()).copied()
     }
-    let lowered = word.to_lowercase();
-    words
-        .iter()
-        .find(|w| w.to_lowercase() == lowered)
-        .map(String::as_str)
+}
+
+/// True when `to_lowercase` would return the word unchanged — then the
+/// slice itself is the map key and nothing is allocated.
+fn is_lowercase_identity(word: &str) -> bool {
+    word.chars().all(|c| {
+        let mut lowered = c.to_lowercase();
+        lowered.next() == Some(c) && lowered.next().is_none()
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -585,19 +634,34 @@ fn ngram_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
     if word_chars.len() < NGRAM_N {
         return Vec::new();
     }
-    let word_ngrams = ngram::extract_ngrams(&word_chars, NGRAM_N);
+    let mut word_ngrams: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+    ngram::extract_ngram_keys(&word_chars, &mut word_ngrams);
+    let mut scratch: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
 
     let mut order: Vec<String> = Vec::new();
     let mut distances: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut dict_chars: Vec<char> = Vec::with_capacity(32);
     for dict_word in words {
         if dict_word == word {
             continue;
         }
-        let dict_chars: Vec<char> = dict_word.chars().collect();
+        dict_chars.clear();
+        dict_chars.extend(dict_word.chars());
         if dict_chars.len() < NGRAM_N {
             continue;
         }
-        let similarity = ngram::ngram_similarity(&word_ngrams, &dict_chars, NGRAM_N);
+        // Pre-gate, mathematically equivalent to the threshold test:
+        // similarity = intersection/union ≤ min_ngrams/max_ngrams, so a
+        // word whose length-bound is already under NGRAM_MIN_SIMILARITY
+        // can never pass the real test. Skips most of the dictionary
+        // before any key is extracted.
+        let lo = dict_chars.len().min(word_chars.len()) - (NGRAM_N - 1);
+        let hi = dict_chars.len().max(word_chars.len()) - (NGRAM_N - 1);
+        if (lo as f64) / (hi as f64) < NGRAM_MIN_SIMILARITY {
+            continue;
+        }
+        ngram::extract_ngram_keys(&dict_chars, &mut scratch);
+        let similarity = ngram::ngram_similarity_keys(&word_ngrams, &scratch);
         if similarity < NGRAM_MIN_SIMILARITY {
             continue;
         }
