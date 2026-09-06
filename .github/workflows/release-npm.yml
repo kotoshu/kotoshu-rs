@@ -22,6 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Clone the gem repo for the conformance self-test
+        run: |
+          set -e
+          GEM_DIR="$(dirname "$GITHUB_WORKSPACE")/kotoshu"
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$GEM_DIR"
+          echo "KOTOSHU_GEM_DIR=$GEM_DIR" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
