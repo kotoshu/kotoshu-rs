@@ -149,6 +149,12 @@ impl Lookuper {
         self.dic.suggest_words()
     }
 
+    /// The `.aff` `TRY` string (the gem's `Dictionary::Hunspell#try_string`)
+    /// — the substitution/insertion alphabet for the suggestion edit sweep.
+    pub fn try_string(&self) -> Option<&str> {
+        self.aff.try_string.as_deref()
+    }
+
     /// The outermost correctness check (the gem's `Lookuper#call`):
     /// forbidden-word gate, `ICONV`, `IGNORE`, plain numbers, then every
     /// break-pattern splitting whose parts are all correct.

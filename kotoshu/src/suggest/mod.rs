@@ -9,14 +9,18 @@
 //! strategy's hardcoded `distance = 1` from `create_suggestion_set`'s
 //! empty distance map, the keyboard strategy's dead "extra double letter"
 //! branch, and MRI/macOS-libc sort tie orders (see the private `ruby_sort`
-//! and `macos_qsort` submodules). Behavioral reference:
-//! `lib/kotoshu/suggestions/` in the gem.
+//! and `macos_qsort` submodules). `EditDistanceStrategy` additionally
+//! sweeps the distance-1 edits of the misspelling (see [`edit_sweep`] and
+//! the private `permutations` submodule), so dictionary forms — affixed
+//! or capitalization variants — surface alongside raw stems. Behavioral
+//! reference: `lib/kotoshu/suggestions/` in the gem.
 
 mod edit_distance;
 mod frequency;
 mod keyboard;
 mod macos_qsort;
 mod ngram;
+mod permutations;
 mod phonetic;
 mod rank;
 mod ruby_sort;
@@ -101,7 +105,7 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
 
     let words = dictionary.words();
     let mut pool: Vec<Candidate> = Vec::new();
-    pool.extend(edit_distance_strategy(word, words));
+    pool.extend(edit_distance_strategy(dictionary, word, words));
     pool.extend(phonetic_strategy(word, words));
     pool.extend(keyboard_proximity_strategy(word, words));
     pool.extend(ngram_strategy(word, words));
@@ -121,13 +125,13 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
 // EditDistanceStrategy
 // ---------------------------------------------------------------------------
 
-fn edit_distance_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
+fn edit_distance_strategy(dictionary: &Dictionary, word: &str, words: &[String]) -> Vec<Candidate> {
     let word_chars: Vec<char> = word.chars().collect();
     let target_length = word_chars.len();
     let length_min = target_length.saturating_sub(EDIT_MAX_DISTANCE);
     let length_max = target_length + EDIT_MAX_DISTANCE;
 
-    let mut candidates: Vec<(&str, usize, f64)> = Vec::new();
+    let mut candidates: Vec<(String, usize, f64)> = Vec::new();
     for dict_word in words {
         if dict_word == word {
             continue;
@@ -147,7 +151,21 @@ fn edit_distance_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
             continue;
         }
         let score = enhanced_score(&word_chars, &dict_chars, distance);
-        candidates.push((dict_word, distance, score));
+        candidates.push((dict_word.clone(), distance, score));
+    }
+
+    // Single-edit sweep (the gem's `edit_sweep_candidates`): the
+    // distance-1 edits of the misspelling itself — adjacent
+    // transposition (restricted Damerau, cost 1), substitution and
+    // insertion over the dictionary TRY string, deletion — validated
+    // against the full affix-aware lookup. The stem loop above can only
+    // ever surface raw stems; without the sweep, dictionary FORMS
+    // (affixed like "definately" → "definitely", or capitalization
+    // variants like "Teh" → "The") can never be suggested.
+    for (candidate_word, distance) in edit_sweep(dictionary, word, &word_chars) {
+        let candidate_chars: Vec<char> = candidate_word.chars().collect();
+        let score = enhanced_score(&word_chars, &candidate_chars, distance);
+        candidates.push((candidate_word, distance, score));
     }
 
     if candidates.is_empty() {
@@ -157,6 +175,11 @@ fn edit_distance_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
     // `candidates.sort_by { |_, _, score| score }` — Float keys, MRI's
     // uniform introsort tie order.
     ruby_sort::sort_by(&mut candidates, |candidate| candidate.2);
+
+    // Case-variant dedup (the gem's `seen_words`): keep the
+    // best-scoring form, first after the sort, per lowercased word.
+    let mut seen_words = std::collections::HashSet::new();
+    candidates.retain(|(candidate_word, _, _)| seen_words.insert(candidate_word.to_lowercase()));
 
     let max_score = candidates
         .iter()
@@ -184,7 +207,7 @@ fn edit_distance_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
         }
 
         suggestions.push(Candidate {
-            word: (*dict_word).to_owned(),
+            word: dict_word.clone(),
             distance: *distance as u8,
             confidence,
             source: SuggestionSource::EditDistance,
@@ -198,6 +221,44 @@ fn edit_distance_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
     }
 
     rank::suggestion_set(suggestions, STRATEGY_MAX_RESULTS)
+}
+
+/// `EditDistanceStrategy#edit_sweep_candidates` — every single-edit
+/// variant of the word (canonical generator order: transposition,
+/// substitution, insertion, deletion), deduplicated by exact string in
+/// emission order, kept when the dictionary accepts it, with its true
+/// Damerau distance.
+fn edit_sweep(dictionary: &Dictionary, word: &str, word_chars: &[char]) -> Vec<(String, usize)> {
+    let try_string = dictionary.try_string();
+    let mut variants = permutations::swapchar(word);
+    variants.extend(permutations::badchar(word, try_string));
+    variants.extend(permutations::forgotchar(word, try_string));
+    variants.extend(permutations::extrachar(word));
+
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for candidate in variants {
+        if candidate == word {
+            continue;
+        }
+        if !seen.insert(candidate.clone()) {
+            continue;
+        }
+        if !dictionary.correct(&candidate) {
+            continue;
+        }
+        let candidate_chars: Vec<char> = candidate.chars().collect();
+        let Some(distance) =
+            edit_distance::damerau_with_threshold(word_chars, &candidate_chars, EDIT_MAX_DISTANCE)
+        else {
+            continue;
+        };
+        if distance == 0 {
+            continue;
+        }
+        out.push((candidate, distance));
+    }
+    out
 }
 
 /// `EditDistanceStrategy#calculate_enhanced_score` — lower is better.
@@ -324,8 +385,14 @@ fn phonetic_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
             continue;
         }
         let dict_chars: Vec<char> = dict_word.chars().collect();
-        let distance = edit_distance::levenshtein(&word_chars, &dict_chars);
-        if distance > STRATEGY_MAX_DISTANCE || distance == 0 {
+        // Damerau-Levenshtein (the gem delegates to
+        // `Algorithms::EditDistance`): an adjacent transposition costs 1.
+        let Some(distance) =
+            edit_distance::damerau_with_threshold(&word_chars, &dict_chars, STRATEGY_MAX_DISTANCE)
+        else {
+            continue;
+        };
+        if distance == 0 {
             continue;
         }
         results.push((dict_word, distance));
@@ -370,10 +437,13 @@ fn keyboard_proximity_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
             continue;
         }
         let dict_chars: Vec<char> = dict_word.chars().collect();
-        let distance = edit_distance::levenshtein(&word_chars, &dict_chars);
-        if distance > STRATEGY_MAX_DISTANCE {
+        // Damerau-Levenshtein (the gem delegates to
+        // `Algorithms::EditDistance`): an adjacent transposition costs 1.
+        let Some(distance) =
+            edit_distance::damerau_with_threshold(&word_chars, &dict_chars, STRATEGY_MAX_DISTANCE)
+        else {
             continue;
-        }
+        };
         let similarity = ngram::typo_similarity(word, dict_word);
         if similarity < KEYBOARD_MIN_SIMILARITY {
             continue;
@@ -461,6 +531,21 @@ fn keyboard_variants(word: &str, max_distance: usize) -> Vec<String> {
                         if next_seen.insert(mutation.clone()) {
                             next.push(mutation);
                         }
+                    }
+                }
+            }
+
+            // Adjacent transposition: swap each neighboring character
+            // pair — a single 1-cost edit (the restricted Damerau
+            // operation), enumerated alongside the neighbor mutations.
+            if variant.len() >= 2 {
+                for i in 0..variant.len() - 1 {
+                    let mut swapped = variant[..i].to_vec();
+                    swapped.push(variant[i + 1]);
+                    swapped.push(variant[i]);
+                    swapped.extend_from_slice(&variant[i + 2..]);
+                    if next_seen.insert(swapped.clone()) {
+                        next.push(swapped);
                     }
                 }
             }

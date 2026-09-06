@@ -1,8 +1,10 @@
-//! Edit-distance algorithms, ported from the gem's
+//! Edit-distance algorithm, ported from the gem's
 //! `Kotoshu::Algorithms::EditDistance` (Damerau-Levenshtein with an
-//! early-exit threshold) and the plain Levenshtein used internally by the
-//! phonetic and keyboard-proximity strategies. Character-based throughout
-//! — Ruby `String#length` / `[]` are character operations.
+//! early-exit threshold). The phonetic and keyboard-proximity strategies
+//! measure through the same Damerau distance — the gem dropped their
+//! private plain-Levenshtein copies, so this port has none either.
+//! Character-based throughout — Ruby `String#length` / `[]` are
+//! character operations.
 
 /// Damerau-Levenshtein distance with early-exit threshold (the gem's
 /// `distance_with_threshold`).
@@ -56,33 +58,6 @@ pub fn damerau_with_threshold(str1: &[char], str2: &[char], threshold: usize) ->
     (result <= threshold).then_some(result)
 }
 
-/// Plain Levenshtein distance (substitution/insertion/deletion). The gem
-/// implements this three times over inside the strategies; all three
-/// compute the same value.
-pub fn levenshtein(str1: &[char], str2: &[char]) -> usize {
-    if str1.is_empty() {
-        return str2.len();
-    }
-    if str2.is_empty() {
-        return str1.len();
-    }
-    let len1 = str1.len();
-    let len2 = str2.len();
-    let mut previous: Vec<usize> = (0..=len2).collect();
-    let mut current = vec![0usize; len2 + 1];
-    for i in 1..=len1 {
-        current[0] = i;
-        for j in 1..=len2 {
-            let cost = usize::from(str1[i - 1] != str2[j - 1]);
-            current[j] = (current[j - 1] + 1)
-                .min(previous[j] + 1)
-                .min(previous[j - 1] + cost);
-        }
-        std::mem::swap(&mut previous, &mut current);
-    }
-    previous[len2]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,12 +92,5 @@ mod tests {
             damerau_with_threshold(&chars("aa"), &chars("aa"), 0),
             Some(0)
         );
-    }
-
-    #[test]
-    fn levenshtein_basics() {
-        assert_eq!(levenshtein(&chars("kitten"), &chars("sitting")), 3);
-        assert_eq!(levenshtein(&chars("abc"), &chars("abc")), 0);
-        assert_eq!(levenshtein(&chars(""), &chars("abc")), 3);
     }
 }

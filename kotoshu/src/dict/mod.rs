@@ -68,6 +68,12 @@ impl Dictionary {
         self.lookup.words()
     }
 
+    /// The `.aff` `TRY` string (the gem's `Dictionary::Hunspell#try_string`)
+    /// — the substitution/insertion alphabet for the suggestion edit sweep.
+    pub fn try_string(&self) -> Option<&str> {
+        self.lookup.try_string()
+    }
+
     /// Generate ranked suggestions for `word` (the gem's
     /// `Spellchecker#suggest` over the default suggestion algorithms:
     /// edit distance, phonetic, keyboard proximity, n-gram, composited).
