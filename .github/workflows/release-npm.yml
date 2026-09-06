@@ -32,6 +32,9 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: jetli/wasm-pack-action@v0.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24' # npm >= 11.5: OIDC trusted publishing support
       - name: Sync conformance fixtures (engine self-test before shipping)
         run: ./scripts/sync_conformance.sh
       - name: Node smoke against the built package
@@ -41,5 +44,3 @@ jobs:
       - name: Publish with provenance
         run: npm publish --access public --provenance
         working-directory: kotoshu-wasm/pkg
-        env:
-          NODE_AUTH_TOKEN: "" # explicit: trusted publishing only, no token
