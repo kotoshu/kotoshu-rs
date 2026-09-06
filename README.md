@@ -61,8 +61,9 @@ the `ruby` and `wasm` features and the new `python` feature in
   panics are never swallowed. The `kotoshu-wasm` workspace member (thin
   cdylib re-export, its own opt-in `wasm` feature — default workspace
   builds stay dependency-free) is the wasm-pack package: `@kotoshu/wasm`,
-  version 0.1.0 PLACEHOLDER (first release is an owner decision; publish
-  blocked on npm credentials — `kotoshu-wasm/RELEASING.md`), built by
+  version 0.2.0 LIVE on npm — published keyless via trusted publishing
+  with provenance (tag `@kotoshu/wasm-v0.2.0`; see
+  `kotoshu-wasm/RELEASING.md`), built by
   `scripts/wasm_build.sh` (bundler default, `web` documented) and smoked
   by `scripts/wasm_node_smoke.mjs` (real fixtures, frozen `hlelo` row);
   CI runs the whole chain (`wasm.yml`).
@@ -163,7 +164,7 @@ core has zero third-party dependencies. Optional deps attach per phase:
 | `onnx`     | ort `load-dynamic` + serde/serde_json (P3) | embedding inference over the tier `.onnx` artifacts |
 | `resources`| serde/serde_json + sha2 (P3) | registry parse, sha256 verify, model cache |
 | `ruby`     | magnus 0.8 (P4) | `Kotoshu::Native` bindings inside the core; the gem's ext cdylib forwards to `ffi::ruby::init` |
-| `wasm`     | wasm-bindgen/js-sys/console_error_panic_hook (P4) | `KotoshuWasm` JS class in `ffi/wasm` (in-memory sources, conformance-row shape); the `kotoshu-wasm` member packages it as `@kotoshu/wasm` (publish blocked on npm credentials) |
+| `wasm`     | wasm-bindgen/js-sys/console_error_panic_hook (P4) | `KotoshuWasm` JS class in `ffi/wasm` (in-memory sources, conformance-row shape); the `kotoshu-wasm` member packages it as `@kotoshu/wasm` (0.1.0 and 0.2.0 live on npm, keyless with provenance) |
 | `python`   | pyo3 0.29 (P4) | `kotoshu_native` module in `ffi/python` (`Dictionary.load`/`correct`/`suggest`, conformance-row dicts, GIL released for engine calls); the `kotoshu-python` member builds the `kotoshu-native` maturin wheel (0.1.0 live on PyPI; wheel matrix in `python-wheels.yml`, keyless publish in `release-pypi.yml`) |
 | `parallel` | rayon (P2) | parallel batch checking |
 | `logging`  | log (P2, deferred from P1) | diagnostics |
