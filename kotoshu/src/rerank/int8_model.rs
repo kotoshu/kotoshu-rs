@@ -207,8 +207,8 @@ impl Int8Model {
     /// Dictionary sweeps can only reorder candidates that already look
     /// like the misspelling; the embedding space can produce the right
     /// word outright. The query vector is the word's own embedding —
-    /// in-vocabulary lookup (exact, then lowercased, as
-    /// [`super::lookup`]) falling back to the character-n-gram
+    /// in-vocabulary lookup (exact, then lowercased, the same
+    /// `super::lookup` rerank uses) falling back to the character-n-gram
     /// [`super::oov::substring_ngram_embedding`] — and every vocabulary
     /// row is scored against it with the same dequantizing row loop
     /// [`Int8Model::embedding`] uses (`q as f32 * row_scale` then
