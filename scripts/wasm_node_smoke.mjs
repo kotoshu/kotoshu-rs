@@ -153,7 +153,7 @@ try {
 
   const near = (expected, actual, tolerance = 1e-4) =>
     assert(
-      `rerank ≈ ${expected} (got ${actual})`,
+      `score ≈ ${expected} (got ${actual})`,
       Number.isFinite(actual) && Math.abs(actual - expected) < tolerance,
     );
 
@@ -187,6 +187,46 @@ try {
   // Honest zeros for OOV on either side (the gem's `(sim || 0.0)`).
   assertEqual("OOV word scores 0", 0, rerank(model, "florbington", "dog"));
   assertEqual("all-OOV context scores 0", 0, rerank(model, "cat", "zzz qqq"));
+
+  // --- Semantic generation surface ----------------------------------------
+  // semanticSuggest asks the MODEL for nearest vocabulary words: an OOV
+  // typo embeds through its character n-grams and the intended word
+  // comes back as top-1. Expectations frozen from the fixture's real
+  // fastText vectors (the same values the Rust unit tests pin).
+  const { semanticSuggest } = mod;
+  assert("semanticSuggest is exported", typeof semanticSuggest === "function");
+
+  const neighbors = semanticSuggest(model, "catt", 4);
+  assert("semanticSuggest returns an Array", Array.isArray(neighbors));
+  assert(
+    "every row has exactly {word, score}",
+    neighbors.every((row) => {
+      const keys = Object.keys(row).sort();
+      return keys.length === 2 && keys[0] === "score" && keys[1] === "word";
+    }),
+  );
+  assertEqual(
+    "semanticSuggest('catt')[0].word — the OOV typo regenerates cat",
+    "cat",
+    neighbors[0]?.word,
+  );
+  near(neighbors[0]?.score, 1.0);
+  assertEqual("semanticSuggest('catt')[1].word", "dog", neighbors[1]?.word);
+  near(neighbors[1]?.score, 0.707432);
+  assertEqual(
+    "k clamps at the vocabulary minus the query",
+    39,
+    semanticSuggest(model, "cat", 1000).length,
+  );
+  assert(
+    "the query word itself is excluded",
+    semanticSuggest(model, "cat", 1000).every((row) => row.word !== "cat"),
+  );
+  assertEqual(
+    "nothing resolvable is an honest empty list",
+    0,
+    semanticSuggest(model, "florbington", 4).length,
+  );
 
   let modelThrew = null;
   try {

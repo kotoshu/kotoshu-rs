@@ -34,6 +34,8 @@
 //! // the host, passed as bytes.
 //! const model = loadModel(onnxBytes, vocabJsonBytes); // => KotoshuModel
 //! rerank(model, "puppy", "the dog and the cat");      // => f32 in [-1, 1]
+//! semanticSuggest(model, "catt", 4); // => [{ word: "cat", score: 1.0 },
+//!                                    //      { word: "dog", score: 0.707 }, ...]
 //! model.free(); // optional: release before GC
 //! ```
 //!
@@ -45,13 +47,22 @@
 //! row shape `ffi::ruby` hashes and the frozen vectors use. `limit` may be
 //! omitted (defaults to 5, the gem's `Spellchecker#suggest` default).
 //!
-//! # Model reranking
+//! # Model reranking and generation
 //!
 //! `loadModel`/`rerank` expose the int8-per-row embedding tiers (the
 //! `mini`/`fluency` artifacts) in pure Rust — no onnxruntime, which a
 //! browser cannot host; `kotoshu::rerank::int8_model` walks the ONNX
 //! protobuf directly and dequantizes rows on the fly. The dictionary
 //! surface above is untouched by this.
+//!
+//! `semanticSuggest` adds the generation half: where dictionary sweeps
+//! can only reorder candidates that already look like the misspelling,
+//! the embedding space produces the right word outright — an
+//! out-of-vocabulary typo embeds through its character n-grams and the
+//! nearest vocabulary rows are that word ("catt" → cat). Rows are plain
+//! `{ word, score }` objects, score-descending, the query word itself
+//! excluded; the sweep is one pass over the vocabulary (`V × d`, the
+//! cost of a single rerank probe in the gem).
 //!
 //! `rerank(model, word, context)` scores `word` against `context` (free
 //! text) as the MEAN cosine over the in-vocabulary tokens — the gem's
@@ -198,4 +209,26 @@ pub fn load_model(model_bytes: &[u8], vocab_bytes: &[u8]) -> Result<KotoshuModel
 #[wasm_bindgen]
 pub fn rerank(model: &KotoshuModel, word: &str, context: &str) -> f32 {
     model.model.context_score(word, context)
+}
+
+/// The `k` nearest vocabulary words to `word` by cosine — semantic
+/// candidate GENERATION (see `Int8Model::semantic_neighbors`): one plain
+/// `{ word, score }` row per neighbor, score-descending, the query word
+/// itself excluded. Empty when `k` is 0 or the word embeds nowhere (out
+/// of vocabulary with no in-vocabulary character n-gram). `k` defaults
+/// to 5 when omitted.
+#[wasm_bindgen(js_name = "semanticSuggest")]
+pub fn semantic_suggest(model: &KotoshuModel, word: &str, k: Option<usize>) -> Array {
+    let k = k.unwrap_or(DEFAULT_SUGGEST_LIMIT);
+    model
+        .model
+        .semantic_neighbors(word, k)
+        .into_iter()
+        .map(|(word, score)| {
+            suggestion_row(&[
+                ("word", JsValue::from(word)),
+                ("score", JsValue::from(score)),
+            ])
+        })
+        .collect()
 }

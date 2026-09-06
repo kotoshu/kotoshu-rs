@@ -200,6 +200,59 @@ impl Int8Model {
             (sum / f64::from(count)) as f32
         }
     }
+
+    /// The `k` nearest vocabulary words to `word` by cosine — semantic
+    /// candidate GENERATION, not just reranking.
+    ///
+    /// Dictionary sweeps can only reorder candidates that already look
+    /// like the misspelling; the embedding space can produce the right
+    /// word outright. The query vector is the word's own embedding —
+    /// in-vocabulary lookup (exact, then lowercased, as
+    /// [`super::lookup`]) falling back to the character-n-gram
+    /// [`super::oov::substring_ngram_embedding`] — and every vocabulary
+    /// row is scored against it with the same dequantizing row loop
+    /// [`Int8Model::embedding`] uses (`q as f32 * row_scale` then
+    /// [`super::cosine`]). The query word itself (in its exact and
+    /// lowercased spellings) is excluded; results are ordered by score
+    /// descending with ties broken by word ascending, so the output is
+    /// deterministic despite the vocab map's unordered iteration.
+    ///
+    /// Empty when `k` is 0 or the word embeds nowhere (out of
+    /// vocabulary with no in-vocabulary character n-gram). Cost is one
+    /// pass over the vocabulary, `V × d` — the same order as one rerank
+    /// sweep of the gem's nearest-neighbor probe.
+    pub fn semantic_neighbors(&self, word: &str, k: usize) -> Vec<(String, f64)> {
+        if k == 0 {
+            return Vec::new();
+        }
+        let lower = word.to_lowercase();
+        let Some(query) = super::lookup(self, word).or_else(|| self.embedding_oov(word)) else {
+            return Vec::new();
+        };
+
+        let mut scored: Vec<(f64, String)> = Vec::with_capacity(self.vocab.len());
+        for (candidate, &index) in &self.vocab {
+            if *candidate == word || *candidate == lower {
+                continue;
+            }
+            // Row bounds were validated at load (a bad row is a parse
+            // error, not a score-time concern).
+            let row = usize::try_from(index).expect("vocab row fits usize");
+            let start = row * self.dims;
+            let vector = dequant_row_int8(&self.q[start..start + self.dims], self.scales[row]);
+            scored.push((cosine(&query, &vector), candidate.clone()));
+        }
+        scored.sort_by(|a, b| {
+            b.0.partial_cmp(&a.0)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then(a.1.cmp(&b.1))
+        });
+        scored
+            .into_iter()
+            .take(k)
+            .map(|(score, word)| (word, score))
+            .collect()
+    }
 }
 
 impl EmbeddingProvider for Int8Model {
@@ -916,6 +969,137 @@ mod tests {
 
     fn fixture() -> Int8Model {
         Int8Model::parse(FIXTURE_ONNX, FIXTURE_VOCAB).expect("real-derived fixture parses")
+    }
+
+    #[test]
+    fn semantic_neighbors_on_the_hand_tier() {
+        let (onnx, vocab) = hand_tier();
+        let model = Int8Model::parse(&onnx, &vocab).expect("hand tier parses");
+
+        // cos(a, b) = 6 / (sqrt(2.5) * 4) — the hand-computed cosine.
+        let cos_ab = 6.0 / ((2.5f64).sqrt() * 4.0);
+        // The query itself is excluded: "a" has only "b" left.
+        let neighbors = model.semantic_neighbors("a", 5);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["b"]
+        );
+        assert!((neighbors[0].1 - cos_ab).abs() < 1e-12);
+        // Symmetrically from "b".
+        let neighbors = model.semantic_neighbors("b", 5);
+        assert_eq!(neighbors.len(), 1);
+        assert_eq!(neighbors[0].0, "a");
+        assert!((neighbors[0].1 - cos_ab).abs() < 1e-12);
+
+        // k = 0 is empty by contract; OOV with no in-vocab n-gram is
+        // empty too (both hand-tier words are shorter than NGRAM_MIN).
+        assert!(model.semantic_neighbors("a", 0).is_empty());
+        assert!(model.semantic_neighbors("zz", 5).is_empty());
+        assert!(model.semantic_neighbors("ab", 5).is_empty());
+    }
+
+    #[test]
+    fn semantic_neighbors_generates_the_word_for_oov_queries() {
+        let model = fixture();
+        // Frozen against the fixture's real fastText vectors (see the
+        // fixture note above): each misspelling's character n-grams
+        // resolve to exactly one in-vocabulary word, so the OOV query
+        // vector IS that word's direction and the sweep regenerates the
+        // intended word as the top-1 — "catt" → cat, "dogz" → dog,
+        // "housed" → house, all at cosine 1.0 (the substring sum is a
+        // single vector, L2-normalized by the fallback).
+        for (misspelling, word) in [("catt", "cat"), ("dogz", "dog"), ("housed", "house")] {
+            let neighbors = model.semantic_neighbors(misspelling, 4);
+            assert_eq!(
+                neighbors.first().map(|(word, _)| word.as_str()),
+                Some(word),
+                "{misspelling} should regenerate {word}"
+            );
+            assert!(
+                (neighbors[0].1 - 1.0).abs() < 1e-6,
+                "{misspelling} vs {word}: {}",
+                neighbors[0].1
+            );
+        }
+
+        // A blend of two in-vocab n-grams: "hotcold" sums hot + cold,
+        // and both source words head the list (frozen).
+        let neighbors = model.semantic_neighbors("hotcold", 2);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["hot", "cold"]
+        );
+        assert!(
+            (neighbors[0].1 - 0.937402).abs() < 1e-4,
+            "{}",
+            neighbors[0].1
+        );
+        assert!(
+            (neighbors[1].1 - 0.856533).abs() < 1e-4,
+            "{}",
+            neighbors[1].1
+        );
+    }
+
+    #[test]
+    fn semantic_neighbors_of_in_vocab_words_and_the_exclusion() {
+        let model = fixture();
+        // In-vocabulary query: cat's nearest neighbor is dog — the same
+        // frozen cosine the conformance fixture pins (0.707432) — then
+        // puppy. The cat row itself never appears (excluded by name).
+        let neighbors = model.semantic_neighbors("cat", 6);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["dog", "puppy", "mouse", "man", "woman", "house"]
+        );
+        assert!(
+            (neighbors[0].1 - 0.707432).abs() < 1e-4,
+            "{}",
+            neighbors[0].1
+        );
+        assert!(
+            (neighbors[1].1 - 0.619312).abs() < 1e-4,
+            "{}",
+            neighbors[1].1
+        );
+
+        // A cased query embeds through the lowercase fallback and
+        // excludes that same lowercased row: "CAT" is "cat" with the
+        // cat row removed.
+        let cased = model.semantic_neighbors("CAT", 3);
+        assert_eq!(
+            cased
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["dog", "puppy", "mouse"]
+        );
+        assert!((cased[0].1 - neighbors[0].1).abs() < 1e-12);
+
+        // k beyond the vocabulary clamps to V - 1 rows (self excluded).
+        assert_eq!(model.semantic_neighbors("cat", 1000).len(), 39);
+    }
+
+    #[test]
+    fn semantic_neighbors_is_empty_when_nothing_resolves() {
+        let model = fixture();
+        // "teh": its only character n-gram is "teh" itself (length 3),
+        // not in this truncated vocabulary — honest empty, matching
+        // the OOV fallback's None.
+        assert!(model.semantic_neighbors("teh", 4).is_empty());
+        // "keyboards" contains "keyboard", but n-grams cap at
+        // NGRAM_MAX = 6 chars, so nothing resolves.
+        assert!(model.semantic_neighbors("keyboards", 4).is_empty());
+        assert!(model.semantic_neighbors("", 4).is_empty());
     }
 
     #[test]
