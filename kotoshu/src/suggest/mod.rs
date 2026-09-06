@@ -10,7 +10,7 @@
 //! empty distance map, the keyboard strategy's dead "extra double letter"
 //! branch, and MRI/macOS-libc sort tie orders (see the private `ruby_sort`
 //! and `macos_qsort` submodules). `EditDistanceStrategy` additionally
-//! sweeps the distance-1 edits of the misspelling (see [`edit_sweep`] and
+//! sweeps the distance-1 edits of the misspelling (see `edit_sweep` and
 //! the private `permutations` submodule), so dictionary forms — affixed
 //! or capitalization variants — surface alongside raw stems. Behavioral
 //! reference: `lib/kotoshu/suggestions/` in the gem.
