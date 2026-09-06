@@ -792,6 +792,9 @@ pub struct Aff {
     pub rep: Vec<RepEntry>,
     /// `CHECKSHARPS`.
     pub checksharps: bool,
+    /// `TRY` string — the substitution/insertion alphabet for the
+    /// suggestion edit sweep (the gem's `Dictionary::Hunspell#try_string`).
+    pub try_string: Option<String>,
     /// Final `FLAG` format (needed to interpret the `.dic` file).
     pub flag_format: FlagFormat,
     /// `AF` aliases (needed to interpret the `.dic` file).
@@ -825,6 +828,7 @@ struct RawAff {
     compoundwordmax: Option<i64>,
     complexprefixes: bool,
     checksharps: bool,
+    try_string: Option<String>,
     checkcompoundcase: bool,
     checkcompounddup: bool,
     checkcompoundrep: bool,
@@ -872,7 +876,8 @@ pub fn parse_lines(lines: Vec<String>) -> Result<Aff, String> {
         let values = &parts[1..];
 
         match name {
-            "SET" | "KEY" | "TRY" | "WORDCHARS" => {}
+            "SET" | "KEY" | "WORDCHARS" => {}
+            "TRY" => raw.try_string = values.first().copied().map(String::from),
             "FLAG" => {
                 if let Some(value) = values.first() {
                     raw.flag_format = FlagFormat::parse(value)?;
@@ -1135,6 +1140,7 @@ fn build_aff(raw: RawAff) -> Result<Aff, String> {
         iconv: raw.iconv,
         rep: raw.rep,
         checksharps: raw.checksharps,
+        try_string: raw.try_string,
         flag_format: raw.flag_format,
         af_aliases: raw.af,
     };
