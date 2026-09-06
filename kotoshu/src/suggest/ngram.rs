@@ -5,7 +5,9 @@ use std::collections::HashMap;
 
 /// `NgramStrategy#extract_ngrams` — n-gram → count map (raw case, exactly
 /// as the gem slices the input word; dictionary words are compared
-/// verbatim).
+/// verbatim). Test-only reference: the sweep uses the u64-key path below,
+/// and the tests cross-check the two for equality.
+#[cfg(test)]
 pub fn extract_ngrams(word: &[char], n: usize) -> HashMap<String, usize> {
     let mut ngrams = HashMap::new();
     if word.len() < n {
@@ -18,8 +20,69 @@ pub fn extract_ngrams(word: &[char], n: usize) -> HashMap<String, usize> {
     ngrams
 }
 
+// The strategy loop scores every dictionary word; building a String per
+// n-gram per word (hundreds of thousands of short-lived allocations per
+// sweep) dominated the sweep. The keys below encode the same n-grams as
+// fixed-width integers — bijective with the String keys, so the multiset
+// arithmetic is identical — and the scratch map is reused across words.
+
+/// Pack an n-gram (n = 3) into a u64. Chars are ≤ 0x10FFFF < 2^21, so
+/// three of them fit without collision.
+fn ngram_key(a: char, b: char, c: char) -> u64 {
+    ((a as u64) << 42) | ((b as u64) << 21) | (c as u64)
+}
+
+/// `extract_ngrams` over u64 keys into a caller-owned scratch map
+/// (cleared first; capacity is retained across calls).
+pub fn extract_ngram_keys(word: &[char], scratch: &mut HashMap<u64, usize>) {
+    scratch.clear();
+    if word.len() < 3 {
+        return;
+    }
+    for i in 0..=(word.len() - 3) {
+        *scratch
+            .entry(ngram_key(word[i], word[i + 1], word[i + 2]))
+            .or_insert(0) += 1;
+    }
+}
+
+/// `ngram_similarity` with the input word's keys precomputed and the
+/// other word's keys in `scratch` (filled by [`extract_ngram_keys`]).
+/// Same multiset Jaccard as the String version, term for term.
+pub fn ngram_similarity_keys(
+    word_ngrams: &HashMap<u64, usize>,
+    scratch: &HashMap<u64, usize>,
+) -> f64 {
+    let mut intersection = 0usize;
+    for (ngram, count) in word_ngrams {
+        if let Some(other_count) = scratch.get(ngram) {
+            intersection += (*count).min(*other_count);
+        }
+    }
+
+    let mut union = 0usize;
+    // Ruby: `word_ngrams.keys | other_ngrams.keys` — each distinct n-gram
+    // once.
+    for (ngram, count) in word_ngrams {
+        union += (*count).max(scratch.get(ngram).copied().unwrap_or(0));
+    }
+    for (ngram, count) in scratch {
+        if !word_ngrams.contains_key(ngram) {
+            union += *count;
+        }
+    }
+
+    if union == 0 {
+        0.0
+    } else {
+        intersection as f64 / union as f64
+    }
+}
+
 /// `NgramStrategy#ngram_similarity` — multiset Jaccard coefficient
-/// between the input word's n-grams and another word's.
+/// between the input word's n-grams and another word's. Test-only
+/// reference (see [`extract_ngrams`]).
+#[cfg(test)]
 pub fn ngram_similarity(
     word_ngrams: &HashMap<String, usize>,
     other_word: &[char],
@@ -137,5 +200,30 @@ mod tests {
         // "aaa" vs "aaaa": intersection 2, union 3.
         let s = ngram_similarity(&grams, &chars("aaaa"), 2);
         assert!((s - 2.0 / 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn u64_key_path_matches_the_string_reference() {
+        // The sweep scores through packed integer keys; this pins that
+        // path to the String-keyed reference term for term.
+        for (a, b) in [
+            ("definately", "definitely"),
+            ("Teh", "The"),
+            ("hello", "hello"),
+            ("aaa", "aaaa"),
+            ("recieve", "receive"),
+            ("misspellings", "misspelling"),
+            ("xyz", "abc"),
+        ] {
+            let a_chars: Vec<char> = a.chars().collect();
+            let b_chars: Vec<char> = b.chars().collect();
+            let reference = ngram_similarity(&extract_ngrams(&a_chars, 3), &b_chars, 3);
+            let mut a_keys = std::collections::HashMap::new();
+            extract_ngram_keys(&a_chars, &mut a_keys);
+            let mut b_keys = std::collections::HashMap::new();
+            extract_ngram_keys(&b_chars, &mut b_keys);
+            let keyed = ngram_similarity_keys(&a_keys, &b_keys);
+            assert_eq!(reference, keyed, "{a} vs {b}");
+        }
     }
 }
