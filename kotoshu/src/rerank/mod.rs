@@ -42,8 +42,14 @@ pub mod onnx;
 #[cfg(feature = "model")]
 pub mod int8_model;
 
+// The shared minimal ONNX protobuf wire reader + the bucket-table
+// sibling artifact reader (plan 103) — same feature gate as the tier
+// reader they serve.
 #[cfg(feature = "model")]
 pub(crate) mod onnx_wire;
+
+#[cfg(feature = "model")]
+pub mod buckets;
 
 use crate::suggest::Suggestion;
 

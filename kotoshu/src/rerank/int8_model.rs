@@ -35,6 +35,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use super::buckets::BucketTable;
 use super::dequant::{RowFormat, dequant_row_int8};
 use super::onnx_wire::{
     DATA_TYPE_FLOAT, DATA_TYPE_INT8, Reader, Tensor, field, metadata_entry, parse_graph,
@@ -83,7 +84,8 @@ impl std::error::Error for Int8ModelError {}
 
 /// One loaded int8-per-row tier: quantized matrix, row scales, and the
 /// vocabulary — everything the dequantizing graph would need, with the
-/// session omitted.
+/// session omitted. An optional [`BucketTable`] sibling (plan 103)
+/// extends the OOV fallback with fastText's hashed n-gram rows.
 #[derive(Debug)]
 pub struct Int8Model {
     /// Quantized rows, row-major `[V, d]`.
@@ -95,6 +97,10 @@ pub struct Int8Model {
     /// error).
     vocab: HashMap<String, u32>,
     dims: usize,
+    /// The OOV bucket-table sibling, when attached (plan 103). In-
+    /// vocabulary behavior is byte-identical with or without it: the
+    /// table is consulted only inside [`Int8Model::embedding_oov`].
+    buckets: Option<BucketTable>,
 }
 
 /// The `.vocab.json` shape the models repo writes (`{"vocab_size": N,
@@ -145,7 +151,34 @@ impl Int8Model {
             scales: onnx.scales,
             vocab: raw,
             dims,
+            buckets: None,
         })
+    }
+
+    /// Attach the bucket-table sibling artifact
+    /// (`kotoshu://models/{lang}/buckets`, the byte CONTENTS of its
+    /// `.onnx` file): an OOV word's subword n-gram fallback then also
+    /// consults the hashed bucket rows fastText training wrote — see
+    /// [`Int8Model::embedding_oov`]. Replacing a previously attached
+    /// table is allowed (the last one wins). Failures leave the
+    /// previously attached table (if any) in place.
+    pub fn attach_buckets(&mut self, onnx_bytes: &[u8]) -> Result<(), Int8ModelError> {
+        let table = BucketTable::parse(onnx_bytes)
+            .map_err(|error| Int8ModelError::Onnx(error.to_string()))?;
+        if table.dims() != self.dims {
+            return Err(Int8ModelError::Onnx(format!(
+                "bucket table dims {} disagree with the tier's {}",
+                table.dims(),
+                self.dims
+            )));
+        }
+        self.buckets = Some(table);
+        Ok(())
+    }
+
+    /// The attached bucket table, if any.
+    pub fn buckets(&self) -> Option<&BucketTable> {
+        self.buckets.as_ref()
     }
 
     /// Vector dimensionality.
@@ -268,8 +301,76 @@ impl EmbeddingProvider for Int8Model {
     }
 
     fn embedding_oov(&self, word: &str) -> Option<Vec<f32>> {
-        // Same honest fallback as the ort provider (B2, plan 68).
+        // B2 (plan 68): the honest substring fallback — or, when a
+        // bucket table is attached (plan 103), the bucket-backed union
+        // first, with the substring fallback as the last resort when
+        // the table resolves nothing for this word.
+        if let Some(table) = &self.buckets
+            && let Some(vector) = self.bucket_backed_embedding(word, table)
+        {
+            return Some(vector);
+        }
         oov::substring_ngram_embedding(word, self)
+    }
+}
+
+impl Int8Model {
+    /// The bucket-backed OOV composition (plan 103): the L2-normalized
+    /// sum of
+    ///
+    /// - every distinct UNMARKED character n-gram (3..=6, lowercased)
+    ///   that is itself a vocabulary word — the substring fallback's
+    ///   contributions, byte for byte unchanged, and
+    /// - every MARKED n-gram of `<word>` (lowercased) whose length is
+    ///   inside the table's trained range (5..=5 for the crawl models),
+    ///   contributing its hashed bucket row when the table keeps it.
+    ///
+    /// The marked half is exactly the n-gram set fastText training
+    /// wrote — a short OOV word ("teh" → the single 5-gram `<teh>`)
+    /// embeds through precisely the row the reference implementation
+    /// would use. `None` when neither half resolves anything (then the
+    /// plain substring fallback runs; see [`EmbeddingProvider::embedding_oov`]).
+    pub fn bucket_backed_embedding(&self, word: &str, table: &BucketTable) -> Option<Vec<f32>> {
+        let lower = word.to_lowercase();
+        let mut sum = vec![0.0f32; self.dims];
+        let mut resolved = 0usize;
+
+        for ngram in oov::substring_ngrams(&lower) {
+            if let Some(vector) = self.embedding(&ngram) {
+                for (accumulator, value) in sum.iter_mut().zip(vector) {
+                    *accumulator += value;
+                }
+                resolved += 1;
+            }
+        }
+
+        let marked: Vec<char> = format!("<{lower}>").chars().collect();
+        let (minn, maxn) = table.ngram_range();
+        let mut seen = std::collections::HashSet::new();
+        for length in minn..=maxn.min(marked.len()) {
+            for start in 0..=marked.len() - length {
+                let ngram: String = marked[start..start + length].iter().collect();
+                if !seen.insert(ngram.clone()) {
+                    continue; // distinct n-grams only (mirrors substring_ngrams)
+                }
+                if let Some(vector) = table.ngram_row(&ngram) {
+                    for (accumulator, value) in sum.iter_mut().zip(vector) {
+                        *accumulator += value;
+                    }
+                    resolved += 1;
+                }
+            }
+        }
+
+        if resolved == 0 {
+            return None;
+        }
+        let norm = sum.iter().map(|v| f64::from(v * v)).sum::<f64>().sqrt();
+        if norm == 0.0 {
+            return None;
+        }
+        let norm = norm as f32;
+        Some(sum.iter().map(|v| *v / norm).collect())
     }
 }
 
@@ -285,24 +386,8 @@ struct ParsedOnnx {
 /// Walk a `ModelProto` and lift the int8-per-row tier out of it.
 fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
     let bad = |source: String| Int8ModelError::Onnx(source);
-
-    let mut metadata: HashMap<String, String> = HashMap::new();
-    let mut tensors: Vec<Tensor<'_>> = Vec::new();
-
-    let mut reader = Reader::new(bytes);
-    while !reader.done() {
-        let (number, wire) = reader.tag().map_err(bad)?;
-        match (number, wire) {
-            (field::MODEL_METADATA, 2) => {
-                let (key, value) = metadata_entry(reader.bytes().map_err(bad)?).map_err(bad)?;
-                metadata.insert(key, value);
-            }
-            (field::MODEL_GRAPH, 2) => {
-                parse_graph(reader.bytes().map_err(bad)?, &mut tensors).map_err(bad)?;
-            }
-            _ => reader.skip(wire).map_err(bad)?,
-        }
-    }
+    let wire = onnx_wire::parse_model(bytes).map_err(bad)?;
+    let metadata = &wire.metadata;
 
     // Metadata gates, mirroring the ort provider's checks.
     if let Some(model_type) = metadata.get("model_type")
@@ -335,18 +420,20 @@ fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
 
     // The two constants (Constant-node attribute values, or
     // initializers — the graph shape accepts both storages).
-    let find = |name: &str| tensors.iter().find(|tensor| tensor.name == name);
-    let q =
-        find("q_embeddings").ok_or_else(|| bad("graph has no q_embeddings tensor".to_owned()))?;
-    let scale = find("row_scale").ok_or_else(|| bad("graph has no row_scale tensor".to_owned()))?;
+    let q = wire
+        .tensor("q_embeddings")
+        .ok_or_else(|| bad("graph has no q_embeddings tensor".to_owned()))?;
+    let scale = wire
+        .tensor("row_scale")
+        .ok_or_else(|| bad("graph has no row_scale tensor".to_owned()))?;
 
-    if q.data_type != DATA_TYPE_INT8 {
+    if q.data_type != onnx_wire::DATA_TYPE_INT8 {
         return Err(bad(format!(
             "q_embeddings is not int8 (data_type {})",
             q.data_type
         )));
     }
-    if scale.data_type != DATA_TYPE_FLOAT {
+    if scale.data_type != onnx_wire::DATA_TYPE_FLOAT {
         return Err(bad(format!(
             "row_scale is not float (data_type {})",
             scale.data_type
@@ -372,44 +459,8 @@ fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
 
     // Payloads: raw_data (what onnx.numpy_helper writes) or the typed
     // packed fields.
-    let q_values: Vec<i8> = if !q.raw_data.is_empty() {
-        if q.raw_data.len() != rows * q_dims {
-            return Err(bad(format!(
-                "q_embeddings raw_data is {} bytes, expected {}",
-                q.raw_data.len(),
-                rows * q_dims
-            )));
-        }
-        q.raw_data.iter().map(|byte| *byte as i8).collect()
-    } else if q.int32_data.len() == rows * q_dims {
-        q.int32_data.iter().map(|value| *value as i8).collect()
-    } else {
-        return Err(bad(
-            "q_embeddings has neither raw_data nor int32_data".to_owned()
-        ));
-    };
-    let scales: Vec<f32> = if !scale.raw_data.is_empty() {
-        if scale.raw_data.len() != rows * 4 {
-            return Err(bad(format!(
-                "row_scale raw_data is {} bytes, expected {}",
-                scale.raw_data.len(),
-                rows * 4
-            )));
-        }
-        scale
-            .raw_data
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .map(|chunk| f32::from_le_bytes(*chunk))
-            .collect()
-    } else if scale.float_data.len() == rows {
-        scale.float_data.clone()
-    } else {
-        return Err(bad(
-            "row_scale has neither raw_data nor float_data".to_owned()
-        ));
-    };
+    let q_values = onnx_wire::int8_payload(q, rows, q_dims).map_err(bad)?;
+    let scales = onnx_wire::float_payload(scale, rows).map_err(bad)?;
 
     Ok(ParsedOnnx {
         q: q_values,
@@ -422,6 +473,9 @@ fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // The wire-format constants the hand-rolled protobuf writer below
+    // needs (moved to the shared reader, plan 103).
+    use super::onnx_wire::{DATA_TYPE_FLOAT, DATA_TYPE_INT8, field};
 
     // --- A hand-rolled protobuf writer for synthetic fixtures ----------
     //
@@ -693,11 +747,17 @@ mod tests {
     // note for provenance). Running the real bytes through the parser
     // guards the wire reader against drift in what onnx actually
     // writes (Constant nodes, raw_data payloads).
+    //
+    // Plus the bucket-table sibling fixture (plan 103), also derived
+    // from the real en artifact: the rows the OOV queries teh/catt/
+    // hotcold address, ids verbatim.
 
     const FIXTURE_ONNX: &[u8] =
         include_bytes!("../../tests/fixtures/models/en-mini-truncated.onnx");
     const FIXTURE_VOCAB: &[u8] =
         include_bytes!("../../tests/fixtures/models/en-mini-truncated.vocab.json");
+    const FIXTURE_BUCKETS: &[u8] =
+        include_bytes!("../../tests/fixtures/models/en-buckets-truncated.onnx");
 
     fn fixture() -> Int8Model {
         Int8Model::parse(FIXTURE_ONNX, FIXTURE_VOCAB).expect("real-derived fixture parses")
@@ -876,5 +936,311 @@ mod tests {
         );
         // OOV words on either side are honest zeros.
         assert_eq!(model.context_score("puppy", "florbington blorble"), 0.0);
+    }
+
+    // --- Bucket-table integration (plan 103) ----------------------------
+    //
+    // A hand tier {cat, dog} (dims 2) plus a hand bucket table
+    // (bucket_count 101, minn=maxn=5, one kept row for the marked
+    // 5-gram "<teh>" and one for "<catt") exercise the OOV union
+    // composition end to end: vocab n-grams keep contributing their
+    // vocab rows, marked in-range n-grams contribute bucket rows, and a
+    // short word with no vocab n-gram ("teh") embeds through its single
+    // whole-word bucket row — the Teh gap this closes.
+
+    fn cat_tier() -> (Vec<u8>, Vec<u8>) {
+        let mut model = metadata("model_type", "fasttext_embedding");
+        model.extend(metadata("quantization", "int8-per-row"));
+        model.extend(metadata("embedding_dimension", "2"));
+
+        let mut graph_body = constant_node(&tensor_bytes(
+            "q_embeddings",
+            &[2, 2],
+            DATA_TYPE_INT8,
+            &[3, 4, 4, 3], // cat = (3, 4), dog = (4, 3)
+        ));
+        let scale_raw: Vec<u8> = [1.0f32, 1.0]
+            .iter()
+            .flat_map(|value| value.to_le_bytes())
+            .collect();
+        graph_body.extend(constant_node(&tensor_bytes(
+            "row_scale",
+            &[2],
+            DATA_TYPE_FLOAT,
+            &scale_raw,
+        )));
+        model.extend(graph(&graph_body));
+
+        let vocab = br#"{"vocab_size": 2, "word_to_idx": {"cat": 0, "dog": 1}}"#;
+        (model, vocab.to_vec())
+    }
+
+    /// The hand bucket table: bucket_count 101, n-grams 5..=5, rows for
+    /// the buckets of "<teh" — no, of the whole-word 5-gram "<teh>" —
+    /// and "<catt". Row "<teh>" = (30, 40) scale 0.1 → (3, 4) (the cat
+    /// direction); row "<catt" = (10, 0) scale 0.1 → (1, 0).
+    fn hand_buckets() -> Vec<u8> {
+        let teh_bucket = u64::from(oov::fasttext_hash_mod("<teh>", 101));
+        let catt_bucket = u64::from(oov::fasttext_hash_mod("<catt", 101));
+        let mut ids_sorted = [teh_bucket, catt_bucket];
+        ids_sorted.sort_unstable();
+        let teh_first = ids_sorted[0] == teh_bucket;
+
+        let mut model = metadata("model_type", "fasttext_buckets");
+        model.extend(metadata("quantization", "int8-per-row"));
+        model.extend(metadata("embedding_dimension", "2"));
+        model.extend(metadata("bucket_count", "101"));
+        model.extend(metadata("minn", "5"));
+        model.extend(metadata("maxn", "5"));
+        model.extend(metadata("buckets", "2"));
+
+        // Rows ordered to match the ascending id order.
+        let rows: [(&[u8], f32); 2] = if teh_first {
+            [(&[30, 40], 0.1), (&[10, 0], 0.1)]
+        } else {
+            [(&[10, 0], 0.1), (&[30, 40], 0.1)]
+        };
+        let q_flat: Vec<u8> = rows.iter().flat_map(|(q, _)| q.iter().copied()).collect();
+        let mut graph_body = constant_node(&tensor_bytes(
+            "q_embeddings",
+            &[2, 2],
+            DATA_TYPE_INT8,
+            &q_flat,
+        ));
+        let scale_raw: Vec<u8> = rows
+            .iter()
+            .map(|(_, scale)| *scale)
+            .flat_map(|value| value.to_le_bytes())
+            .collect();
+        graph_body.extend(constant_node(&tensor_bytes(
+            "row_scale",
+            &[2],
+            DATA_TYPE_FLOAT,
+            &scale_raw,
+        )));
+        let ids_raw: Vec<u8> = ids_sorted
+            .iter()
+            .flat_map(|value| value.to_le_bytes())
+            .collect();
+        graph_body.extend(constant_node(&tensor_bytes(
+            "bucket_ids",
+            &[2],
+            onnx_wire::DATA_TYPE_INT64,
+            &ids_raw,
+        )));
+        model.extend(graph(&graph_body));
+        model
+    }
+
+    fn attached_cat_model() -> Int8Model {
+        let (onnx, vocab) = cat_tier();
+        let mut model = Int8Model::parse(&onnx, &vocab).expect("cat tier parses");
+        model
+            .attach_buckets(&hand_buckets())
+            .expect("hand bucket table attaches");
+        model
+    }
+
+    #[test]
+    fn attach_buckets_validates_dims_and_stores_the_table() {
+        let (onnx, vocab) = cat_tier();
+        let mut model = Int8Model::parse(&onnx, &vocab).expect("cat tier parses");
+        assert!(model.buckets().is_none());
+
+        // A table with mismatched dims is rejected.
+        let mut wrong_dims = metadata("model_type", "fasttext_buckets");
+        wrong_dims.extend(metadata("quantization", "int8-per-row"));
+        wrong_dims.extend(metadata("embedding_dimension", "3"));
+        wrong_dims.extend(metadata("bucket_count", "101"));
+        wrong_dims.extend(metadata("minn", "5"));
+        wrong_dims.extend(metadata("maxn", "5"));
+        wrong_dims.extend(graph(&[]));
+        assert!(model.attach_buckets(&wrong_dims).is_err());
+        assert!(
+            model.buckets().is_none(),
+            "a failed attach keeps the old state"
+        );
+
+        model.attach_buckets(&hand_buckets()).expect("attaches");
+        let table = model.buckets().expect("table stored");
+        assert_eq!(table.dims(), 2);
+        assert_eq!(table.bucket_count(), 101);
+        assert_eq!(table.ngram_range(), (5, 5));
+        assert_eq!(table.len(), 2);
+    }
+
+    #[test]
+    fn bucket_backed_oov_covers_the_short_typo_gap() {
+        let model = attached_cat_model();
+
+        // "teh": no vocab n-gram (the tier knows only cat/dog); with the
+        // table attached, its single marked 5-gram "<teh>" resolves to
+        // (3, 4)/|(3, 4)| = (0.6, 0.8) — the cat direction, exactly the
+        // row the reference implementation would use.
+        let provider: &dyn EmbeddingProvider = &model;
+        let embedding = provider.embedding_oov("teh").expect("teh embeds");
+        assert!((embedding[0] - 0.6).abs() < 1e-6);
+        assert!((embedding[1] - 0.8).abs() < 1e-6);
+
+        // semantic_neighbors regenerates the intended word: cat first
+        // (cosine 1.0), dog second (24/25 = 0.96).
+        let neighbors = model.semantic_neighbors("teh", 2);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["cat", "dog"]
+        );
+        assert!((neighbors[0].1 - 1.0).abs() < 1e-6);
+        assert!((neighbors[1].1 - 24.0 / 25.0).abs() < 1e-6);
+
+        // WITHOUT the table the same query is the honest miss (frozen
+        // gap, oov.rs docs) — the table is the only thing that changed.
+        let (onnx, vocab) = cat_tier();
+        let bare = Int8Model::parse(&onnx, &vocab).expect("cat tier parses");
+        let bare_provider: &dyn EmbeddingProvider = &bare;
+        assert!(bare_provider.embedding_oov("teh").is_none());
+        assert!(bare.semantic_neighbors("teh", 2).is_empty());
+    }
+
+    #[test]
+    fn bucket_backed_oov_composes_vocab_and_bucket_rows() {
+        let model = attached_cat_model();
+
+        // "catt": the vocab n-gram "cat" contributes (3, 4); the marked
+        // 5-gram "<catt" contributes (1, 0); "catt>" is not kept. The
+        // composition is the L2 normalization of (4, 4) — NOT the pure
+        // substring vector (3, 4)/5, proving both halves contribute.
+        let embedding = model
+            .bucket_backed_embedding("catt", model.buckets().unwrap())
+            .expect("catt embeds");
+        let expected = [4.0f32 / (32.0f32).sqrt(), 4.0 / (32.0f32).sqrt()];
+        assert!((embedding[0] - expected[0]).abs() < 1e-6);
+        assert!((embedding[1] - expected[1]).abs() < 1e-6);
+        // And the intended word still heads the sweep.
+        let neighbors = model.semantic_neighbors("catt", 1);
+        assert_eq!(neighbors[0].0, "cat");
+        // cat: cos = (4*3 + 4*4) / (sqrt(32) * 5) = 28/28.284
+        assert!((neighbors[0].1 - 28.0 / (32.0f64).sqrt() / 5.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn in_vocab_behavior_is_byte_identical_with_the_table_attached() {
+        let (onnx, vocab) = cat_tier();
+        let bare = Int8Model::parse(&onnx, &vocab).expect("cat tier parses");
+        let attached = attached_cat_model();
+
+        // In-vocabulary embeddings and context scores never consult the
+        // table (the frozen conformance surface).
+        assert_eq!(bare.embedding("cat"), attached.embedding("cat"));
+        assert_eq!(bare.embedding("dog"), attached.embedding("dog"));
+        assert_eq!(
+            bare.context_score("cat", "dog"),
+            attached.context_score("cat", "dog")
+        );
+        // In-vocab neighbors are identical too.
+        assert_eq!(
+            bare.semantic_neighbors("cat", 1),
+            attached.semantic_neighbors("cat", 1)
+        );
+        // An OOV word with vocab n-grams but no kept bucket rows falls
+        // back to the plain substring sum ("dogt": "dog" resolves).
+        let bare_oov: Vec<f32> = {
+            let provider: &dyn EmbeddingProvider = &bare;
+            provider.embedding_oov("dogt").expect("dogt embeds")
+        };
+        let attached_oov: Vec<f32> = {
+            let provider: &dyn EmbeddingProvider = &attached;
+            provider.embedding_oov("dogt").expect("dogt embeds")
+        };
+        assert_eq!(bare_oov, attached_oov);
+    }
+
+    #[test]
+    fn real_artifact_fixture_attaches_the_real_buckets_table() {
+        // The bucket-table fixture is checked in at
+        // tests/fixtures/models/en-buckets-truncated.onnx — the real
+        // en buckets artifact's rows for the queries teh/catt/hotcold,
+        // ids verbatim. The reader parses them, the wasm smoke loads
+        // them, and these specs freeze the result for both.
+        let mut model = fixture();
+        model
+            .attach_buckets(FIXTURE_BUCKETS)
+            .expect("buckets attach");
+        let table = model.buckets().expect("buckets stored");
+        assert_eq!(table.dims(), 300);
+        assert_eq!(table.bucket_count(), 2_000_000);
+        assert_eq!(table.ngram_range(), (5, 5));
+    }
+
+    #[test]
+    fn real_artifact_buckets_cover_the_short_typo_and_keep_neighbors() {
+        // Frozen against the real en/mini + en/buckets fixture pair
+        // (regenerated together by scripts/make_model_fixture.py —
+        // the script prints these numbers; never edit the assertions
+        // without re-running it against the pinned source artifacts).
+        let mut model = fixture();
+        model
+            .attach_buckets(FIXTURE_BUCKETS)
+            .expect("buckets attach");
+
+        // Teh — the canonical gate: the only n-gram ("<teh>") is not in
+        // the 40-word fixture vocab; the bucket row resolves and points
+        // at "the" (cosine ~0.36). The fixture vocab is small, so the
+        // exact neighbors differ from the full-mini sweep; these
+        // values freeze the artifact's behavior on the fixture.
+        let neighbors = model.semantic_neighbors("teh", 4);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["the", "and", "they", "she"]
+        );
+        assert!(
+            (neighbors[0].1 - 0.3587).abs() < 1e-4,
+            "teh->the cosine drifted: {}",
+            neighbors[0].1
+        );
+
+        // catt — the union contract: "cat" is in the fixture vocab AND
+        // <catt/catt> buckets contribute. Top-1 stays "cat" (~0.89,
+        // lower than the pure substring 1.0 because the bucket rows
+        // pull the sum off the cat axis), then "dog"/"puppy".
+        let neighbors = model.semantic_neighbors("catt", 4);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["cat", "dog", "puppy", "mouse"]
+        );
+        assert!(
+            (neighbors[0].1 - 0.8902).abs() < 1e-4,
+            "catt->cat cosine drifted: {}",
+            neighbors[0].1
+        );
+
+        // hotcold — both "hot" and "cold" are in the fixture vocab;
+        // the bucket rows adjust the magnitudes but keep them top-2.
+        let neighbors = model.semantic_neighbors("hotcold", 4);
+        assert_eq!(
+            neighbors
+                .iter()
+                .map(|(word, _)| word.as_str())
+                .collect::<Vec<_>>(),
+            ["hot", "cold", "winter", "water"]
+        );
+        assert!(
+            (neighbors[0].1 - 0.8711).abs() < 1e-4,
+            "hotcold->hot drifted: {}",
+            neighbors[0].1
+        );
+        assert!(
+            (neighbors[1].1 - 0.7930).abs() < 1e-4,
+            "hotcold->cold drifted: {}",
+            neighbors[1].1
+        );
     }
 }

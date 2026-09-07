@@ -228,6 +228,38 @@ try {
     semanticSuggest(model, "florbington", 4).length,
   );
 
+  // --- Bucket-table sibling surface (plan 103) --------------------------
+  // The bucket fixture is a 4-row subset of the real en/buckets
+  // artifact (see LICENSE-NOTE.md): just the rows the OOV queries
+  // teh/catt/hotcold address. With it attached, "teh" — whose only
+  // unmarked n-gram is itself (not in the 40-word fixture vocab) —
+  // embeds through its marked 5-gram "<teh>" and surfaces "the" as
+  // the top-1 neighbor (the canonical OOV gate).
+  const bucketsBytes = new Uint8Array(
+    await readFile(path.join(modelsDir, "en-buckets-truncated.onnx")),
+  );
+  const modelWithBuckets = loadModel(modelBytes, vocabBytes, bucketsBytes);
+  assert("loadModel accepts the optional bucketsBytes", typeof modelWithBuckets === "object");
+
+  const teh = semanticSuggest(modelWithBuckets, "teh", 4);
+  assertEqual("bucket-backed semanticSuggest('teh')[0].word", "the", teh[0]?.word);
+  near(teh[0]?.score, 0.3587);
+
+  const cattBucketed = semanticSuggest(modelWithBuckets, "catt", 4);
+  assertEqual("bucket-backed semanticSuggest('catt')[0].word", "cat", cattBucketed[0]?.word);
+  near(cattBucketed[0]?.score, 0.8902);
+
+  const hotcold = semanticSuggest(modelWithBuckets, "hotcold", 4);
+  assertEqual("bucket-backed semanticSuggest('hotcold')[0].word", "hot", hotcold[0]?.word);
+  assertEqual("bucket-backed semanticSuggest('hotcold')[1].word", "cold", hotcold[1]?.word);
+  // Top-2 ordering preserved; magnitudes reflect the union composition.
+  near(hotcold[0]?.score, 0.8711);
+  near(hotcold[1]?.score, 0.7930);
+
+  // The handle still exposes free() with the bucket table attached.
+  assert("modelWithBuckets.free() exists", typeof modelWithBuckets.free === "function");
+  modelWithBuckets.free();
+
   let modelThrew = null;
   try {
     loadModel(new Uint8Array(1024).fill(0x42), vocabBytes);

@@ -55,7 +55,15 @@ pub fn fasttext_hash(s: &str) -> u32 {
 /// The bucket row an n-gram would occupy in a fastText artifact
 /// (`hash % bucket`). Unused by the current substring fallback.
 pub fn fasttext_bucket(s: &str) -> u32 {
-    fasttext_hash(s) % FASTTEXT_BUCKET_COUNT
+    fasttext_hash_mod(s, FASTTEXT_BUCKET_COUNT)
+}
+
+/// The bucket row of `s` under an explicit bucket count — the lookup the
+/// bucket-table artifacts (`kotoshu://models/{lang}/buckets`, the
+/// `model` feature's [`crate::rerank::buckets`]) are keyed by; the
+/// artifact's `bucket_count` metadata is this modulus.
+pub fn fasttext_hash_mod(s: &str, bucket_count: u32) -> u32 {
+    fasttext_hash(s) % bucket_count
 }
 
 /// The distinct character n-grams (length `NGRAM_MIN..=NGRAM_MAX`) of
