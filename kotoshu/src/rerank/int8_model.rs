@@ -37,9 +37,7 @@ use std::fmt;
 
 use super::buckets::BucketTable;
 use super::dequant::{RowFormat, dequant_row_int8};
-use super::onnx_wire::{
-    DATA_TYPE_FLOAT, DATA_TYPE_INT8, Reader, Tensor, field, metadata_entry, parse_graph,
-};
+use super::onnx_wire;
 use super::{EmbeddingProvider, cosine, oov};
 
 /// Free-text context cap for [`Int8Model::context_score`] — the gem
@@ -475,7 +473,7 @@ mod tests {
     use super::*;
     // The wire-format constants the hand-rolled protobuf writer below
     // needs (moved to the shared reader, plan 103).
-    use super::onnx_wire::{DATA_TYPE_FLOAT, DATA_TYPE_INT8, field};
+    use super::onnx_wire;
 
     // --- A hand-rolled protobuf writer for synthetic fixtures ----------
     //
@@ -513,7 +511,7 @@ mod tests {
     fn metadata(key: &str, value: &str) -> Vec<u8> {
         let mut entry = bytes_field(1, key.as_bytes());
         entry.extend(bytes_field(2, value.as_bytes()));
-        bytes_field(field::MODEL_METADATA, &entry)
+        bytes_field(onnx_wire::field::MODEL_METADATA, &entry)
     }
 
     fn tensor_bytes(name: &str, dims: &[i64], data_type: i32, raw: &[u8]) -> Vec<u8> {
@@ -533,11 +531,11 @@ mod tests {
         attribute.extend(bytes_field(5, tensor));
         let mut node = bytes_field(4, b"Constant");
         node.extend(bytes_field(5, &attribute));
-        bytes_field(field::GRAPH_NODE, &node)
+        bytes_field(onnx_wire::field::GRAPH_NODE, &node)
     }
 
     fn graph(tensors: &[u8]) -> Vec<u8> {
-        bytes_field(field::MODEL_GRAPH, tensors)
+        bytes_field(onnx_wire::field::MODEL_GRAPH, tensors)
     }
 
     /// The hand-computed tier: vocab `{"a": 0, "b": 1}`, dims 2,
@@ -553,7 +551,7 @@ mod tests {
         let mut graph_body = constant_node(&tensor_bytes(
             "q_embeddings",
             &[2, 2],
-            DATA_TYPE_INT8,
+            onnx_wire::DATA_TYPE_INT8,
             &[3, 0xff, 2, 0], // [3, -1, 2, 0] int8
         ));
         let scale_raw: Vec<u8> = [0.5f32, 2.0]
@@ -563,7 +561,7 @@ mod tests {
         graph_body.extend(constant_node(&tensor_bytes(
             "row_scale",
             &[2],
-            DATA_TYPE_FLOAT,
+            onnx_wire::DATA_TYPE_FLOAT,
             &scale_raw,
         )));
         model.extend(graph(&graph_body));
@@ -622,7 +620,7 @@ mod tests {
         let mut q_tensor = bytes_field(8, b"q_embeddings");
         q_tensor.extend(varint_field(1, 2));
         q_tensor.extend(varint_field(1, 2));
-        q_tensor.extend(varint_field(2, DATA_TYPE_INT8 as u64));
+        q_tensor.extend(varint_field(2, onnx_wire::DATA_TYPE_INT8 as u64));
         let mut packed = Vec::new();
         for value in [3i32, -1, 2, 0] {
             packed.extend(varint(value as i64 as u64));
@@ -631,7 +629,7 @@ mod tests {
 
         let mut scale_tensor = bytes_field(8, b"row_scale");
         scale_tensor.extend(varint_field(1, 2));
-        scale_tensor.extend(varint_field(2, DATA_TYPE_FLOAT as u64));
+        scale_tensor.extend(varint_field(2, onnx_wire::DATA_TYPE_FLOAT as u64));
         let float_packed: Vec<u8> = [0.5f32, 2.0]
             .iter()
             .flat_map(|value| value.to_le_bytes())
@@ -640,8 +638,11 @@ mod tests {
 
         // Deliver these two as graph initializers instead of Constant
         // nodes — that storage shape must load too.
-        let mut graph_body = bytes_field(field::GRAPH_INITIALIZER, &q_tensor);
-        graph_body.extend(bytes_field(field::GRAPH_INITIALIZER, &scale_tensor));
+        let mut graph_body = bytes_field(onnx_wire::field::GRAPH_INITIALIZER, &q_tensor);
+        graph_body.extend(bytes_field(
+            onnx_wire::field::GRAPH_INITIALIZER,
+            &scale_tensor,
+        ));
         model.extend(graph(&graph_body));
 
         let vocab = br#"{"word_to_idx": {"a": 0, "b": 1}}"#;
@@ -665,7 +666,7 @@ mod tests {
         fp32.extend(graph(&constant_node(&tensor_bytes(
             "word_embeddings",
             &[2, 2],
-            DATA_TYPE_FLOAT,
+            onnx_wire::DATA_TYPE_FLOAT,
             &[0; 16],
         ))));
         let error = Int8Model::parse(&fp32, &vocab).unwrap_err();
@@ -687,7 +688,7 @@ mod tests {
         no_scale.extend(graph(&constant_node(&tensor_bytes(
             "q_embeddings",
             &[2, 2],
-            DATA_TYPE_INT8,
+            onnx_wire::DATA_TYPE_INT8,
             &[3, 0xff, 2, 0],
         ))));
         assert!(matches!(
@@ -701,13 +702,13 @@ mod tests {
         let mut graph_body = constant_node(&tensor_bytes(
             "q_embeddings",
             &[2, 2],
-            DATA_TYPE_INT8,
+            onnx_wire::DATA_TYPE_INT8,
             &[3, 0xff, 2, 0],
         ));
         graph_body.extend(constant_node(&tensor_bytes(
             "row_scale",
             &[2],
-            DATA_TYPE_FLOAT,
+            onnx_wire::DATA_TYPE_FLOAT,
             &[0; 8],
         )));
         bad_dims.extend(graph(&graph_body));
@@ -956,7 +957,7 @@ mod tests {
         let mut graph_body = constant_node(&tensor_bytes(
             "q_embeddings",
             &[2, 2],
-            DATA_TYPE_INT8,
+            onnx_wire::DATA_TYPE_INT8,
             &[3, 4, 4, 3], // cat = (3, 4), dog = (4, 3)
         ));
         let scale_raw: Vec<u8> = [1.0f32, 1.0]
@@ -966,7 +967,7 @@ mod tests {
         graph_body.extend(constant_node(&tensor_bytes(
             "row_scale",
             &[2],
-            DATA_TYPE_FLOAT,
+            onnx_wire::DATA_TYPE_FLOAT,
             &scale_raw,
         )));
         model.extend(graph(&graph_body));
@@ -1004,7 +1005,7 @@ mod tests {
         let mut graph_body = constant_node(&tensor_bytes(
             "q_embeddings",
             &[2, 2],
-            DATA_TYPE_INT8,
+            onnx_wire::DATA_TYPE_INT8,
             &q_flat,
         ));
         let scale_raw: Vec<u8> = rows
@@ -1015,7 +1016,7 @@ mod tests {
         graph_body.extend(constant_node(&tensor_bytes(
             "row_scale",
             &[2],
-            DATA_TYPE_FLOAT,
+            onnx_wire::DATA_TYPE_FLOAT,
             &scale_raw,
         )));
         let ids_raw: Vec<u8> = ids_sorted
