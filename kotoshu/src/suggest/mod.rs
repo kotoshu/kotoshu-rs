@@ -24,6 +24,9 @@ mod permutations;
 mod phonetic;
 mod rank;
 mod ruby_sort;
+mod sweep_index;
+
+pub(crate) use sweep_index::SweepIndex;
 
 use crate::dict::Dictionary;
 
@@ -104,15 +107,18 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
     }
 
     let words = dictionary.words();
+    // Per-dictionary invariants shared by every sweep: lengths, Soundex
+    // codes, length buckets — built once, kept for the dictionary's life.
+    let sweep = dictionary.sweep_index();
     // Built once per sweep: the keyboard strategy looks up one variant at
     // a time and its two-round variant set reaches tens of thousands of
     // lookups, each of which used to scan the whole dictionary.
     let index = WordIndex::build(words);
     let mut pool: Vec<Candidate> = Vec::new();
-    pool.extend(edit_distance_strategy(dictionary, word, words));
-    pool.extend(phonetic_strategy(word, words));
+    pool.extend(edit_distance_strategy(dictionary, word, words, sweep));
+    pool.extend(phonetic_strategy(word, words, sweep));
     pool.extend(keyboard_proximity_strategy(word, &index));
-    pool.extend(ngram_strategy(word, words));
+    pool.extend(ngram_strategy(word, words, sweep));
 
     rank::suggestion_set(pool, limit)
         .into_iter()
@@ -129,7 +135,12 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
 // EditDistanceStrategy
 // ---------------------------------------------------------------------------
 
-fn edit_distance_strategy(dictionary: &Dictionary, word: &str, words: &[String]) -> Vec<Candidate> {
+fn edit_distance_strategy(
+    dictionary: &Dictionary,
+    word: &str,
+    words: &[String],
+    sweep: &SweepIndex,
+) -> Vec<Candidate> {
     let word_chars: Vec<char> = word.chars().collect();
     let target_length = word_chars.len();
     let length_min = target_length.saturating_sub(EDIT_MAX_DISTANCE);
@@ -137,13 +148,12 @@ fn edit_distance_strategy(dictionary: &Dictionary, word: &str, words: &[String])
 
     let mut candidates: Vec<(String, usize, f64)> = Vec::new();
     let mut dict_chars: Vec<char> = Vec::with_capacity(32);
-    for dict_word in words {
+    // Only the ±2 length buckets — the index restores word-list order, so
+    // the candidate array (and every tie in the ranking sort) is exactly
+    // what the whole-list walk produced.
+    for idx in sweep.indices_in_length_window(length_min as u32, length_max as u32) {
+        let dict_word = &words[idx as usize];
         if dict_word == word {
-            continue;
-        }
-        // `find_by_length_range`: edit distance can't beat the length gap.
-        let dict_len = dict_word.chars().count();
-        if dict_len < length_min || dict_len > length_max {
             continue;
         }
         dict_chars.clear();
@@ -378,17 +388,19 @@ fn typo_pattern_bonus(original: &[char], suggestion: &[char]) -> u32 {
 // PhoneticStrategy
 // ---------------------------------------------------------------------------
 
-fn phonetic_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
-    let word_code = phonetic::soundex_key(word);
+fn phonetic_strategy(word: &str, words: &[String], sweep: &SweepIndex) -> Vec<Candidate> {
+    let word_code = phonetic::soundex_key(word).map_or(u32::MAX, sweep_index::pack_key);
     let word_chars: Vec<char> = word.chars().collect();
 
     let mut results: Vec<(&str, usize)> = Vec::new();
     let mut dict_chars: Vec<char> = Vec::with_capacity(32);
-    for dict_word in words {
+    for (idx, dict_word) in words.iter().enumerate() {
         if dict_word == word {
             continue;
         }
-        if phonetic::soundex_key(dict_word) != word_code {
+        // Packed codes compare without decoding the word — u32::MAX on
+        // both sides is two empty codes, equal as before.
+        if sweep.soundex(idx) != word_code {
             continue;
         }
         dict_chars.clear();
@@ -629,7 +641,7 @@ fn is_lowercase_identity(word: &str) -> bool {
 // NgramStrategy
 // ---------------------------------------------------------------------------
 
-fn ngram_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
+fn ngram_strategy(word: &str, words: &[String], sweep: &SweepIndex) -> Vec<Candidate> {
     let word_chars: Vec<char> = word.chars().collect();
     if word_chars.len() < NGRAM_N {
         return Vec::new();
@@ -641,22 +653,24 @@ fn ngram_strategy(word: &str, words: &[String]) -> Vec<Candidate> {
     let mut order: Vec<String> = Vec::new();
     let mut distances: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     let mut dict_chars: Vec<char> = Vec::with_capacity(32);
-    for dict_word in words {
+    for (idx, dict_word) in words.iter().enumerate() {
         if dict_word == word {
+            continue;
+        }
+        // The indexed length gates before the word is ever decoded.
+        let dict_len = sweep.length(idx);
+        if dict_len < NGRAM_N as u32 {
             continue;
         }
         dict_chars.clear();
         dict_chars.extend(dict_word.chars());
-        if dict_chars.len() < NGRAM_N {
-            continue;
-        }
         // Pre-gate, mathematically equivalent to the threshold test:
         // similarity = intersection/union ≤ min_ngrams/max_ngrams, so a
         // word whose length-bound is already under NGRAM_MIN_SIMILARITY
         // can never pass the real test. Skips most of the dictionary
         // before any key is extracted.
-        let lo = dict_chars.len().min(word_chars.len()) - (NGRAM_N - 1);
-        let hi = dict_chars.len().max(word_chars.len()) - (NGRAM_N - 1);
+        let lo = dict_len.min(word_chars.len() as u32) - (NGRAM_N as u32 - 1);
+        let hi = dict_len.max(word_chars.len() as u32) - (NGRAM_N as u32 - 1);
         if (lo as f64) / (hi as f64) < NGRAM_MIN_SIMILARITY {
             continue;
         }

@@ -14,6 +14,7 @@ mod lookup;
 
 use std::fmt;
 use std::path::Path;
+use std::sync::OnceLock;
 
 use crate::suggest;
 
@@ -24,6 +25,9 @@ use crate::suggest;
 #[derive(Debug)]
 pub struct Dictionary {
     lookup: lookup::Lookuper,
+    /// Per-word sweep invariants (lengths, Soundex codes, length
+    /// buckets), built once at the first suggestion sweep.
+    sweep_index: OnceLock<suggest::SweepIndex>,
 }
 
 impl Dictionary {
@@ -32,7 +36,10 @@ impl Dictionary {
     /// The `.dic` file is interpreted with the flag format and `AF` aliases
     /// declared by the `.aff` file, mirroring the gem's `LookupBuilder`.
     pub fn load(aff_path: &Path, dic_path: &Path) -> Result<Self, LoadError> {
-        lookup::Lookuper::load(aff_path, dic_path).map(|lookup| Self { lookup })
+        lookup::Lookuper::load(aff_path, dic_path).map(|lookup| Self {
+            lookup,
+            sweep_index: OnceLock::new(),
+        })
     }
 
     /// Load a dictionary from in-memory `.aff`/`.dic` source text.
@@ -43,8 +50,12 @@ impl Dictionary {
     /// load. The wasm binding (`ffi::wasm`, feature `wasm`) constructs
     /// dictionaries this way — wasm has no filesystem.
     pub fn load_from_sources(aff_source: &str, dic_source: &str) -> Result<Self, LoadError> {
-        lookup::Lookuper::from_bytes(aff_source.as_bytes(), dic_source.as_bytes())
-            .map(|lookup| Self { lookup })
+        lookup::Lookuper::from_bytes(aff_source.as_bytes(), dic_source.as_bytes()).map(|lookup| {
+            Self {
+                lookup,
+                sweep_index: OnceLock::new(),
+            }
+        })
     }
 
     /// Whether `word` is spelled correctly per this dictionary.
@@ -72,6 +83,13 @@ impl Dictionary {
     /// — the substitution/insertion alphabet for the suggestion edit sweep.
     pub fn try_string(&self) -> Option<&str> {
         self.lookup.try_string()
+    }
+
+    /// The sweep invariants for this dictionary's word list — built on
+    /// first use, shared by every later sweep.
+    pub(crate) fn sweep_index(&self) -> &suggest::SweepIndex {
+        self.sweep_index
+            .get_or_init(|| suggest::SweepIndex::build(self.words()))
     }
 
     /// Generate ranked suggestions for `word` (the gem's
