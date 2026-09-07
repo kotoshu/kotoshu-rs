@@ -680,10 +680,10 @@ mod tests {
         assert_eq!(model.rows(), 50_000);
         assert_eq!(model.labels()[0], "en");
         // The pruned dictionary keeps 7235 word rows.
-        assert!(model.words.get("de").is_some());
+        assert!(model.words.contains_key("de"));
         // "the" did not survive the upstream cutoff - it embeds through
         // its n-grams, exactly like the bindings.
-        assert!(model.words.get("the").is_none());
+        assert!(!model.words.contains_key("the"));
         assert_eq!(model.words.get("</s>"), Some(&0));
     }
 
