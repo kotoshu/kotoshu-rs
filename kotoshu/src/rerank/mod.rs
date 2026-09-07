@@ -42,6 +42,9 @@ pub mod onnx;
 #[cfg(feature = "model")]
 pub mod int8_model;
 
+#[cfg(feature = "model")]
+pub(crate) mod onnx_wire;
+
 use crate::suggest::Suggestion;
 
 /// Host-supplied word vectors (the inference seam; plan 66: one trait,

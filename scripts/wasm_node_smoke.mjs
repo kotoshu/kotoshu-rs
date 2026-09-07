@@ -239,6 +239,56 @@ try {
     "the model rejection carries the Rust message",
     typeof modelThrew?.message === "string" && modelThrew.message.length > 0,
   );
+
+  // --- Language detection (plan 102) ----------------------------------
+  // The fixture is the real registry lid.176 artifact pair (the same
+  // bytes scripts/build_lid.py writes for the models repo release);
+  // numbers below are the gem's frozen detection outputs on a small
+  // corpus, asserted to the int8 gate tolerance (1e-3 with headroom).
+  const { loadLid, detectLanguage } = mod;
+  assert("loadLid is exported", typeof loadLid === "function");
+  assert("detectLanguage is exported", typeof detectLanguage === "function");
+
+  const lidDir =
+    process.env.KOTOSHU_LID_FIXTURES_DIR ??
+    path.join(root, "kotoshu", "tests", "fixtures", "lid");
+  const lidOnnxBytes = new Uint8Array(
+    await readFile(path.join(lidDir, "lid.176.onnx")),
+  );
+  const lidVocabBytes = new Uint8Array(
+    await readFile(path.join(lidDir, "lid.176.vocab.json")),
+  );
+  const lid = loadLid(lidOnnxBytes, lidVocabBytes);
+  assert("loadLid returns a KotoshuLid handle", typeof lid === "object");
+  assert("the LID handle exposes free()", typeof lid.free === "function");
+
+  const lidCases = [
+    ["the quick brown fox jumps over the lazy dog", "en"],
+    ["今日はとても良い天気ですね", "ja"],
+    ["Быстрая бурая лиса прыгает через ленивую собаку", "ru"],
+    ["Esta é uma frase de teste para verificar a deteção de idioma", "pt"],
+  ];
+  for (const [text, code] of lidCases) {
+    const detection = detectLanguage(lid, text);
+    assert(
+      `detectLanguage("${text.slice(0, 30)}…").code == "${code}" (got "${detection.code}")`,
+      detection.code === code,
+    );
+    assert(
+      `detectLanguage score is a finite number in [0, 1] for "${code}"`,
+      Number.isFinite(detection.score) &&
+        detection.score >= 0 &&
+        detection.score <= 1,
+    );
+  }
+
+  let lidThrew = null;
+  try {
+    loadLid(new Uint8Array(1024).fill(0x42), lidVocabBytes);
+  } catch (error) {
+    lidThrew = error;
+  }
+  assert("loadLid rejects malformed model bytes", lidThrew instanceof Error);
 } catch (error) {
   failures += 1;
   console.error(`FAIL smoke setup (${error?.stack ?? error})`);

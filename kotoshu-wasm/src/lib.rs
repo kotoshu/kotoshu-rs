@@ -16,7 +16,11 @@
 /// The JS surface: the `KotoshuWasm` class (`VERSION`, constructor over
 /// source strings, `correct`, `suggest`) plus the model surface
 /// (`loadModel`, `rerank`, `semanticSuggest` over a `KotoshuModel`
-/// handle — plan 85). Feature-gated like everything wasm — see
+/// handle — plan 85; `loadLid` + `detectLanguage` over a `KotoshuLid`
+/// handle — plan 102). Feature-gated like everything wasm — see
 /// `kotoshu::ffi::wasm` for the API it exposes.
 #[cfg(feature = "wasm")]
-pub use kotoshu::ffi::wasm::{KotoshuModel, KotoshuWasm, load_model, rerank, semantic_suggest};
+pub use kotoshu::ffi::wasm::{
+    KotoshuLid, KotoshuModel, KotoshuWasm, detect_language, load_lid, load_model, rerank,
+    semantic_suggest,
+};

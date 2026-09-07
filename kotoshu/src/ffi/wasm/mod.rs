@@ -37,6 +37,12 @@
 //! semanticSuggest(model, "catt", 4); // => [{ word: "cat", score: 1.0 },
 //!                                    //      { word: "dog", score: 0.707 }, ...]
 //! model.free(); // optional: release before GC
+//!
+//! // Language detection (plan 102): the LID registry artifact pair.
+//! const lid = loadLid(lidOnnxBytes, lidVocabJsonBytes); // => KotoshuLid
+//! detectLanguage(lid, "今日はとても良い天気ですね");
+//! // => { code: "ja", score: 0.9976 }
+//! lid.free(); // optional: release before GC
 //! ```
 //!
 //! `suggest` returns one plain object per suggestion with exactly the four
@@ -74,6 +80,18 @@
 //! gem's `(sim || 0.0)`). The playground derives the gem-shaped
 //! adjusted confidence in JS: `min(confidence + 0.02 × n × score, 1.0)`
 //! where `n` is the in-vocab token count.
+//!
+//! `detectLanguage` (plan 102) completes the model surface with the
+//! language-identification model the gem detects document language
+//! with: `loadLid` parses the `kotoshu://models/lid/lid-176` artifact
+//! pair (≈ 1 MB int8 ONNX + ≈ 1.8 MB sidecar) with
+//! [`crate::lid::LidModel`] — the same registry shape as the tiers,
+//! scored in pure Rust — and `detectLanguage(lid, text)` returns
+//! `{ code, score }`: the top label and its probability, matching the
+//! gem's `LanguageIdentifier` (labels equal, scores within the int8
+//! drift, ~5e-4) on the frozen parity corpus. The playground proposes
+//! the detected language next to the dropdown; it never switches a
+//! user's explicit choice silently.
 //!
 //! Memory: a `KotoshuModel` holds ≈ the tier file's size (mini ≈ 3 MB,
 //! fluency ≈ 15 MB — int8 matrix + f32 row scales + vocab map) in wasm
@@ -231,4 +249,38 @@ pub fn semantic_suggest(model: &KotoshuModel, word: &str, k: Option<usize>) -> A
             ])
         })
         .collect()
+}
+
+/// One loaded language-identification model: the handle twin of
+/// [`crate::lid::LidModel`], same lifecycle as [`KotoshuModel`]
+/// (GC or `free()`; footprint ≈ the artifact pair's size).
+#[wasm_bindgen]
+pub struct KotoshuLid {
+    model: crate::lid::LidModel,
+}
+
+/// Load the LID model from the byte CONTENTS of its registry artifact
+/// pair: the `lid.176.onnx` container and its `lid.176.vocab.json`
+/// sidecar (`kotoshu://models/lid/lid-176`, ≈ 1 MB + ≈ 1.8 MB). The
+/// wasm twin of [`load_model`]. Failures reject with the Rust error
+/// message.
+#[wasm_bindgen(js_name = "loadLid")]
+pub fn load_lid(model_bytes: &[u8], vocab_bytes: &[u8]) -> Result<KotoshuLid, JsError> {
+    console_error_panic_hook::set_once();
+    crate::lid::LidModel::parse(model_bytes, vocab_bytes)
+        .map(|model| KotoshuLid { model })
+        .map_err(|error| JsError::new(&error.to_string()))
+}
+
+/// Detect the language of `text`: `{ code, score }` — the top label
+/// and its probability, the gem's `LanguageIdentifier` pair (see the
+/// module docs for the parity contract). Empty text still scores (the
+/// EOS token row), exactly like the gem.
+#[wasm_bindgen(js_name = "detectLanguage")]
+pub fn detect_language(model: &KotoshuLid, text: &str) -> JsValue {
+    let detection = model.model.detect(text);
+    suggestion_row(&[
+        ("code", JsValue::from(detection.code)),
+        ("score", JsValue::from(detection.score)),
+    ])
 }
