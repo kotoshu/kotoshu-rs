@@ -7,6 +7,8 @@
 //! tensor extraction and validation in their own modules (MECE: the
 //! wire format is one concern, in one place).
 
+use std::collections::HashMap;
+
 // --- The minimal ONNX protobuf reader -----------------------------------
 //
 // Protobuf wire format, the parts ONNX uses: each field is a varint tag
@@ -19,6 +21,7 @@
 /// ONNX `TensorProto.DataType` values this reader names.
 pub(crate) const DATA_TYPE_FLOAT: i32 = 1;
 pub(crate) const DATA_TYPE_INT8: i32 = 3;
+pub(crate) const DATA_TYPE_INT64: i32 = 7;
 
 /// Field numbers of the protos walked (onnx/onnx.proto).
 pub(crate) mod field {
@@ -38,6 +41,7 @@ pub(crate) mod field {
     pub const TENSOR_DATA_TYPE: u32 = 2;
     pub const TENSOR_FLOAT_DATA: u32 = 4;
     pub const TENSOR_INT32_DATA: u32 = 5;
+    pub const TENSOR_INT64_DATA: u32 = 7;
     pub const TENSOR_NAME: u32 = 8;
     pub const TENSOR_RAW_DATA: u32 = 9;
 
@@ -158,6 +162,7 @@ pub(crate) struct Tensor<'a> {
     pub(crate) raw_data: &'a [u8],
     pub(crate) float_data: Vec<f32>,
     pub(crate) int32_data: Vec<i32>,
+    pub(crate) int64_data: Vec<i64>,
 }
 
 pub(crate) fn parse_tensor(buf: &[u8]) -> Result<Tensor<'_>, String> {
@@ -169,6 +174,7 @@ pub(crate) fn parse_tensor(buf: &[u8]) -> Result<Tensor<'_>, String> {
         raw_data: &[],
         float_data: Vec::new(),
         int32_data: Vec::new(),
+        int64_data: Vec::new(),
     };
     while !reader.done() {
         let (number, wire) = reader.tag()?;
@@ -215,6 +221,15 @@ pub(crate) fn parse_tensor(buf: &[u8]) -> Result<Tensor<'_>, String> {
                 }
             }
             (field::TENSOR_INT32_DATA, 0) => tensor.int32_data.push(reader.varint()? as i32),
+            // int64_data: packed varints (the bucket_ids tensor).
+            (field::TENSOR_INT64_DATA, 2) => {
+                let packed = reader.bytes()?;
+                let mut packed_reader = Reader::new(packed);
+                while !packed_reader.done() {
+                    tensor.int64_data.push(packed_reader.varint()? as i64);
+                }
+            }
+            (field::TENSOR_INT64_DATA, 0) => tensor.int64_data.push(reader.varint()? as i64),
             (field::TENSOR_RAW_DATA, 2) => tensor.raw_data = reader.bytes()?,
             _ => reader.skip(wire)?,
         }
@@ -276,4 +291,92 @@ pub(crate) fn parse_graph<'a>(buf: &'a [u8], tensors: &mut Vec<Tensor<'a>>) -> R
         }
     }
     Ok(())
+}
+
+/// A walked `ModelProto`: its metadata entries and every tensor found.
+pub(crate) struct WireModel<'a> {
+    pub(crate) metadata: HashMap<String, String>,
+    pub(crate) tensors: Vec<Tensor<'a>>,
+}
+
+impl WireModel<'_> {
+    pub(crate) fn tensor(&self, name: &str) -> Option<&Tensor<'_>> {
+        self.tensors.iter().find(|tensor| tensor.name == name)
+    }
+}
+
+/// Walk a `ModelProto`, lifting metadata entries and tensors.
+pub(crate) fn parse_model(bytes: &[u8]) -> Result<WireModel<'_>, String> {
+    let mut metadata: HashMap<String, String> = HashMap::new();
+    let mut tensors: Vec<Tensor<'_>> = Vec::new();
+
+    let mut reader = Reader::new(bytes);
+    while !reader.done() {
+        let (number, wire) = reader.tag()?;
+        match (number, wire) {
+            (field::MODEL_METADATA, 2) => {
+                let (key, value) = metadata_entry(reader.bytes()?)?;
+                metadata.insert(key, value);
+            }
+            (field::MODEL_GRAPH, 2) => {
+                parse_graph(reader.bytes()?, &mut tensors)?;
+            }
+            _ => reader.skip(wire)?,
+        }
+    }
+    Ok(WireModel { metadata, tensors })
+}
+
+/// Decode a float32 payload (raw_data or float_data) of `rows` values.
+pub(crate) fn float_payload(tensor: &Tensor<'_>, rows: usize) -> Result<Vec<f32>, String> {
+    if !tensor.raw_data.is_empty() {
+        if tensor.raw_data.len() != rows * 4 {
+            return Err(format!(
+                "{} raw_data is {} bytes, expected {}",
+                tensor.name,
+                tensor.raw_data.len(),
+                rows * 4
+            ));
+        }
+        Ok(tensor
+            .raw_data
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|chunk| f32::from_le_bytes(*chunk))
+            .collect())
+    } else if tensor.float_data.len() == rows {
+        Ok(tensor.float_data.clone())
+    } else {
+        Err(format!(
+            "{} has neither raw_data nor float_data",
+            tensor.name
+        ))
+    }
+}
+
+/// Decode an int8 payload (raw_data or int32_data) of `rows * width` values.
+pub(crate) fn int8_payload(
+    tensor: &Tensor<'_>,
+    rows: usize,
+    width: usize,
+) -> Result<Vec<i8>, String> {
+    if !tensor.raw_data.is_empty() {
+        if tensor.raw_data.len() != rows * width {
+            return Err(format!(
+                "{} raw_data is {} bytes, expected {}",
+                tensor.name,
+                tensor.raw_data.len(),
+                rows * width
+            ));
+        }
+        Ok(tensor.raw_data.iter().map(|byte| *byte as i8).collect())
+    } else if tensor.int32_data.len() == rows * width {
+        Ok(tensor.int32_data.iter().map(|value| *value as i8).collect())
+    } else {
+        Err(format!(
+            "{} has neither raw_data nor int32_data",
+            tensor.name
+        ))
+    }
 }

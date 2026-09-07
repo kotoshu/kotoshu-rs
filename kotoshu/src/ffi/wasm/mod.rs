@@ -210,14 +210,28 @@ pub struct KotoshuModel {
 
 /// Load an int8-per-row embedding tier from the byte CONTENTS of its
 /// `.onnx` artifact and `.vocab.json` sibling (wasm has no filesystem;
-/// the host fetches the pair — mini ≈ 3 MB, fluency ≈ 15 MB).
-/// Failures reject with the Rust error message.
+/// the host fetches the pair — mini ≈ 3 MB, fluency ≈ 15 MB). The
+/// third optional argument is the byte CONTENTS of the bucket-table
+/// sibling artifact (`kotoshu://models/{lang}/buckets`, plan 103), a
+/// last-mile OOV aid whose presence turns short-typo queries
+/// (`teh` → `the`-like neighbors) from misses into model-generated
+/// candidates. Pass `undefined`/`null` to omit. Failures reject with
+/// the Rust error message.
 #[wasm_bindgen(js_name = "loadModel")]
-pub fn load_model(model_bytes: &[u8], vocab_bytes: &[u8]) -> Result<KotoshuModel, JsError> {
+pub fn load_model(
+    model_bytes: &[u8],
+    vocab_bytes: &[u8],
+    buckets_bytes: Option<Vec<u8>>,
+) -> Result<KotoshuModel, JsError> {
     console_error_panic_hook::set_once();
-    crate::rerank::int8_model::Int8Model::parse(model_bytes, vocab_bytes)
-        .map(|model| KotoshuModel { model })
-        .map_err(|error| JsError::new(&error.to_string()))
+    let mut model = crate::rerank::int8_model::Int8Model::parse(model_bytes, vocab_bytes)
+        .map_err(|error| JsError::new(&error.to_string()))?;
+    if let Some(bytes) = buckets_bytes.as_deref() {
+        model
+            .attach_buckets(bytes)
+            .map_err(|error| JsError::new(&error.to_string()))?;
+    }
+    Ok(KotoshuModel { model })
 }
 
 /// Score `word` against `context` (free text): the mean cosine over the
