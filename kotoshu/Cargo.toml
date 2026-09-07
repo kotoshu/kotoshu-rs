@@ -75,6 +75,12 @@ pyo3 = { version = "0.29", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
+# Plan 102: LID parity vs the gem on the frozen corpus fixture.
+[[test]]
+name = "lid_parity"
+path = "../tests/lid_parity.rs"
+required-features = ["model"]
+
 # Conformance-vector runner lives at the workspace root (plan 66 layout).
 [[test]]
 name = "conformance"

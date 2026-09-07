@@ -8,6 +8,8 @@
 
 pub mod dict;
 pub mod ffi;
+#[cfg(feature = "model")]
+pub mod lid;
 pub mod rerank;
 #[cfg(feature = "resources")]
 pub mod resource;
