@@ -1,21 +1,26 @@
 //! OOV embedding fallback — B2 (plan 68): unseen words still embed.
 //!
 //! fastText embeds OOV words through hashed character n-grams: each
-//! n-gram of `<word>` (minn..maxn = 3..=6 by default) is mapped by a
-//! deterministic FNV-1a hash into a bucket table (`2M` rows by default)
-//! that lives *alongside* the word matrix, and the OOV vector is the
-//! (normalized) sum over word + bucket rows ([arxiv 1709.03933]).
+//! n-gram of `<word>` (minn..maxn = 3..=6 by default; the crawl models
+//! were trained with minn=maxn=5) is mapped by a deterministic FNV-1a
+//! hash into a bucket table (`2M` rows by default) that lives *alongside*
+//! the word matrix, and the OOV vector is the (normalized) sum over
+//! word + bucket rows ([arxiv 1709.03933]).
 //!
-//! **Our tier artifacts do not carry the bucket table** — the models
-//! repo converts plain `.vec` files, which have word vectors only. The
-//! honest fallback over the current artifacts is therefore narrower: a
-//! word's character n-grams contribute only when the n-gram *is itself
-//! an in-vocabulary word* (e.g. the "hello" inside "qqhelloqq"). Full
-//! bucket hashing requires re-converted artifacts with a subword matrix
-//! — a models-repo converter change (named there as B2's sibling) — and
-//! remains trait-pluggable: implement
-//! [`EmbeddingProvider::embedding_oov`] (or compose
-//! [`SubwordFallback`]) however the vectors become available.
+//! **The tier artifacts themselves do not carry the bucket table** — the
+//! models repo converts plain `.vec` files, which have word vectors only.
+//! The honest fallback over a bare tier is therefore narrower: a word's
+//! character n-grams contribute only when the n-gram *is itself an
+//! in-vocabulary word* (e.g. the "hello" inside "qqhelloqq"). Full
+//! bucket hashing is plan 103: the models repo exports a sibling
+//! `kotoshu://models/{lang}/buckets` artifact (top-K by training usage
+//! plus typo-corpus demand; crawl binaries were discovered minn=maxn=5),
+//! and [`crate::rerank::int8_model::Int8Model::attach_buckets`] wires
+//! it in. With the table attached, a short typo whose unmarked n-grams
+//! never appear in the vocab ("Teh" — only the marked 5-gram `<teh>`)
+//! embeds through its bucket row and `semantic_neighbors` returns
+//! "the"-ish neighbors. Without it the gap remains: the table is
+//! opt-in so a bare tier's in-vocab behavior stays byte-identical.
 
 use std::collections::HashSet;
 
