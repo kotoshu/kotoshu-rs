@@ -75,3 +75,7 @@ jobs:
       run: scripts/worker_build.sh
     - name: Worker package node smoke (real protocol, real pins)
       run: node scripts/worker_node_smoke.mjs
+    - name: Wasm memory ceiling (dict + mini tier + buckets resident)
+      run: |
+        node scripts/wasm_memory_ceiling.mjs en
+        node scripts/wasm_memory_ceiling.mjs pt
