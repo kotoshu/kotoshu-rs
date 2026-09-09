@@ -5,6 +5,9 @@
 # kotoshu-wasm/RELEASING.md). Publication of @kotoshu/wasm is deliberately
 # NOT here: npm credentials are blocked (plan 67 M5); RELEASING.md carries
 # the procedure for when they exist.
+# Plan 112 adds the @kotoshu/worker package to this job: its payload
+# assembly, the protocol smoke over the pinned CDN sources, and the wasm
+# memory-ceiling test (dictionary + mini tier + buckets resident).
 name: WASM
 on:
   push:
@@ -14,9 +17,13 @@ on:
     - "Cargo.toml"
     - "Cargo.lock"
     - "kotoshu-wasm/**"
+    - "kotoshu-worker/**"
     - "kotoshu/tests/fixtures/models/**"
     - "scripts/wasm_build.sh"
     - "scripts/wasm_node_smoke.mjs"
+    - "scripts/worker_build.sh"
+    - "scripts/worker_node_smoke.mjs"
+    - "scripts/wasm_memory_ceiling.mjs"
     - "scripts/make_model_fixture.py"
     - ".github/workflows/wasm.yml"
   pull_request:
@@ -64,3 +71,7 @@ jobs:
       run: node scripts/wasm_node_smoke.mjs
     - name: Report wasm binary size
       run: ls -lh kotoshu-wasm/pkg/kotoshu_wasm_bg.wasm
+    - name: Assemble the @kotoshu/worker package payload (plan 112)
+      run: scripts/worker_build.sh
+    - name: Worker package node smoke (real protocol, real pins)
+      run: node scripts/worker_node_smoke.mjs
