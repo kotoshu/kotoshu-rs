@@ -42,6 +42,10 @@ CLAUDE.local.md
 # (see kotoshu-wasm/RELEASING.md for the blocked publish)
 /kotoshu-wasm/pkg/
 
+# Assembled payload for @kotoshu/worker — same policy as the wasm pkg
+# (see kotoshu-worker/RELEASING.md)
+/kotoshu-worker/pkg/
+
 # Python smoke artifacts: the maturin venv and bytecode caches never commit
 __pycache__/
 *.pyc

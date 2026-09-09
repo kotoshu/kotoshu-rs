@@ -1,0 +1,29 @@
+{
+  "name": "@kotoshu/worker",
+  "version": "0.1.0",
+  "description": "The kotoshu engine worker: load/check/suggest-batch/semantic/detect protocol over the @kotoshu/wasm engine, dictionaries, and model tiers",
+  "type": "module",
+  "license": "BSD-2-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kotoshu/kotoshu-rs"
+  },
+  "homepage": "https://github.com/kotoshu/kotoshu-rs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./engine-worker": "./engine-worker.js",
+    "./semantic-merge": "./semantic-merge.js"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "engine-core.js",
+    "engine-worker.js",
+    "engine-worker.d.ts",
+    "semantic-merge.js",
+    "semantic-merge.d.ts",
+    "README.md"
+  ]
+}
