@@ -1,6 +1,6 @@
 # Releasing `@kotoshu/worker`
 
-**Publishing is BLOCKED.** The npm trusted-publisher registration on
+**0.1.0 was published manually by the owner (2026-09-09). From 0.1.1 on:** register the npm trusted publisher (package settings -> Trusted Publishing: repository kotoshu/kotoshu-rs, workflow release-npm-worker.yml, environment blank), then cut by tag @kotoshu/worker-vX.Y.Z. Before that registration: The npm trusted-publisher registration on
 npmjs.com exists for `@kotoshu/wasm` only; `@kotoshu/worker` needs the
 same owner-side registration (Repository `kotoshu/kotoshu-rs`, Workflow
 `release-npm-worker.yml`, no environment) before the keyless publish in
