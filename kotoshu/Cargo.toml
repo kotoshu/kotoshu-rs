@@ -42,8 +42,9 @@ resources = ["dep:serde", "dep:serde_json", "dep:sha2"]
 # artifacts without a runtime — no ort, so it also builds for
 # wasm32-unknown-unknown (the wasm feature attaches it). serde/serde_json
 # are only for the .vocab.json sibling, the same payloads the onnx and
-# resources features already use.
-model = ["dep:serde", "dep:serde_json"]
+# resources features already use; sha2 verifies the language packs
+# (plan 113) whose per-section footers the pack reader checks.
+model = ["dep:serde", "dep:serde_json", "dep:sha2"]
 parallel = []
 logging = []
 

@@ -60,8 +60,8 @@ In (messages): `load {lang}`, `check {text}`, `suggest {word, context?}`
 pending non-priority words), `semantic {enable, lang?}`, `detect {text}`.
 
 Out (events): `load-progress {phase, kind, loaded, total}`, `loaded
-{lang, engineVersion, wasmVersion, loadMs, ...}`, `load-error`, `checked
-{words, ms}`, `suggested {word, suggestions, sweepMs, semanticMs,
+{lang, engineVersion, wasmVersion, loadMs, packed, ...}`, `load-error`,
+`checked {words, ms}`, `suggested {word, suggestions, sweepMs, semanticMs,
 rerankMs, semantic}`, `semantic-status {lang, state, modelBytes,
 bucketsBytes, ...}`, `detected {code, score, ms, modelBytes}`,
 `detect-error`. `Suggestion` rows carry the engine conformance
@@ -73,14 +73,32 @@ registry mirror; a missing or failed tier degrades to dictionary-only
 suggestions, never an error. One model is resident at a time and is
 freed deterministically on disable or language switch.
 
+## Language packs (optional, plan 113)
+
+```js
+const engine = createEngine(onMessage, { pack: true })
+```
+
+With `pack: true` a `load` first tries ONE artifact per language —
+`kotoshu://packs/{lang}` through the pinned registry: the dictionary
+aff+dic plus the mini model, its vocab and the buckets sibling as one
+length-prefixed section stream (`loadPack` verifies every section
+sha256, so a corrupt or truncated fetch can never half-load). One
+fetch, one progress stream (`load-progress` phase `pack`), and the tier
+model rides along resident — a later `semantic {enable: true}` fetches
+nothing. Any miss (no registry entry, an engine without `loadPack`, a
+failed fetch) degrades to the per-resource paths above, never an error;
+`loaded` reports `packed: true|false`.
+
 ## Pins
 
-`wasmVersion` (default `0.4.0`), `dictPin`, `registryTag` and
-`cacheName` are `createEngine` options; the defaults are the pins the
+`wasmVersion` (default `0.4.0`), `dictPin`, `registryTag`,
+`registryUrl` (override the registry URL outright) and `cacheName` are
+`createEngine` options; the defaults are the pins the
 playground ships with, and the wasm pin tracks the published
 `@kotoshu/wasm` version line. Optional engine members (`loadModel`,
-`rerank`, `semanticSuggest`, `loadLid`, `detectLanguage`) are probed at
-call time, so an engine build without them degrades to
+`rerank`, `semanticSuggest`, `loadLid`, `detectLanguage`, `loadPack`)
+are probed at call time, so an engine build without them degrades to
 dictionary-only instead of throwing.
 
 License: BSD-2-Clause (see the repository root).

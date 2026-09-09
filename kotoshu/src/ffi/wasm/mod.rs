@@ -43,6 +43,12 @@
 //! detectLanguage(lid, "今日はとても良い天気ですね");
 //! // => { code: "ja", score: 0.9976 }
 //! lid.free(); // optional: release before GC
+//!
+//! // Language pack (plan 113): one fetch for the whole language.
+//! const pack = loadPack(packBytes); // => { dictionary, model }
+//! pack.dictionary.correct("hello");  // the KotoshuWasm twin
+//! semanticSuggest(pack.model, "catt", 4); // the KotoshuModel twin
+//! pack.dictionary.free(); pack.model.free();
 //! ```
 //!
 //! `suggest` returns one plain object per suggestion with exactly the four
@@ -263,6 +269,49 @@ pub fn semantic_suggest(model: &KotoshuModel, word: &str, k: Option<usize>) -> A
             ])
         })
         .collect()
+}
+
+/// Load a whole language in one call from the byte CONTENTS of a
+/// `kotoshu://packs/{lang}` pack artifact (plan 113): the
+/// length-prefixed section stream the models registry serves as ONE
+/// file, replacing the five per-artifact fetches (aff, dic, model,
+/// vocab, buckets). Every section footer is sha256-verified before
+/// anything is constructed — a corrupt or truncated fetch rejects, it
+/// can never half-load a language.
+///
+/// Returns a plain `{ dictionary, model }` object: `dictionary` is the
+/// same handle `new KotoshuWasm(aff, dic)` builds from the pack aff/dic
+/// sections, `model` the same handle `loadModel(modelBytes, vocabBytes,
+/// bucketsBytes)` builds from the pack model/vocab (+ buckets)
+/// sections — byte-identical sources, identical behavior (the parity
+/// contract the core specs freeze on the real-derived fixtures). Both
+/// handles free with `.free()` exactly like their per-artifact twins.
+///
+/// Failures reject with the Rust error message.
+#[wasm_bindgen(js_name = "loadPack")]
+pub fn load_pack(bytes: &[u8]) -> Result<JsValue, JsError> {
+    console_error_panic_hook::set_once();
+    let loaded = crate::pack::load(bytes).map_err(|error| JsError::new(&error.to_string()))?;
+    let out = Object::new();
+    // Setting the two handle fields on a fresh object cannot fail; a
+    // panic here (routed to console.error) would mean engine misuse.
+    Reflect::set(
+        &out,
+        &JsValue::from("dictionary"),
+        &JsValue::from(KotoshuWasm {
+            dictionary: loaded.dictionary,
+        }),
+    )
+    .expect("Reflect::set on a fresh object");
+    Reflect::set(
+        &out,
+        &JsValue::from("model"),
+        &JsValue::from(KotoshuModel {
+            model: loaded.model,
+        }),
+    )
+    .expect("Reflect::set on a fresh object");
+    Ok(out.into())
 }
 
 /// One loaded language-identification model: the handle twin of
