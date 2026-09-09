@@ -128,6 +128,19 @@ Everything from P2/P3 remains:
   `loadLid` + `detectLanguage`; the shared ONNX protobuf walker lives
   in `rerank/onnx_wire.rs` (extracted from `int8_model`, MECE: the
   wire format is one concern in one place).
+- `pack.rs` (feature `model`, plan 113): the language-pack reader —
+  `kotoshu://packs/{lang}` artifacts (one length-prefixed `KPK1`
+  section stream: dict aff+dic + tier model/vocab + the buckets
+  sibling, per-section sha256 footers) parsed zero-copy with every
+  footer verified before anything constructs, then handed to the
+  ordinary per-artifact loaders, so `pack::load(bytes)` yields the
+  same `{ dictionary, model }` the per-artifact path builds from the
+  same bytes. The wasm surface exposes it as `loadPack(bytes)`; the
+  framing is pinned against the models-repo builder
+  (`scripts/build_packs.py`) by a shared golden sha256, and the
+  `@kotoshu/worker` package gains an opt-in `pack: true` mode that
+  loads a language with one fetch and degrades to the per-resource
+  path on any miss.
 - The ignored integration test (`tests/rerank_integration.rs`) runs
   the real thing: the committed registry fixture (release v1.0.1), a
   real en/mini download (~3 MB) sha-verified through the resource

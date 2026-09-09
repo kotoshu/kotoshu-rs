@@ -10,6 +10,8 @@ pub mod dict;
 pub mod ffi;
 #[cfg(feature = "model")]
 pub mod lid;
+#[cfg(feature = "model")]
+pub mod pack;
 pub mod rerank;
 #[cfg(feature = "resources")]
 pub mod resource;

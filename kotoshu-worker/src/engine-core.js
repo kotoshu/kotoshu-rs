@@ -11,6 +11,13 @@
 //   jsDelivr npm files, not esm.sh — the package is a wasm-bindgen
 //   bundler-target build whose entry imports the .wasm binary
 //   directly; both transforms break on it);
+// - with options.pack (plan 113, opt-in) a load first tries ONE pack
+//   artifact per language (kotoshu://packs/{lang} through the pinned
+//   registry: dict aff+dic + mini model + vocab + buckets, sha256-
+//   verified per section inside loadPack); any miss — no entry, an
+//   engine without loadPack, a failed fetch — degrades to the
+//   per-resource paths below, never an error. The pack model rides
+//   along resident, so semantic-enable then fetches nothing;
 // - dictionaries load from the pinned kotoshu/dictionaries commit,
 //   trying the wired layout ({lang}/spelling/index.*) first and the
 //   flat one ({lang}/index.*) second — both exist at the pin;
@@ -90,8 +97,15 @@ export function createEngine(onMessage, options = {}) {
   // serves the registry JSON with ACAO:* — it is a plain git file, never
   // an LFS pointer — and entry.urls.mirror points at the media host, the
   // only source that serves the tier bytes themselves with ACAO:* to
-  // browsers (release assets and jsDelivr /gh do not).
-  const registryUrl = `https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/${options.registryTag ?? DEFAULT_REGISTRY_TAG}/registry.json`
+  // browsers (release assets and jsDelivr /gh do not). registryUrl
+  // overrides the resolved URL outright (tests and self-hosted embeds).
+  const registryUrl = options.registryUrl ??
+    `https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/${options.registryTag ?? DEFAULT_REGISTRY_TAG}/registry.json`
+  // Language packs (plan 113) are opt-in: one fetch for dict + mini
+  // tier + buckets when the registry carries kotoshu://packs/{lang} and
+  // the engine exposes loadPack. Every miss degrades to the
+  // per-resource path below, never an error.
+  const packMode = options.pack === true
   const cacheName = options.cacheName ?? DEFAULT_CACHE_NAME
 
   function post(type, payload) {
@@ -268,20 +282,76 @@ export function createEngine(onMessage, options = {}) {
     )
   }
 
+  // - language packs (plan 113, optional) -------------------------------
+  // ONE artifact per language: dict aff+dic + mini model + vocab +
+  // buckets as a length-prefixed section stream, sha256-verified per
+  // section by the engine (a corrupt fetch rejects inside loadPack; the
+  // catch in loadLanguage degrades to the per-resource path). The pack
+  // model rides along resident, so a later semantic-enable is free.
+  async function loadLanguageFromPack(lang) {
+    if (!packMode || typeof glue?.loadPack !== 'function') return null
+    const registry = await ensureRegistry()
+    const entry = registry.resources?.[`kotoshu://packs/${lang}`]
+    const mirror = entry?.urls?.mirror
+    if (!mirror) return null
+    const { res, cached } = await cachedFetchProgress(mirror, 'pack', `${lang} pack`)
+    if (!res.ok) return null
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    const t0 = performance.now()
+    const pack = glue.loadPack(bytes) // { dictionary, model }
+    const contents = entry.contents ?? {}
+    dropModel()
+    model = {
+      handle: pack.model,
+      lang,
+      sizeBytes: (contents.model?.length ?? 0) + (contents.vocab?.length ?? 0),
+      bucketsBytes: contents.buckets?.length ?? 0,
+      fromPack: true,
+    }
+    modelCached = cached
+    dictCached = cached
+    return {
+      dictionary: pack.dictionary,
+      sizeBytes: bytes.byteLength,
+      loadMs: performance.now() - t0,
+      packed: true,
+    }
+  }
+
   async function loadLanguage(lang) {
     if (active && activeLang === lang) return active
     await ensureEngine()
 
-    let sources = sourceCache.get(lang)
-    if (!sources) {
-      const [aff, dic] = await Promise.all([fetchDictFile(lang, 'aff'), fetchDictFile(lang, 'dic')])
-      sources = { aff, dic, sizeBytes: aff.length + dic.length }
-      sourceCache.set(lang, sources)
+    let loaded = null
+    try {
+      loaded = await loadLanguageFromPack(lang)
+    } catch {
+      // A pack that rejects (corrupt bytes, engine mismatch) must never
+      // take the language down — the per-resource path is complete.
+      loaded = null
+    }
+    if (!loaded) {
+      let sources = sourceCache.get(lang)
+      if (!sources) {
+        const [aff, dic] = await Promise.all([fetchDictFile(lang, 'aff'), fetchDictFile(lang, 'dic')])
+        sources = { aff, dic, sizeBytes: aff.length + dic.length }
+        sourceCache.set(lang, sources)
+      }
+      const t0 = performance.now()
+      loaded = {
+        dictionary: new glue.KotoshuWasm(sources.aff, sources.dic),
+        sizeBytes: sources.sizeBytes,
+        loadMs: performance.now() - t0,
+        packed: false,
+      }
     }
 
-    const t0 = performance.now()
-    const dictionary = new glue.KotoshuWasm(sources.aff, sources.dic)
-    active = { dictionary, sizeBytes: sources.sizeBytes, loadMs: performance.now() - t0 }
+    active = {
+      dictionary: loaded.dictionary,
+      sizeBytes: loaded.sizeBytes,
+      loadMs: loaded.loadMs,
+      packed: loaded.packed,
+    }
     activeLang = lang
     suggestCache.clear()
     return active
@@ -360,6 +430,13 @@ export function createEngine(onMessage, options = {}) {
 
   async function enableSemantic(lang) {
     if (model && model.lang === lang && semanticState === 'ready') {
+      postSemantic(lang)
+      return
+    }
+    // A pack load (plan 113) already made the tier resident — semantic
+    // opt-in is free, nothing to fetch.
+    if (model && model.lang === lang && model.fromPack) {
+      semanticState = 'ready'
       postSemantic(lang)
       return
     }
@@ -629,6 +706,7 @@ export function createEngine(onMessage, options = {}) {
             engineVersion: glue.KotoshuWasm.VERSION ?? wasmVersion,
             wasmVersion,
             loadMs: Math.round(loaded.loadMs),
+            packed: loaded.packed === true,
           })
         } catch (error) {
           post('load-error', { lang: data.lang, message: error?.message })

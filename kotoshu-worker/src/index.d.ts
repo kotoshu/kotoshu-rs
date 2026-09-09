@@ -54,6 +54,21 @@ export interface EngineOptions {
   dictPin?: string
   /** kotoshu/models-fasttext-onnx registry tag pin. */
   registryTag?: string
+  /**
+   * Override the registry URL outright (a https:/file: URL or path).
+   * Default resolves raw.githubusercontent .../{registryTag}/registry.json;
+   * a file: URL needs options.readFile, like a file: engineSource.
+   */
+  registryUrl?: string
+  /**
+   * Opt into language packs (plan 113): when the pinned registry carries
+   * kotoshu://packs/{lang} and the engine exposes loadPack, a load
+   * fetches ONE artifact instead of aff+dic (and semantic-enable reuses
+   * the pack model instead of fetching the tier trio). Any miss — no
+   * entry, old engine, failed fetch — degrades to the per-resource path,
+   * never an error. Default false.
+   */
+  pack?: boolean
   /** Cache Storage bucket name (browsers only; absent caches degrade to fetch). */
   cacheName?: string
   /** Override both engine URLs — e.g. a local @kotoshu/wasm pkg under Node. */
@@ -79,7 +94,7 @@ export type EngineMessage =
 export type EngineEvent =
   | {
       type: 'load-progress'
-      phase: 'engine' | 'dictionary' | 'semantic' | 'detect'
+      phase: 'engine' | 'pack' | 'dictionary' | 'semantic' | 'detect'
       kind: string
       loaded: number
       total: number
@@ -94,6 +109,8 @@ export type EngineEvent =
       engineVersion: string
       wasmVersion: string
       loadMs: number
+      /** True when the language arrived as one pack artifact (plan 113). */
+      packed: boolean
     }
   | { type: 'load-error'; lang: string | undefined; message: string }
   | { type: 'checked'; words: string[]; ms: number }

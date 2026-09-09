@@ -15,6 +15,7 @@
 // expectations are frozen by the fixture generator's reference cosines.
 
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -258,7 +259,6 @@ try {
 
   // The handle still exposes free() with the bucket table attached.
   assert("modelWithBuckets.free() exists", typeof modelWithBuckets.free === "function");
-  modelWithBuckets.free();
 
   let modelThrew = null;
   try {
@@ -271,6 +271,109 @@ try {
     "the model rejection carries the Rust message",
     typeof modelThrew?.message === "string" && modelThrew.message.length > 0,
   );
+
+  // --- Language pack surface (plan 113) ---------------------------------
+  // One call over one artifact replacing the five per-artifact fetches.
+  // The pack is framed here exactly as scripts/build_packs.py in the
+  // models repo frames it (KPK1: u32 LE length + tag byte + payload +
+  // per-section sha256; the Rust core suite pins the same framing
+  // against the Python builder through a shared golden sha256), from
+  // the same sources the sections above loaded separately — so the
+  // parity assertions below prove the pack handles BEHAVE identically
+  // to the per-artifact handles, not merely exist.
+  const { loadPack } = mod;
+  assert("loadPack is exported", typeof loadPack === "function");
+
+  const frameSection = (tag, payload) => {
+    const framed = Buffer.alloc(5 + payload.length + 32);
+    framed.writeUInt32LE(payload.length, 0);
+    framed[4] = tag;
+    payload.copy(framed, 5);
+    framed.set(createHash("sha256").update(payload).digest(), 5 + payload.length);
+    return framed;
+  };
+  const affBytes = Buffer.from(aff, "utf8");
+  const dicBytes = Buffer.from(dic, "utf8");
+  const countBuf = Buffer.alloc(4);
+  countBuf.writeUInt32LE(5, 0);
+  const packBytes = Buffer.concat([
+    Buffer.from("KPK1"),
+    countBuf,
+    frameSection(1, affBytes),
+    frameSection(2, dicBytes),
+    frameSection(3, Buffer.from(modelBytes)),
+    frameSection(4, Buffer.from(vocabBytes)),
+    frameSection(5, Buffer.from(bucketsBytes)),
+  ]);
+
+  const pack = loadPack(new Uint8Array(packBytes));
+  assert("loadPack returns { dictionary, model }", typeof pack === "object" && pack !== null);
+  assert(
+    "the pack object carries exactly the two handles",
+    Object.keys(pack).sort().join() === "dictionary,model",
+  );
+  assert(
+    "the pack dictionary exposes the KotoshuWasm surface",
+    typeof pack.dictionary.correct === "function" &&
+      typeof pack.dictionary.suggest === "function" &&
+      typeof pack.dictionary.free === "function",
+  );
+  assert(
+    "the pack model exposes the KotoshuModel surface",
+    typeof pack.model.free === "function",
+  );
+
+  // Parity: dictionary identical to the per-artifact constructor over
+  // the same sources.
+  assertEqual("pack dictionary.correct('helo') matches", dictionary.correct("helo"), pack.dictionary.correct("helo"));
+  assertEqual("pack dictionary.correct('ruby') matches", dictionary.correct("ruby"), pack.dictionary.correct("ruby"));
+  const packedRows = pack.dictionary.suggest("hlelo", 5);
+  assertEqual(
+    "pack dictionary.suggest('hlelo') rows are identical",
+    JSON.stringify(rows),
+    JSON.stringify(packedRows),
+  );
+
+  // Parity: model identical to the per-artifact loadModel (buckets
+  // attached) over the same bytes — the bucket-backed OOV gate included.
+  const packedTeh = semanticSuggest(pack.model, "teh", 4);
+  assertEqual("pack model semanticSuggest('teh')[0].word", "the", packedTeh[0]?.word);
+  near(0.3587, packedTeh[0]?.score);
+  assert(
+    "pack model rerank('cat', 'dog') matches the per-artifact handle",
+    rerank(modelWithBuckets, "cat", "dog") === rerank(pack.model, "cat", "dog"),
+  );
+  assert(
+    "pack model rerank('puppy', machine context) matches the per-artifact handle",
+    rerank(modelWithBuckets, "puppy", "the computer and the keyboard") ===
+      rerank(pack.model, "puppy", "the computer and the keyboard"),
+  );
+
+  pack.dictionary.free();
+  pack.model.free();
+  modelWithBuckets.free();
+
+  let packThrew = null;
+  try {
+    const corrupt = new Uint8Array(packBytes);
+    corrupt[corrupt.length - 40] ^= 0xFF; // inside the buckets payload
+    loadPack(corrupt);
+  } catch (error) {
+    packThrew = error;
+  }
+  assert("loadPack rejects a tampered section (sha256 footer)", packThrew instanceof Error);
+  assert(
+    "the pack rejection names the section",
+    /pack|section|sha256/i.test(String(packThrew?.message)),
+  );
+
+  let magicThrew = null;
+  try {
+    loadPack(new Uint8Array(1024).fill(0x42));
+  } catch (error) {
+    magicThrew = error;
+  }
+  assert("loadPack rejects non-pack bytes", magicThrew instanceof Error);
 
   // --- Language detection (plan 102) ----------------------------------
   // The fixture is the real registry lid.176 artifact pair (the same
