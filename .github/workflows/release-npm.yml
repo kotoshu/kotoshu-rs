@@ -41,6 +41,8 @@ jobs:
         run: |
           ./scripts/wasm_build.sh
           node scripts/wasm_node_smoke.mjs
+      - name: Use the newest npm (trusted-publishing policy changes)
+        run: npm install -g npm@latest
       - name: Publish with provenance
         run: npm publish --access public --provenance
         working-directory: kotoshu-wasm/pkg
