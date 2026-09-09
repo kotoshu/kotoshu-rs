@@ -1,0 +1,50 @@
+# Latency gate (plan 112): the multi-language sweep bench over the built
+# wasm, with budgets that fail red. The bench sweeps a committed typo
+# wordlist per language through the real dictionary of each (pinned
+# dictionary CDN, both layouts), reports avg/p50/p95/worst, and gates the
+# average: en < 120 ms, pt < 700 ms (the heaviest dictionary at the pin).
+# Budgets are tuned to measured p50s with headroom for CI-runner variance
+# — the measurements live in scripts/wasm_sweep_bench.mjs next to the
+# budget table. The other six languages run ungated for the record.
+name: Latency gate
+on:
+  push:
+    branches: [main]
+    paths:
+    - "**.rs"
+    - "Cargo.toml"
+    - "Cargo.lock"
+    - "kotoshu-wasm/**"
+    - "scripts/wasm_build.sh"
+    - "scripts/wasm_sweep_bench.mjs"
+    - ".github/workflows/latency.yml"
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+jobs:
+  bench:
+    name: Sweep bench (en < 120 ms, pt < 700 ms avg)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: true
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "24"
+    - name: Install wasm-pack (official npm distribution)
+      run: npm install -g wasm-pack
+    - name: Build the @kotoshu/wasm package payload (wasm-pack, bundler)
+      run: scripts/wasm_build.sh
+    - name: Multi-language sweep bench with latency budgets
+      run: node scripts/wasm_sweep_bench.mjs
