@@ -1,0 +1,42 @@
+name: Release npm (@kotoshu/worker)
+
+# Trusted publishing: keyless OIDC. Requires the owner-side registration
+# on npmjs.com — package @kotoshu/worker -> Settings: Trusted Publishing:
+#   Repository: kotoshu/kotoshu-rs | Workflow: release-npm-worker.yml (no environment)
+# Until that registration exists AND the owner states the first version,
+# nothing here publishes (see kotoshu-worker/RELEASING.md).
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["@kotoshu/worker-v*"]
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token that replaces the npm token
+
+concurrency:
+  group: release-npm-worker
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: jetli/wasm-pack-action@v0.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24' # npm >= 11.5: OIDC trusted publishing support
+      - name: Build the engine package payload
+        run: ./scripts/wasm_build.sh
+      - name: Assemble the worker package payload
+        run: ./scripts/worker_build.sh
+      - name: Node smoke against both built packages
+        run: node scripts/worker_node_smoke.mjs
+      - name: Publish with provenance
+        run: npm publish --access public --provenance
+        working-directory: kotoshu-worker/pkg
