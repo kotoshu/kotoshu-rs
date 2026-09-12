@@ -430,7 +430,6 @@ impl RowStore {
                 .map(<[f32]>::to_vec),
         }
     }
-
 }
 
 /// The tensors + metadata of a parsed tier file, with payloads copied
