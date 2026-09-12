@@ -84,7 +84,7 @@ impl std::error::Error for Int8ModelError {}
 /// vocabulary — everything the dequantizing graph would need, with the
 /// session omitted. An optional [`BucketTable`] sibling (plan 103)
 /// extends the OOV fallback with fastText's hashed n-gram rows.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Int8Model {
     /// Row storage — the int8-per-row tiers or the fp32 full tier
     /// (one accessor serves every read; see [`RowStore`]).
@@ -409,7 +409,7 @@ impl Int8Model {
 /// (`Constant word_embeddings`, no `quantization` metadata — the
 /// rescore of the hybrid typo layer must be fp32-exact, plan 131).
 /// One accessor, [`RowStore::row`], serves every read.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum RowStore {
     Int8 { q: Vec<i8>, scales: Vec<f32> },
     Fp32(Vec<f32>),

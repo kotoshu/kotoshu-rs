@@ -70,6 +70,7 @@ impl fmt::Display for TypoModelError {
 impl std::error::Error for TypoModelError {}
 
 /// The frozen bi-encoder, weights loaded and ready.
+#[derive(Clone)]
 pub struct TypoModel {
     char_to_id: HashMap<char, u32>,
     /// unk id = vocab_len + 1 (pad occupies 0; chars 1..=vocab_len).
@@ -86,6 +87,7 @@ pub struct TypoModel {
     proj_bias: Vec<f32>,
 }
 
+#[derive(Clone)]
 struct GruDir {
     /// z/r/n gate rows stacked: [3H, I].
     w: Vec<f32>,

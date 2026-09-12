@@ -17,5 +17,5 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-kotoshu = { path = "../../kotoshu", features = ["ruby"] }
+kotoshu = { path = "../../kotoshu", features = ["ruby", "model"] }
 magnus = "0.8"

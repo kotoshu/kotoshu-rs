@@ -104,6 +104,41 @@ rescue Kotoshu::Native::Error => e
          e.message.include?("/nonexistent-kotoshu.aff") && e.message.include?("failed to load"))
 end
 
+# --- plan 131: the typo-retrieval surface --------------------------------
+# Real frozen bi-encoder + the committed mini tier fixture; skips
+# with a PASS-marked note when the typo fixtures were not synced.
+MODELS_DIR = File.join(FIXTURES_DIR, "models")
+TYPO_ONNX = File.join(MODELS_DIR, "typo.biencoder.onnx")
+TYPO_VOCAB = File.join(MODELS_DIR, "typo.biencoder.vocab.json")
+TIER_ONNX = File.expand_path(
+  "../kotoshu/tests/fixtures/models/en-mini-truncated.onnx", __dir__
+)
+TIER_VOCAB = File.expand_path(
+  "../kotoshu/tests/fixtures/models/en-mini-truncated.vocab.json", __dir__
+)
+
+if File.exist?(TYPO_ONNX) && File.exist?(TYPO_VOCAB) && defined?(Kotoshu::Native::TypoModel)
+  typo = Kotoshu::Native::TypoModel.load(TYPO_ONNX, TYPO_VOCAB)
+  tier = Kotoshu::Native::TypoTier.load(TIER_ONNX, TIER_VOCAB)
+  engine = Kotoshu::Native::TypoEngine.new(typo, tier)
+
+  assert("typo engine class", engine.is_a?(Kotoshu::Native::TypoEngine))
+
+  rows = engine.typo_suggest("love")
+  assert("typo suggest returns rows", rows.is_a?(Array) && !rows.empty?)
+  assert("typo rows carry word and score",
+         rows.first.is_a?(Hash) && %w[word score].all? { |k| rows.first.key?(k) })
+  assert("typo self is excluded", rows.none? { |row| row["word"] == "love" })
+  scores = rows.map { |row| row["score"] }
+  assert("typo rows are score-sorted", scores == scores.sort.reverse)
+  assert("typo out-of-vocab returns empty", engine.typo_suggest("qwertyuiopzz") == [])
+  again = engine.typo_suggest("love")
+  assert("typo suggest is deterministic", again.map { |r| r["word"] } == rows.map { |r| r["word"] })
+else
+  puts "SKIP typo surface (fixtures or feature absent)"
+end
+
+
 puts "ruby ffi smoke: #{$assertions} assertions, #{$failures} failures" \
      " (kotoshu-rs #{Kotoshu::Native::VERSION}, ruby #{RUBY_VERSION})"
 exit($failures.zero? ? 0 : 1)
