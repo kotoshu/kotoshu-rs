@@ -4,7 +4,7 @@ name = "kotoshu-python"
 # tracks THIS crate, not the core. 0.1.0 is a PLACEHOLDER — the first
 # release and its version are owner decisions (plan 67 M5); publishing is
 # blocked on PyPI credentials (see RELEASING.md).
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
