@@ -3,7 +3,7 @@
 //! the models repo (plan 114, priced plan 115, verdict plan 128). The
 //! graph is not interpreted generatively — the artifact is ours, its
 //! architecture frozen and sha-pinned in the registry, so this reader
-//! walks the ONNX wire format (the shared [`onnx_wire`] walker),
+//! walks the ONNX wire format (the shared wire walker in `rerank`),
 //! validates the graph against that frozen shape, and runs the forward
 //! pass by hand. That keeps inference dependency-free and wasm-clean
 //! (the `ort` provider needs a host `libonnxruntime`, which no browser
