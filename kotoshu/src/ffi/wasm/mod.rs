@@ -271,6 +271,60 @@ pub fn semantic_suggest(model: &KotoshuModel, word: &str, k: Option<usize>) -> A
         .collect()
 }
 
+/// One loaded typo bi-encoder (plan 131): the frozen char-BiGRU
+/// artifact plus its char-vocab sibling, scored in pure Rust (no ort,
+/// no filesystem — the host fetches the pair, ≈ 0.5 MB together).
+/// Handle-shaped like [`KotoshuModel`].
+#[wasm_bindgen]
+pub struct KotoshuTypo {
+    engine: crate::typo::TypoEngine,
+}
+
+/// Load the typo bi-encoder from the byte CONTENTS of its `.onnx`
+/// artifact and `.vocab.json` sibling. Failures reject with the Rust
+/// error message.
+#[wasm_bindgen(js_name = "loadTypo")]
+pub fn load_typo(model_bytes: &[u8], char_vocab_bytes: &[u8]) -> Result<KotoshuTypo, JsError> {
+    console_error_panic_hook::set_once();
+    let model = crate::typo::TypoModel::parse(model_bytes, char_vocab_bytes)
+        .map_err(|error| JsError::new(&error.to_string()))?;
+    Ok(KotoshuTypo {
+        engine: crate::typo::TypoEngine::new(model),
+    })
+}
+
+/// The hybrid suggestion slate for `word` (plan 131): the bi-encoder
+/// retrieves the top-20 vocabulary candidates, the fastText tier
+/// rescores them by cosine to the typo, and the top `k` return as
+/// `{ word, score }` rows, score-descending, the typo itself excluded.
+/// `k` defaults to 5. The FIRST call against a given tier builds the
+/// derived vocabulary matrix (~5 s per 100k words on desktop; one-time,
+/// cached on the handle) — subsequent calls are single-milliseconds.
+/// Returns an empty array when the typo is outside the tier's
+/// vocabulary (the hybrid's in-vocab rule).
+#[wasm_bindgen(js_name = "typoSuggest")]
+pub fn typo_suggest(
+    typo: &KotoshuTypo,
+    model: &KotoshuModel,
+    word: &str,
+    k: Option<usize>,
+) -> Array {
+    let k = k.unwrap_or(DEFAULT_SUGGEST_LIMIT);
+    typo.engine
+        .suggest(&model.model, word, k)
+        .map(|rows| {
+            rows.into_iter()
+                .map(|(word, score)| {
+                    suggestion_row(&[
+                        ("word", JsValue::from(word)),
+                        ("score", JsValue::from(score)),
+                    ])
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Load a whole language in one call from the byte CONTENTS of a
 /// `kotoshu://packs/{lang}` pack artifact (plan 113): the
 /// length-prefixed section stream the models registry serves as ONE
@@ -311,6 +365,16 @@ pub fn load_pack(bytes: &[u8]) -> Result<JsValue, JsError> {
         }),
     )
     .expect("Reflect::set on a fresh object");
+    if let Some(model) = loaded.typo {
+        Reflect::set(
+            &out,
+            &JsValue::from("typo"),
+            &JsValue::from(KotoshuTypo {
+                engine: crate::typo::TypoEngine::new(model),
+            }),
+        )
+        .expect("Reflect::set on a fresh object");
+    }
     Ok(out.into())
 }
 

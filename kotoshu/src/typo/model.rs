@@ -138,7 +138,7 @@ impl TypoModel {
             name: &str,
             want: &[i64],
         ) -> Result<(), TypoModelError> {
-            let got = tensor(&wire, name)?.dims.clone();
+            let got = tensor(wire, name)?.dims.clone();
             if got != want {
                 return Err(TypoModelError::Graph(format!(
                     "{name} dims {got:?} != {want:?}"
@@ -147,7 +147,7 @@ impl TypoModel {
             Ok(())
         }
         fn floats(wire: &onnx_wire::WireModel<'_>, name: &str) -> Result<Vec<f32>, TypoModelError> {
-            let t = tensor(&wire, name)?;
+            let t = tensor(wire, name)?;
             let n = t
                 .dims
                 .iter()
@@ -156,13 +156,13 @@ impl TypoModel {
             onnx_wire::float_payload(t, n).map_err(TypoModelError::Graph)
         }
         fn scalar_f32(wire: &onnx_wire::WireModel<'_>, name: &str) -> Result<f32, TypoModelError> {
-            floats(&wire, name)?
+            floats(wire, name)?
                 .first()
                 .copied()
                 .ok_or_else(|| TypoModelError::Graph(format!("{name} is empty")))
         }
         fn byte_scalar(wire: &onnx_wire::WireModel<'_>, name: &str) -> Result<u8, TypoModelError> {
-            let t = tensor(&wire, name)?;
+            let t = tensor(wire, name)?;
             if !t.raw_data.is_empty() {
                 return Ok(t.raw_data[0]);
             }
@@ -331,6 +331,8 @@ impl TypoModel {
         let (q, a_scale, a_zp) = dynamic_quantize_linear(&pooled);
         let total_scale = a_scale * self.proj_scale;
         let mut out = [0f32; OUT_DIM];
+        // indexes out, q, and the row-major int8 weights together
+        #[allow(clippy::needless_range_loop)]
         for j in 0..OUT_DIM {
             let mut acc: i32 = 0;
             for i in 0..PROJ_IN {
@@ -371,6 +373,8 @@ impl GruDir {
                 }
                 gates_w[g] = s;
                 let mut s = rb[g];
+                // indexes the gate slices and h together
+                #[allow(clippy::needless_range_loop)]
                 for k in 0..GRU_DIM {
                     s += self.r[g * GRU_DIM + k] * h[k];
                 }

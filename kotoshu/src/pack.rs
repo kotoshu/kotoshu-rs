@@ -51,6 +51,7 @@ use sha2::{Digest, Sha256};
 
 use crate::dict::Dictionary;
 use crate::rerank::int8_model::Int8Model;
+use crate::typo::model::TypoModel;
 
 /// The pack magic — `KPK1`, the framing version (`KPK2` would be a new
 /// format, cut as new artifacts, never parsed leniently).
@@ -73,6 +74,11 @@ pub enum SectionTag {
     Vocab = 4,
     /// The bucket-table sibling (plan 103; optional).
     Buckets = 5,
+    /// The typo bi-encoder `.onnx` artifact (plan 131; optional, and
+    /// only meaningful beside [`SectionTag::TypoVocab`]).
+    TypoModel = 6,
+    /// The typo bi-encoder char-vocab sibling (plan 131; optional).
+    TypoVocab = 7,
 }
 
 impl SectionTag {
@@ -83,6 +89,8 @@ impl SectionTag {
             3 => Some(Self::Model),
             4 => Some(Self::Vocab),
             5 => Some(Self::Buckets),
+            6 => Some(Self::TypoModel),
+            7 => Some(Self::TypoVocab),
             _ => None,
         }
     }
@@ -95,6 +103,8 @@ impl SectionTag {
             Self::Model => "model",
             Self::Vocab => "vocab",
             Self::Buckets => "buckets",
+            Self::TypoModel => "typo-model",
+            Self::TypoVocab => "typo-vocab",
         }
     }
 }
@@ -151,17 +161,40 @@ pub struct Sections<'a> {
     pub vocab: &'a [u8],
     /// The bucket-table artifact bytes, when the pack carries one.
     pub buckets: Option<&'a [u8]>,
+    /// The typo bi-encoder artifact bytes, when the pack carries the
+    /// plan-131 pair.
+    pub typo_model: Option<&'a [u8]>,
+    /// The typo bi-encoder char-vocab bytes, when the pack carries the
+    /// plan-131 pair.
+    pub typo_vocab: Option<&'a [u8]>,
 }
 
 /// One fully loaded language pack: the dictionary and the embedding
 /// model a per-artifact load would produce, from one byte stream.
-#[derive(Debug)]
 pub struct LoadedPack {
     /// The dictionary built from the aff/dic sections.
     pub dictionary: Dictionary,
     /// The tier model built from the model/vocab sections, with the
     /// bucket table attached when present.
     pub model: Int8Model,
+    /// The typo bi-encoder built from the typo-model/typo-vocab
+    /// sections, when the pack carries the plan-131 pair. The derived
+    /// per-language index is NOT part of the pack (it derives from the
+    /// tier vocabulary at load, by design).
+    pub typo: Option<TypoModel>,
+}
+
+/// Hand-written: the handles carry multi-megabyte tables whose
+/// `Debug` would be noise; tests need the type name and whether the
+/// typo half is present.
+impl std::fmt::Debug for LoadedPack {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LoadedPack")
+            .field("dictionary", &"..")
+            .field("model", &"..")
+            .field("typo", &self.typo.as_ref().map(|_| ".."))
+            .finish()
+    }
 }
 
 /// Walk the framing and verify every section footer.
@@ -191,8 +224,10 @@ pub fn parse(bytes: &[u8]) -> Result<Sections<'_>, PackError> {
     let mut model: Option<&[u8]> = None;
     let mut vocab: Option<&[u8]> = None;
     let mut buckets: Option<&[u8]> = None;
+    let mut typo_model: Option<&[u8]> = None;
+    let mut typo_vocab: Option<&[u8]> = None;
     let mut pos = HEADER_LEN;
-    let mut expected = Some(SectionTag::Aff);
+    let mut expected: &[SectionTag] = &[SectionTag::Aff];
 
     for index in 0..count {
         if pos + 5 > bytes.len() {
@@ -211,17 +246,25 @@ pub fn parse(bytes: &[u8]) -> Result<Sections<'_>, PackError> {
             ))
         })?;
         // The order is part of the format: the builder writes aff, dic,
-        // model, vocab, buckets. Accepting any order would make the
-        // offsets the registry declares ambiguous.
-        match (&expected, tag) {
-            (Some(want), got) if *want == got => {}
-            _ => {
-                return Err(PackError::Format(format!(
-                    "section #{index} is {} but the format order expects {}",
-                    tag.name(),
-                    expected.map(SectionTag::name).unwrap_or("<end>")
-                )));
-            }
+        // model, vocab, then the optional buckets and typo pair.
+        // Accepting any order would make the offsets the registry
+        // declares ambiguous. Optionals may be skipped, so the
+        // expectation is the set of tags that may legally follow.
+        if !expected.contains(&tag) {
+            let wants = if expected.is_empty() {
+                "<end>".to_owned()
+            } else {
+                expected
+                    .iter()
+                    .map(|tag| tag.name())
+                    .collect::<Vec<_>>()
+                    .join(" or ")
+            };
+            return Err(PackError::Format(format!(
+                "section #{index} is {} but the format order expects {}",
+                tag.name(),
+                wants
+            )));
         }
         pos += 5;
         let payload_end = pos
@@ -240,21 +283,26 @@ pub fn parse(bytes: &[u8]) -> Result<Sections<'_>, PackError> {
                 section: tag.name(),
             });
         }
-        let slot = match tag {
-            SectionTag::Aff => &mut aff,
-            SectionTag::Dic => &mut dic,
-            SectionTag::Model => &mut model,
-            SectionTag::Vocab => &mut vocab,
-            SectionTag::Buckets => &mut buckets,
-        };
-        *slot = Some(payload);
+        match tag {
+            SectionTag::Aff => aff = Some(payload),
+            SectionTag::Dic => dic = Some(payload),
+            SectionTag::Model => model = Some(payload),
+            SectionTag::Vocab => vocab = Some(payload),
+            SectionTag::Buckets => buckets = Some(payload),
+            SectionTag::TypoModel => typo_model = Some(payload),
+            SectionTag::TypoVocab => typo_vocab = Some(payload),
+        }
         pos = payload_end + 32;
         expected = match tag {
-            SectionTag::Aff => Some(SectionTag::Dic),
-            SectionTag::Dic => Some(SectionTag::Model),
-            SectionTag::Model => Some(SectionTag::Vocab),
-            SectionTag::Vocab => Some(SectionTag::Buckets),
-            SectionTag::Buckets => None,
+            SectionTag::Aff => &[SectionTag::Dic],
+            SectionTag::Dic => &[SectionTag::Model],
+            SectionTag::Model => &[SectionTag::Vocab],
+            // buckets and the typo pair are independently optional:
+            // after vocab comes either, or the end
+            SectionTag::Vocab => &[SectionTag::Buckets, SectionTag::TypoModel],
+            SectionTag::Buckets => &[SectionTag::TypoModel],
+            SectionTag::TypoModel => &[SectionTag::TypoVocab],
+            SectionTag::TypoVocab => &[],
         };
     }
     if pos != bytes.len() {
@@ -273,6 +321,8 @@ pub fn parse(bytes: &[u8]) -> Result<Sections<'_>, PackError> {
         model,
         vocab,
         buckets,
+        typo_model,
+        typo_vocab,
     })
 }
 
@@ -289,7 +339,106 @@ pub fn load(bytes: &[u8]) -> Result<LoadedPack, PackError> {
     if let Some(buckets) = sections.buckets {
         model.attach_buckets(buckets).map_err(PackError::Model)?;
     }
-    Ok(LoadedPack { dictionary, model })
+    let typo = match (sections.typo_model, sections.typo_vocab) {
+        (Some(onnx), Some(vocab)) => Some(
+            TypoModel::parse(onnx, vocab)
+                .map_err(|error| PackError::Format(format!("typo bi-encoder section: {error}")))?,
+        ),
+        (None, None) => None,
+        (found, missing) => {
+            let found = if found.is_some() {
+                "typo-model"
+            } else {
+                "typo-vocab"
+            };
+            let missing = if missing.is_some() {
+                "typo-model"
+            } else {
+                "typo-vocab"
+            };
+            return Err(PackError::Format(format!(
+                "pack carries {found} without {missing} — the typo pair travels together"
+            )));
+        }
+    };
+    Ok(LoadedPack {
+        dictionary,
+        model,
+        typo,
+    })
+}
+
+#[cfg(test)]
+mod typo_section_tests {
+    use super::*;
+
+    fn synced_typo() -> Option<(Vec<u8>, Vec<u8>)> {
+        let base = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/models");
+        let onnx = std::fs::read(format!("{base}/typo.biencoder.onnx")).ok()?;
+        let vocab = std::fs::read(format!("{base}/typo.biencoder.vocab.json")).ok()?;
+        Some((onnx, vocab))
+    }
+
+    fn sections_pack(typo: Option<(&[u8], &[u8])>) -> Vec<u8> {
+        // the test builder below (build) writes the five frozen tags;
+        // this local builder appends the optional pair the same way
+        use sha2::Digest;
+        let aff: &[u8] = b"SET UTF-8\nTRY esianrtolcdugmphbyfvkwz\n";
+        let dic: &[u8] = b"3\nhello\nworld\nkotoshu\n";
+        let model: &[u8] = include_bytes!("../tests/fixtures/models/en-mini-truncated.onnx");
+        let vocab: &[u8] = include_bytes!("../tests/fixtures/models/en-mini-truncated.vocab.json");
+        let mut parts: Vec<(u8, &[u8])> = vec![
+            (SectionTag::Aff as u8, aff),
+            (SectionTag::Dic as u8, dic),
+            (SectionTag::Model as u8, model),
+            (SectionTag::Vocab as u8, vocab),
+        ];
+        if let Some((onnx, chars)) = typo {
+            parts.push((SectionTag::TypoModel as u8, onnx));
+            parts.push((SectionTag::TypoVocab as u8, chars));
+        }
+        let mut out = Vec::new();
+        out.extend_from_slice(&MAGIC);
+        out.extend_from_slice(&(parts.len() as u32).to_le_bytes());
+        for (tag, payload) in parts {
+            out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+            out.push(tag);
+            out.extend_from_slice(payload);
+            out.extend_from_slice(&Sha256::digest(payload));
+        }
+        out
+    }
+
+    #[test]
+    fn typo_sections_load_and_half_pairs_error() {
+        let Some((onnx, chars)) = synced_typo() else {
+            eprintln!("typo fixtures absent (skipped)");
+            return;
+        };
+        // full pair loads with the encoder present
+        let loaded = load(&sections_pack(Some((&onnx, &chars)))).expect("load with typo");
+        assert!(loaded.typo.is_some());
+        let model = loaded.typo.unwrap();
+        let embed = model.embed("hello").expect("embed through the pack");
+        assert!((embed.iter().map(|v| v * v).sum::<f32>().sqrt() - 1.0).abs() < 1e-5);
+
+        // packs without the pair are unchanged (None, no error)
+        let plain = load(&sections_pack(None)).expect("load without typo");
+        assert!(plain.typo.is_none());
+
+        // a half pair rejects: the pair travels together
+        let mut half = sections_pack(None);
+        // append only typo-model (tag 6) after the frozen five
+        use sha2::Digest as _;
+        let count = u32::from_le_bytes([half[4], half[5], half[6], half[7]]) as usize + 1;
+        half[4..8].copy_from_slice(&(count as u32).to_le_bytes());
+        half.extend_from_slice(&(onnx.len() as u32).to_le_bytes());
+        half.push(SectionTag::TypoModel as u8);
+        half.extend_from_slice(&onnx);
+        half.extend_from_slice(&Sha256::digest(&onnx));
+        let error = load(&half).unwrap_err();
+        assert!(error.to_string().contains("travels together"), "{error}");
+    }
 }
 
 #[cfg(test)]

@@ -39,7 +39,7 @@ impl TypoEngine {
 
     /// The derived index, building it over the fastText vocabulary on
     /// first use.
-    pub fn index(&self, ft: &Int8Model) -> &TypoIndex {
+    pub fn derived_index(&self, ft: &Int8Model) -> &TypoIndex {
         self.index
             .get_or_init(|| TypoIndex::build(&self.model, ft.vocab()))
     }
@@ -52,7 +52,7 @@ impl TypoEngine {
         let typo_ft = ft.embedding(word)?;
         let typo_row = usize::try_from(ft.word_index(word)?).ok()?;
         let query = self.model.embed(word).ok()?;
-        let index = self.index(ft);
+        let index = self.derived_index(ft);
         let slate = index.top_k(&query, SLATE.max(k), Some(typo_row));
 
         let mut rescored: Vec<(String, f64)> = slate
