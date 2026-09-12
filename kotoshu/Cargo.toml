@@ -89,6 +89,12 @@ name = "typo_parity"
 path = "../tests/typo_parity.rs"
 required-features = ["model"]
 
+# Plan 131's productization gate (frozen C-benchmark replay through
+# the shipped engine path); needs the model feature.
+[[example]]
+name = "typo_gate"
+required-features = ["model"]
+
 # Conformance-vector runner lives at the workspace root (plan 66 layout).
 [[test]]
 name = "conformance"
