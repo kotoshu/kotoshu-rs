@@ -36,7 +36,10 @@ jobs:
         with:
           node-version: '24' # npm >= 11.5: OIDC trusted publishing support
       - name: Sync conformance fixtures (engine self-test before shipping)
-        run: ./scripts/sync_conformance.sh
+        run: |
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu" || true
+          git clone --depth 1 https://github.com/kotoshu/models-fasttext-onnx "$RUNNER_TEMP/models" || true
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" KOTOSHU_MODELS_DIR="$RUNNER_TEMP/models" ./scripts/sync_conformance.sh
       - name: Node smoke against the built package
         run: |
           ./scripts/wasm_build.sh

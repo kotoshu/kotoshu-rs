@@ -14,10 +14,12 @@
 //!   fastText vocabulary through the model, int8-quantized per row)
 //!   and the top-k retrieval over it.
 
-#[cfg(feature = "model")]
 pub mod index;
 #[cfg(feature = "model")]
 pub mod model;
+#[cfg(feature = "model")]
+pub mod suggest;
 
 pub use index::{TypoIndex, TypoSuggestion};
 pub use model::{CHAR_DIM, GRU_DIM, MAX_WORD_LEN, OUT_DIM, TypoModel, TypoModelError};
+pub use suggest::{SLATE, TypoEngine};

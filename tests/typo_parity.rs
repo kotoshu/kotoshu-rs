@@ -156,3 +156,44 @@ fn index_retrieval_matches_brute_force_and_excludes_self() {
         assert_eq!(exp.0, got.index, "rank {rank} index");
     }
 }
+
+// The compose (slate + rescore) rides the committed en-mini-truncated
+// tier fixture as the fastText side, so only the bi-encoder syncs.
+const MINI_ONNX: &[u8] = include_bytes!("../kotoshu/tests/fixtures/models/en-mini-truncated.onnx");
+const MINI_VOCAB: &[u8] =
+    include_bytes!("../kotoshu/tests/fixtures/models/en-mini-truncated.vocab.json");
+
+#[test]
+fn hybrid_slate_is_rescored_sorted_and_in_vocab_only() {
+    let Some((onnx, char_vocab, _)) = artifacts() else {
+        eprintln!("typo fixtures absent (skipped)");
+        return;
+    };
+    let model = kotoshu::typo::TypoModel::parse(&onnx, &char_vocab).expect("parse");
+    let mut ft = kotoshu::rerank::int8_model::Int8Model::parse(MINI_ONNX, MINI_VOCAB)
+        .expect("parse mini tier");
+    ft.attach_buckets(include_bytes!(
+        "../kotoshu/tests/fixtures/models/en-buckets-truncated.onnx"
+    ))
+    .ok();
+    let engine = kotoshu::typo::TypoEngine::new(model);
+
+    // an in-vocab query yields a rescored, sorted, self-free slate
+    let out = engine.suggest(&ft, "love", 5).expect("in-vocab suggest");
+    assert_eq!(out.len(), 5);
+    assert!(out.iter().all(|(w, _)| w != "love"), "self excluded");
+    for pair in out.windows(2) {
+        assert!(
+            pair[0].1 >= pair[1].1,
+            "sorted: {:?} {:?}",
+            pair[0],
+            pair[1]
+        );
+    }
+    // determinism: same query, same answer
+    let again = engine.suggest(&ft, "love", 5).expect("again");
+    assert_eq!(out, again);
+
+    // out-of-vocab query is honestly None (the hybrid's in-vocab rule)
+    assert!(engine.suggest(&ft, "qwertyuiopzz", 5).is_none());
+}
