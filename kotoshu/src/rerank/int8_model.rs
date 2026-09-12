@@ -86,10 +86,9 @@ impl std::error::Error for Int8ModelError {}
 /// extends the OOV fallback with fastText's hashed n-gram rows.
 #[derive(Debug)]
 pub struct Int8Model {
-    /// Quantized rows, row-major `[V, d]`.
-    q: Vec<i8>,
-    /// Per-row dequantization scale `[V]` (the graph's `row_scale`).
-    scales: Vec<f32>,
+    /// Row storage — the int8-per-row tiers or the fp32 full tier
+    /// (one accessor serves every read; see [`RowStore`]).
+    store: RowStore,
     /// Word → row index (validated `< V` at load; a bad row would read
     /// out of bounds at score time, so it is a load error, not a score
     /// error).
@@ -165,8 +164,7 @@ impl Int8Model {
         };
 
         Ok(Self {
-            q: onnx.q,
-            scales: onnx.scales,
+            store: onnx.store,
             vocab: raw,
             words,
             dims,
@@ -222,14 +220,7 @@ impl Int8Model {
     /// The embedding row at `index` (a dequantized copy), without a
     /// word lookup.
     pub fn vocab_embedding(&self, index: usize) -> Option<Vec<f32>> {
-        let rows = self.q.len() / self.dims;
-        if index >= rows {
-            return None;
-        }
-        Some(dequant_row_int8(
-            &self.q[index * self.dims..(index + 1) * self.dims],
-            self.scales[index],
-        ))
+        self.store.row(index, self.dims)
     }
 
     pub fn word_index(&self, word: &str) -> Option<u32> {
@@ -240,10 +231,7 @@ impl Int8Model {
     /// or `None` when the word is out of vocabulary.
     pub fn embedding(&self, word: &str) -> Option<Vec<f32>> {
         let row = usize::try_from(self.word_index(word)?).ok()?;
-        let start = row.checked_mul(self.dims)?;
-        let end = start.checked_add(self.dims)?;
-        let scale = *self.scales.get(row)?;
-        Some(dequant_row_int8(self.q.get(start..end)?, scale))
+        self.store.row(row, self.dims)
     }
 
     /// Mean cosine of `word` against the in-vocabulary tokens of
@@ -314,8 +302,10 @@ impl Int8Model {
             // Row bounds were validated at load (a bad row is a parse
             // error, not a score-time concern).
             let row = usize::try_from(index).expect("vocab row fits usize");
-            let start = row * self.dims;
-            let vector = dequant_row_int8(&self.q[start..start + self.dims], self.scales[row]);
+            let vector = self
+                .store
+                .row(row, self.dims)
+                .expect("row bounds validated at load");
             scored.push((cosine(&query, &vector), candidate.clone()));
         }
         scored.sort_by(|a, b| {
@@ -414,11 +404,39 @@ impl Int8Model {
     }
 }
 
-/// The two tensors + metadata of a parsed tier file, with payloads
-/// copied into owned storage.
+/// The row storage of a parsed tier: the quantized tiers carry int8
+/// rows plus per-row scales; the full tier is a straight fp32 table
+/// (`Constant word_embeddings`, no `quantization` metadata — the
+/// rescore of the hybrid typo layer must be fp32-exact, plan 131).
+/// One accessor, [`RowStore::row`], serves every read.
+#[derive(Debug)]
+enum RowStore {
+    Int8 { q: Vec<i8>, scales: Vec<f32> },
+    Fp32(Vec<f32>),
+}
+
+impl RowStore {
+    fn row(&self, index: usize, dims: usize) -> Option<Vec<f32>> {
+        match self {
+            Self::Int8 { q, scales } => {
+                let scale = *scales.get(index)?;
+                Some(dequant_row_int8(
+                    q.get(index * dims..(index + 1) * dims)?,
+                    scale,
+                ))
+            }
+            Self::Fp32(rows) => rows
+                .get(index * dims..(index + 1) * dims)
+                .map(<[f32]>::to_vec),
+        }
+    }
+
+}
+
+/// The tensors + metadata of a parsed tier file, with payloads copied
+/// into owned storage.
 struct ParsedOnnx {
-    q: Vec<i8>,
-    scales: Vec<f32>,
+    store: RowStore,
     rows: usize,
     dims: usize,
 }
@@ -438,25 +456,52 @@ fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
         )));
     }
     let quantization = metadata.get("quantization").map(String::as_str);
-    match RowFormat::from_metadata(quantization) {
-        Some(RowFormat::Int8PerRow) => {}
-        Some(_) => {
-            return Err(Int8ModelError::UnsupportedQuantization(
-                quantization.unwrap_or_default().to_owned(),
-            ));
-        }
-        None => {
-            return Err(Int8ModelError::UnsupportedQuantization(
-                quantization.unwrap_or_default().to_owned(),
-            ));
-        }
-    }
     let dims = metadata
         .get("embedding_dimension")
         .and_then(|value| value.parse::<usize>().ok())
         .ok_or_else(|| {
             Int8ModelError::Metadata("embedding_dimension missing or malformed".to_owned())
         })?;
+
+    // The full tier: a plain fp32 embedding table, no quantization
+    // metadata (the ort provider's documented first shape). Accepted
+    // here so the hybrid's full-tier rescore runs on the pure-Rust
+    // path too (plan 131).
+    if quantization.is_none() {
+        let embeddings = wire
+            .tensor("word_embeddings")
+            .ok_or_else(|| bad("graph has no word_embeddings tensor".to_owned()))?;
+        if embeddings.data_type != onnx_wire::DATA_TYPE_FLOAT {
+            return Err(bad(format!(
+                "word_embeddings is not float (data_type {})",
+                embeddings.data_type
+            )));
+        }
+        let [rows, width] = match embeddings.dims.as_slice() {
+            [rows, dims] if *rows > 0 && *dims > 0 => [*rows as usize, *dims as usize],
+            shape => return Err(bad(format!("word_embeddings is not 2-D: {shape:?}"))),
+        };
+        if width != dims {
+            return Err(bad(format!(
+                "word_embeddings width {width} disagrees with embedding_dimension {dims}"
+            )));
+        }
+        let payload = onnx_wire::float_payload(embeddings, rows * dims).map_err(bad)?;
+        return Ok(ParsedOnnx {
+            store: RowStore::Fp32(payload),
+            rows,
+            dims,
+        });
+    }
+
+    match RowFormat::from_metadata(quantization) {
+        Some(RowFormat::Int8PerRow) => {}
+        Some(_) | None => {
+            return Err(Int8ModelError::UnsupportedQuantization(
+                quantization.unwrap_or_default().to_owned(),
+            ));
+        }
+    }
 
     // The two constants (Constant-node attribute values, or
     // initializers — the graph shape accepts both storages).
@@ -503,8 +548,10 @@ fn parse_onnx(bytes: &[u8]) -> Result<ParsedOnnx, Int8ModelError> {
     let scales = onnx_wire::float_payload(scale, rows).map_err(bad)?;
 
     Ok(ParsedOnnx {
-        q: q_values,
-        scales,
+        store: RowStore::Int8 {
+            q: q_values,
+            scales,
+        },
         rows,
         dims,
     })
@@ -702,7 +749,9 @@ mod tests {
         assert!(Int8Model::parse(b"", &vocab).is_err());
         assert!(Int8Model::parse(&onnx[..onnx.len() / 2], &vocab).is_err());
 
-        // The fp32 full tier (quantization metadata absent).
+        // The fp32 full tier (quantization metadata absent) now
+        // LOADS — the hybrid's full-tier rescore needs it on the
+        // pure-Rust path (plan 131). Rows read back exactly.
         let mut fp32 = metadata("model_type", "fasttext_embedding");
         fp32.extend(metadata("embedding_dimension", "2"));
         fp32.extend(graph(&constant_node(&tensor_bytes(
@@ -711,8 +760,8 @@ mod tests {
             onnx_wire::DATA_TYPE_FLOAT,
             &[0; 16],
         ))));
-        let error = Int8Model::parse(&fp32, &vocab).unwrap_err();
-        assert!(matches!(error, Int8ModelError::UnsupportedQuantization(_)));
+        let model = Int8Model::parse(&fp32, &vocab).expect("fp32 full tier loads");
+        assert_eq!(model.embedding("a"), Some(vec![0.0, 0.0]));
 
         // Wrong model_type.
         let mut wrong_type = metadata("model_type", "something_else");
