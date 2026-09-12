@@ -16,6 +16,8 @@ pub mod rerank;
 #[cfg(feature = "resources")]
 pub mod resource;
 pub mod suggest;
+#[cfg(feature = "model")]
+pub mod typo;
 
 #[cfg(feature = "ruby")]
 pub use ffi::ruby as ruby_ffi;
