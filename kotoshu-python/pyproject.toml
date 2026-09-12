@@ -14,7 +14,7 @@ build-backend = "maturin"
 # the one the integration plan expects for the wheel the `kotoshu` package
 # will depend on.
 name = "kotoshu-native"
-version = "0.1.0"
+version = "0.1.1"
 description = "Native kotoshu spell-check engine for Python: the kotoshu_native extension module"
 license = { text = "BSD-2-Clause" }
 authors = [{ name = "Ribose Inc.", email = "open.source@ribose.com" }]
