@@ -65,7 +65,8 @@ jobs:
         # gracefully. Fixture files are never committed to this repo.
         run: |
           git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
-          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
+          git clone --depth 1 https://github.com/kotoshu/models-fasttext-onnx "$RUNNER_TEMP/models" || true
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" KOTOSHU_MODELS_DIR="$RUNNER_TEMP/models" scripts/sync_conformance.sh
       - name: Build
         run: cargo build --verbose
       - name: Test
@@ -108,7 +109,8 @@ jobs:
         # fixture dictionary; without the sync it skips that section.
         run: |
           git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
-          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
+          git clone --depth 1 https://github.com/kotoshu/models-fasttext-onnx "$RUNNER_TEMP/models" || true
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" KOTOSHU_MODELS_DIR="$RUNNER_TEMP/models" scripts/sync_conformance.sh
       - name: Unit tests with features
         run: cargo test --verbose --features onnx,resources
       - name: Integration test (ignored; network + dylib)

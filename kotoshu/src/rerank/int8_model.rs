@@ -94,6 +94,9 @@ pub struct Int8Model {
     /// out of bounds at score time, so it is a load error, not a score
     /// error).
     vocab: HashMap<String, u32>,
+    /// Index-parallel word list, empty when the mapping is sparse
+    /// (built at parse — the typo index derives from it, plan 131).
+    words: Vec<String>,
     dims: usize,
     /// The OOV bucket-table sibling, when attached (plan 103). In-
     /// vocabulary behavior is byte-identical with or without it: the
@@ -144,10 +147,28 @@ impl Int8Model {
             )));
         }
 
+        // index-parallel word list for consumers that walk the whole
+        // vocabulary (the typo index derives from it — plan 131)
+        let mut words = vec![String::new(); rows];
+        let mut placed = 0usize;
+        for (word, row) in &raw {
+            let row = usize::try_from(*row).unwrap_or(usize::MAX);
+            if row < rows {
+                words[row] = word.clone();
+                placed += 1;
+            }
+        }
+        let words = if placed == raw.len() {
+            words
+        } else {
+            Vec::new()
+        };
+
         Ok(Self {
             q: onnx.q,
             scales: onnx.scales,
             vocab: raw,
+            words,
             dims,
             buckets: None,
         })
@@ -190,6 +211,27 @@ impl Int8Model {
     }
 
     /// The row index of `word`, if it is in vocabulary.
+    /// The whole vocabulary as an index-parallel list, when the
+    /// artifact's word→row mapping is dense (every word owns a row).
+    /// Empty for a sparse mapping — consumers fall back to their own
+    /// enumeration.
+    pub fn vocab(&self) -> &[String] {
+        &self.words
+    }
+
+    /// The embedding row at `index` (a dequantized copy), without a
+    /// word lookup.
+    pub fn vocab_embedding(&self, index: usize) -> Option<Vec<f32>> {
+        let rows = self.q.len() / self.dims;
+        if index >= rows {
+            return None;
+        }
+        Some(dequant_row_int8(
+            &self.q[index * self.dims..(index + 1) * self.dims],
+            self.scales[index],
+        ))
+    }
+
     pub fn word_index(&self, word: &str) -> Option<u32> {
         self.vocab.get(word).copied()
     }

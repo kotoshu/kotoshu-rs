@@ -57,7 +57,8 @@ jobs:
       - name: Sync gem conformance vectors and fixtures
         run: |
           git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu"
-          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" scripts/sync_conformance.sh
+          git clone --depth 1 https://github.com/kotoshu/models-fasttext-onnx "$RUNNER_TEMP/models" || true
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" KOTOSHU_MODELS_DIR="$RUNNER_TEMP/models" scripts/sync_conformance.sh
       - name: Unit + conformance tests (ruby feature)
         run: cargo test --no-default-features --features ruby
       - name: Build the reference shim and run the smoke test
