@@ -31,10 +31,14 @@ pub(crate) mod field {
     pub const GRAPH_NODE: u32 = 1;
     pub const GRAPH_INITIALIZER: u32 = 5;
 
+    pub const NODE_INPUT: u32 = 1;
+    pub const NODE_OUTPUT: u32 = 2;
     pub const NODE_OP_TYPE: u32 = 4;
     pub const NODE_ATTRIBUTE: u32 = 5;
 
     pub const ATTRIBUTE_NAME: u32 = 1;
+    pub const ATTRIBUTE_INT: u32 = 3;
+    pub const ATTRIBUTE_STRING: u32 = 4;
     pub const ATTRIBUTE_TENSOR: u32 = 5;
 
     pub const TENSOR_DIMS: u32 = 1;
@@ -297,6 +301,11 @@ pub(crate) fn parse_graph<'a>(buf: &'a [u8], tensors: &mut Vec<Tensor<'a>>) -> R
 pub(crate) struct WireModel<'a> {
     pub(crate) metadata: HashMap<String, String>,
     pub(crate) tensors: Vec<Tensor<'a>>,
+    /// The raw `GraphProto` bytes, for readers that also need node
+    /// wiring (the typo bi-encoder validates its frozen graph's
+    /// structure). `None` only for a model with no graph, which every
+    /// reader treats as an error anyway.
+    pub(crate) graph: Option<&'a [u8]>,
 }
 
 impl WireModel<'_> {
@@ -306,9 +315,98 @@ impl WireModel<'_> {
 }
 
 /// Walk a `ModelProto`, lifting metadata entries and tensors.
+/// A graph node's identity, wiring, and scalar attributes — enough
+/// for the artifact readers that must validate a frozen graph's
+/// structure (the typo bi-encoder checks its GRU's direction,
+/// hidden_size, and linear_before_reset). Tensor-valued attributes
+/// (Constant `value`) stay handled by [`parse_graph`].
+#[derive(Debug)]
+pub(crate) struct Node {
+    pub(crate) op_type: String,
+    pub(crate) inputs: Vec<String>,
+    pub(crate) outputs: Vec<String>,
+    pub(crate) int_attrs: Vec<(String, i64)>,
+    pub(crate) str_attrs: Vec<(String, String)>,
+}
+
+impl Node {
+    pub(crate) fn int_attr(&self, name: &str) -> Option<i64> {
+        self.int_attrs
+            .iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, v)| *v)
+    }
+
+    pub(crate) fn str_attr(&self, name: &str) -> Option<&str> {
+        self.str_attrs
+            .iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, v)| v.as_str())
+    }
+}
+
+fn parse_node(buf: &[u8]) -> Result<Node, String> {
+    let mut reader = Reader::new(buf);
+    let mut node = Node {
+        op_type: String::new(),
+        inputs: Vec::new(),
+        outputs: Vec::new(),
+        int_attrs: Vec::new(),
+        str_attrs: Vec::new(),
+    };
+    while !reader.done() {
+        let (number, wire) = reader.tag()?;
+        match (number, wire) {
+            (field::NODE_INPUT, 2) => node.inputs.push(text(reader.bytes()?)?.to_owned()),
+            (field::NODE_OUTPUT, 2) => node.outputs.push(text(reader.bytes()?)?.to_owned()),
+            (field::NODE_OP_TYPE, 2) => node.op_type = text(reader.bytes()?)?.to_owned(),
+            (field::NODE_ATTRIBUTE, 2) => {
+                let attr = reader.bytes()?;
+                let mut attr_reader = Reader::new(attr);
+                let mut name = String::new();
+                let mut int_val: Option<i64> = None;
+                let mut str_val: Option<String> = None;
+                while !attr_reader.done() {
+                    let (attr_number, attr_wire) = attr_reader.tag()?;
+                    match (attr_number, attr_wire) {
+                        (field::ATTRIBUTE_NAME, 2) => name = text(attr_reader.bytes()?)?.to_owned(),
+                        (field::ATTRIBUTE_INT, 0) => int_val = Some(attr_reader.varint()? as i64),
+                        (field::ATTRIBUTE_STRING, 2) => {
+                            str_val = Some(text(attr_reader.bytes()?)?.to_owned())
+                        }
+                        _ => attr_reader.skip(attr_wire)?,
+                    }
+                }
+                if let (Some(v), None) = (int_val, str_val.as_ref()) {
+                    node.int_attrs.push((name, v));
+                } else if let (None, Some(v)) = (int_val, str_val) {
+                    node.str_attrs.push((name, v));
+                }
+            }
+            _ => reader.skip(wire)?,
+        }
+    }
+    Ok(node)
+}
+
+/// Walk a `GraphProto` for its nodes alone.
+pub(crate) fn parse_nodes(buf: &[u8]) -> Result<Vec<Node>, String> {
+    let mut reader = Reader::new(buf);
+    let mut nodes = Vec::new();
+    while !reader.done() {
+        let (number, wire) = reader.tag()?;
+        match (number, wire) {
+            (field::GRAPH_NODE, 2) => nodes.push(parse_node(reader.bytes()?)?),
+            _ => reader.skip(wire)?,
+        }
+    }
+    Ok(nodes)
+}
+
 pub(crate) fn parse_model(bytes: &[u8]) -> Result<WireModel<'_>, String> {
     let mut metadata: HashMap<String, String> = HashMap::new();
     let mut tensors: Vec<Tensor<'_>> = Vec::new();
+    let mut graph: Option<&[u8]> = None;
 
     let mut reader = Reader::new(bytes);
     while !reader.done() {
@@ -319,12 +417,18 @@ pub(crate) fn parse_model(bytes: &[u8]) -> Result<WireModel<'_>, String> {
                 metadata.insert(key, value);
             }
             (field::MODEL_GRAPH, 2) => {
-                parse_graph(reader.bytes()?, &mut tensors)?;
+                let bytes = reader.bytes()?;
+                parse_graph(bytes, &mut tensors)?;
+                graph = Some(bytes);
             }
             _ => reader.skip(wire)?,
         }
     }
-    Ok(WireModel { metadata, tensors })
+    Ok(WireModel {
+        metadata,
+        tensors,
+        graph,
+    })
 }
 
 /// Decode a float32 payload (raw_data or float_data) of `rows` values.
@@ -356,6 +460,15 @@ pub(crate) fn float_payload(tensor: &Tensor<'_>, rows: usize) -> Result<Vec<f32>
 }
 
 /// Decode an int8 payload (raw_data or int32_data) of `rows * width` values.
+/// uint8 payload of `rows × width` bytes (quantized embedding tables
+/// store one byte per element; uint8 never rides the typed fields).
+pub(crate) fn uint8_payload(tensor: &Tensor<'_>) -> Result<Vec<u8>, String> {
+    if tensor.raw_data.is_empty() {
+        return Err(format!("{} has no raw_data", tensor.name));
+    }
+    Ok(tensor.raw_data.to_vec())
+}
+
 pub(crate) fn int8_payload(
     tensor: &Tensor<'_>,
     rows: usize,

@@ -24,6 +24,26 @@ GEM_DIR="${KOTOSHU_GEM_DIR:-$ROOT/../kotoshu}"
 SRC_VECTORS="$GEM_DIR/conformance/vectors.jsonl"
 DEST="$ROOT/tests/fixtures"
 
+# Plan 131: also sync the frozen typo bi-encoder (the models repo owns
+# the artifact and its eval reference; fixture files are never
+# committed here). Skips with a message when the models repo is not
+# present — the parity test degrades to skip as well.
+MODELS_DIR="${KOTOSHU_MODELS_DIR:-$ROOT/../models-fasttext-onnx}"
+if [ -d "$MODELS_DIR/models/typo" ]; then
+  mkdir -p "$DEST/models"
+  cp "$MODELS_DIR/models/typo/typo.biencoder.onnx" "$DEST/models/"
+  cp "$MODELS_DIR/models/typo/typo.biencoder.vocab.json" "$DEST/models/"
+  REF="$MODELS_DIR/eval/references/typo-biencoder-embeddings.json"
+  if [ -f "$REF" ]; then
+    cp "$REF" "$DEST/models/typo-embeddings-reference.json"
+  else
+    echo "sync_conformance: typo reference not found at $REF (parity test will skip)" >&2
+  fi
+else
+  echo "sync_conformance: models repo not found at $MODELS_DIR (typo parity test will skip)" >&2
+fi
+
+
 if [ ! -d "$GEM_DIR" ]; then
   echo "sync_conformance: gem directory not found: $GEM_DIR" >&2
   echo "sync_conformance: set KOTOSHU_GEM_DIR or clone kotoshu/kotoshu next to this repo" >&2
