@@ -67,7 +67,7 @@ impl std::error::Error for BucketError {}
 /// One loaded bucket table: quantized rows, row scales, the kept bucket
 /// ids (ascending, binary-searchable), and the hash modulus + n-gram
 /// range the export used.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BucketTable {
     /// Original bucket indices of the kept rows, ascending.
     ids: Vec<u32>,

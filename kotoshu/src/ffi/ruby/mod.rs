@@ -203,6 +203,10 @@ pub fn init(ruby: &Ruby) -> Result<(), Error> {
     class.define_method("suggest", method!(dictionary_suggest, -1))?;
 
     native.define_module_function("available?", function!(is_available, 0))?;
+
+    #[cfg(feature = "model")]
+    typo::init(ruby)?;
+
     Ok(())
 }
 
@@ -227,5 +231,232 @@ mod tests {
                 .next()
                 .is_some_and(|c| c.is_ascii_digit())
         );
+    }
+}
+
+// The typo-retrieval layer (plan 131), exposed when the `model`
+// feature rides along. Three objects, mirroring the wasm surface:
+//
+// ```ruby
+// typo = Kotoshu::Native::TypoModel.load(onnx_path, char_vocab_path)
+// tier = Kotoshu::Native::TypoTier.load(tier_onnx_path, tier_vocab_path)
+// engine = Kotoshu::Native::TypoEngine.new(typo, tier)
+// engine.typo_suggest("helo", 5)  # => [{ "word" => ..., "score" => ... }]
+// ```
+//
+// The derived vocabulary index builds lazily on the first suggest
+// (one forward pass per tier word, parallel; ~15 s for the 100k full
+// tier) and is reused for the engine's lifetime. `typo_suggest`
+// returns `[]` for a typo outside the tier vocabulary — the hybrid's
+// honest in-vocab rule.
+#[cfg(feature = "model")]
+pub mod typo {
+
+    use magnus::typed_data::Obj;
+    use magnus::value::Lazy;
+    use magnus::{
+        Class, DataType, DataTypeFunctions, Error, Module, Object, RArray, RClass, Ruby, TypedData,
+        data_type_builder, method,
+    };
+
+    use crate::rerank::int8_model::Int8Model;
+    use crate::typo::model::TypoModel as EngineTypoModel;
+    use crate::typo::{TypoEngine, TypoModelError};
+
+    fn native_module(ruby: &Ruby) -> magnus::RModule {
+        static NATIVE: Lazy<magnus::RModule> = Lazy::new(|ruby| {
+            ruby.define_module("Kotoshu")
+                .expect("cannot define Kotoshu")
+                .define_module("Native")
+                .expect("cannot define Kotoshu::Native")
+        });
+        ruby.get_inner(&NATIVE)
+    }
+
+    fn error_class(ruby: &Ruby) -> magnus::ExceptionClass {
+        static ERROR: Lazy<magnus::ExceptionClass> = Lazy::new(|ruby| {
+            native_module(ruby)
+                .define_error("Error", ruby.exception_runtime_error())
+                .expect("cannot define Kotoshu::Native::Error")
+        });
+        ruby.get_inner(&ERROR)
+    }
+
+    fn model_error(ruby: &Ruby, error: TypoModelError) -> Error {
+        Error::new(error_class(ruby), error.to_string())
+    }
+
+    /// The loaded bi-encoder artifact pair.
+    pub struct RubyTypoModel {
+        inner: EngineTypoModel,
+    }
+
+    impl DataTypeFunctions for RubyTypoModel {}
+
+    unsafe impl TypedData for RubyTypoModel {
+        fn class(ruby: &Ruby) -> RClass {
+            static CLASS: Lazy<RClass> = Lazy::new(|ruby| {
+                let class = native_module(ruby)
+                    .define_class("TypoModel", ruby.class_object())
+                    .expect("cannot define Kotoshu::Native::TypoModel");
+                class.undef_default_alloc_func();
+                class
+            });
+            ruby.get_inner(&CLASS)
+        }
+
+        fn data_type() -> &'static DataType {
+            static DATA_TYPE: DataType =
+                data_type_builder!(RubyTypoModel, "Kotoshu/Native/TypoModel").build();
+            &DATA_TYPE
+        }
+    }
+
+    /// The fastText tier the hybrid rescores with (int8-per-row or the
+    /// fp32 full tier — the rescore is fp32-exact by contract).
+    #[derive(Debug)]
+    pub struct RubyTypoTier {
+        inner: Int8Model,
+    }
+
+    impl DataTypeFunctions for RubyTypoTier {}
+
+    unsafe impl TypedData for RubyTypoTier {
+        fn class(ruby: &Ruby) -> RClass {
+            static CLASS: Lazy<RClass> = Lazy::new(|ruby| {
+                let class = native_module(ruby)
+                    .define_class("TypoTier", ruby.class_object())
+                    .expect("cannot define Kotoshu::Native::TypoTier");
+                class.undef_default_alloc_func();
+                class
+            });
+            ruby.get_inner(&CLASS)
+        }
+
+        fn data_type() -> &'static DataType {
+            static DATA_TYPE: DataType =
+                data_type_builder!(RubyTypoTier, "Kotoshu/Native/TypoTier").build();
+            &DATA_TYPE
+        }
+    }
+
+    /// The compose engine: bi-encoder retrieval + tier rescore — the
+    /// same `TypoEngine` the wasm surface holds (one compose
+    /// implementation everywhere).
+    pub struct RubyTypoEngine {
+        engine: TypoEngine,
+        tier: Int8Model,
+    }
+
+    impl DataTypeFunctions for RubyTypoEngine {}
+
+    unsafe impl TypedData for RubyTypoEngine {
+        fn class(ruby: &Ruby) -> RClass {
+            static CLASS: Lazy<RClass> = Lazy::new(|ruby| {
+                let class = native_module(ruby)
+                    .define_class("TypoEngine", ruby.class_object())
+                    .expect("cannot define Kotoshu::Native::TypoEngine");
+                class.undef_default_alloc_func();
+                class
+            });
+            ruby.get_inner(&CLASS)
+        }
+
+        fn data_type() -> &'static DataType {
+            static DATA_TYPE: DataType =
+                data_type_builder!(RubyTypoEngine, "Kotoshu/Native/TypoEngine").build();
+            &DATA_TYPE
+        }
+    }
+
+    fn typo_model_load(
+        ruby: &Ruby,
+        _class: RClass,
+        onnx_path: String,
+        vocab_path: String,
+    ) -> Result<Obj<RubyTypoModel>, Error> {
+        let onnx = std::fs::read(&onnx_path).map_err(|error| {
+            Error::new(
+                error_class(ruby),
+                format!("cannot read {onnx_path}: {error}"),
+            )
+        })?;
+        let vocab = std::fs::read(&vocab_path).map_err(|error| {
+            Error::new(
+                error_class(ruby),
+                format!("cannot read {vocab_path}: {error}"),
+            )
+        })?;
+        let inner =
+            EngineTypoModel::parse(&onnx, &vocab).map_err(|error| model_error(ruby, error))?;
+        Ok(ruby.obj_wrap(RubyTypoModel { inner }))
+    }
+
+    fn tier_load(
+        ruby: &Ruby,
+        _class: RClass,
+        onnx_path: String,
+        vocab_path: String,
+    ) -> Result<Obj<RubyTypoTier>, Error> {
+        let read = |path: &str| {
+            std::fs::read(path).map_err(|error| {
+                Error::new(error_class(ruby), format!("cannot read {path}: {error}"))
+            })
+        };
+        let inner = Int8Model::parse(&read(&onnx_path)?, &read(&vocab_path)?).map_err(|error| {
+            Error::new(
+                error_class(ruby),
+                format!("failed to load tier ({onnx_path}, {vocab_path}): {error}"),
+            )
+        })?;
+        Ok(ruby.obj_wrap(RubyTypoTier { inner }))
+    }
+
+    fn typo_engine_new(
+        ruby: &Ruby,
+        _class: RClass,
+        typo: Obj<RubyTypoModel>,
+        tier: Obj<RubyTypoTier>,
+    ) -> Result<Obj<RubyTypoEngine>, Error> {
+        Ok(ruby.obj_wrap(RubyTypoEngine {
+            engine: TypoEngine::new(typo.inner.clone()),
+            tier: tier.inner.clone(),
+        }))
+    }
+
+    fn typo_engine_suggest(
+        ruby: &Ruby,
+        engine: &RubyTypoEngine,
+        word: String,
+    ) -> Result<RArray, Error> {
+        let rows = engine
+            .engine
+            .suggest(&engine.tier, &word, crate::typo::SLATE);
+        let out = ruby.ary_new_capa(rows.as_ref().map_or(0, Vec::len) as _);
+        if let Some(rows) = rows {
+            for (word, score) in rows {
+                let row = ruby.hash_new();
+                row.aset("word", word.as_str())
+                    .and_then(|()| row.aset("score", score))
+                    .map_err(|error| Error::new(error_class(ruby), error.to_string()))?;
+                out.push(row)
+                    .map_err(|error| Error::new(error_class(ruby), error.to_string()))?;
+            }
+        }
+        Ok(out)
+    }
+
+    /// Define the typo classes on `Kotoshu::Native` (idempotent).
+    pub fn init(ruby: &Ruby) -> Result<(), Error> {
+        let typo_class = RubyTypoModel::class(ruby);
+        typo_class.define_singleton_method("load", method!(typo_model_load, 2))?;
+
+        let tier_class = RubyTypoTier::class(ruby);
+        tier_class.define_singleton_method("load", method!(tier_load, 2))?;
+
+        let engine_class = RubyTypoEngine::class(ruby);
+        engine_class.define_singleton_method("new", method!(typo_engine_new, 2))?;
+        engine_class.define_method("typo_suggest", method!(typo_engine_suggest, 1))?;
+        Ok(())
     }
 }
