@@ -286,6 +286,79 @@ pub mod typo {
         Error::new(error_class(ruby), error.to_string())
     }
 
+    /// Run a pure-Rust computation with the GVL released. The typo
+    /// layer's index build takes seconds and its scan milliseconds;
+    /// held under the GVL, one arming request would stop every other
+    /// Ruby thread for the duration. The compute touches no Ruby
+    /// objects — the payload box round-trips through
+    /// `rb_thread_call_without_gvl`, panics are caught and re-raised
+    /// as `Kotoshu::Native::Error` on re-entry, and the no-op
+    /// unblock function keeps Ruby schedulable throughout.
+    fn without_gvl<'f, T: Send>(
+        ruby: &Ruby,
+        f: impl FnOnce() -> T + Send + 'f,
+    ) -> Result<T, Error> {
+        use std::ffi::c_void;
+
+        struct Payload<'f, T> {
+            f: Option<Box<dyn FnOnce() -> T + Send + 'f>>,
+            out: Option<T>,
+            panic: Option<String>,
+        }
+
+        // 'f rides the payload pointer, not the fn signature (late-
+        // bound lifetimes cannot be named in fn pointers)
+        #[allow(clippy::extra_unused_lifetimes)]
+        extern "C" fn trampoline<'f, T: Send>(data: *mut c_void) -> *mut c_void {
+            unsafe {
+                let payload = &mut *(data as *mut Payload<'f, T>);
+                let job = payload.f.take().expect("payload runs once");
+                match std::panic::catch_unwind(std::panic::AssertUnwindSafe(job)) {
+                    Ok(value) => payload.out = Some(value),
+                    Err(panic) => {
+                        let message = panic
+                            .downcast_ref::<String>()
+                            .cloned()
+                            .or_else(|| panic.downcast_ref::<&str>().map(|s| (*s).to_owned()))
+                            .unwrap_or_else(|| "panic inside GVL-released compute".to_owned());
+                        payload.panic = Some(message);
+                    }
+                }
+                std::ptr::null_mut()
+            }
+        }
+
+        extern "C" fn ubf(_data: *mut c_void) {
+            // The compute is uninterruptible by design (a
+            // deterministic index build); Ruby stays scheduled while
+            // it runs.
+        }
+
+        let mut payload = Payload {
+            f: Some(Box::new(f)),
+            out: None,
+            panic: None,
+        };
+        unsafe {
+            ::rb_sys::rb_thread_call_without_gvl(
+                Some(
+                    trampoline::<T>
+                        as unsafe extern "C" fn(*mut std::ffi::c_void) -> *mut std::ffi::c_void,
+                ),
+                (&mut payload as *mut Payload<'f, T>).cast(),
+                Some(ubf),
+                std::ptr::null_mut(),
+            );
+        }
+        if let Some(message) = payload.panic {
+            return Err(Error::new(
+                error_class(ruby),
+                format!("GVL-released compute panicked: {message}"),
+            ));
+        }
+        Ok(payload.out.take().expect("payload ran"))
+    }
+
     /// The loaded bi-encoder artifact pair.
     pub struct RubyTypoModel {
         inner: EngineTypoModel,
@@ -429,9 +502,10 @@ pub mod typo {
         engine: &RubyTypoEngine,
         word: String,
     ) -> Result<RArray, Error> {
-        let rows = engine
-            .engine
-            .suggest(&engine.tier, &word, crate::typo::SLATE);
+        // capture the Sync engine fields, not the TypedData wrapper
+        // (the compute runs on this thread with the GVL released)
+        let (compose, tier) = (&engine.engine, &engine.tier);
+        let rows = without_gvl(ruby, || compose.suggest(tier, &word, crate::typo::SLATE))?;
         let out = ruby.ary_new_capa(rows.as_ref().map_or(0, Vec::len) as _);
         if let Some(rows) = rows {
             for (word, score) in rows {
@@ -457,6 +531,22 @@ pub mod typo {
         let engine_class = RubyTypoEngine::class(ruby);
         engine_class.define_singleton_method("new", method!(typo_engine_new, 2))?;
         engine_class.define_method("typo_suggest", method!(typo_engine_suggest, 1))?;
+        engine_class.define_method("build_index", method!(typo_engine_build_index, 1))?;
         Ok(())
+    }
+
+    /// `TypoEngine#build_index(tier)` — derive the per-language index
+    /// NOW, with the GVL released: the cost lands at setup where it
+    /// belongs, instead of stalling the first suggest (and the whole
+    /// process under the GVL). The OnceLock inside `suggest` answers
+    /// instantly afterwards; building again is a no-op.
+    fn typo_engine_build_index(
+        ruby: &Ruby,
+        engine: &RubyTypoEngine,
+        tier: Obj<RubyTypoTier>,
+    ) -> Result<usize, Error> {
+        let (compose, tier) = (&engine.engine, &tier.inner);
+        let len = without_gvl(ruby, move || compose.derived_index(tier).len())?;
+        Ok(len)
     }
 }
