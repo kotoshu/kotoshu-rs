@@ -185,6 +185,32 @@ python_smoke.sh + python_smoke.py (venv + maturin wheel + Python smoke)
                     release-pypi.yml (keyless kotoshu-native publish)
 ```
 
+## Typo retrieval (plan 131/136, crate 0.2.1)
+
+`typo/` holds the hybrid typo-retrieval engine: a frozen 0.481 MB
+character bi-encoder (hand-rolled ONNX reader, cosine 1.0 vs
+onnxruntime) retrieves the twenty vocabulary entries nearest a
+misspelling's character shape, and the language's int8 FastText full
+tier rescores the slate exactly. `TypoEngine::suggest` applies the
+benchmark's in-vocab rule — a word outside the tier vocabulary has no
+retrievable neighborhood and gets an honest `None`.
+
+Arming derives the index over the tier vocabulary (~25 s for 100k
+words, thread-parallel). The prebuilt-matrix path (crate 0.2.1) makes
+arming a load instead: the model registry ships per-language KTM1
+artifacts — `magic | version | count | dims | int8 rows | f32 scales`,
+rows index-parallel to the tier vocab — and:
+
+```rust
+let index = TypoIndex::parse_ktm1(&matrix_bytes)?;   // structural validation
+let engine = TypoEngine::from_matrix(model, &tier, &matrix_bytes)?; // ~0.5 s, slates identical to derived
+```
+
+`TypoIndex::write_rows` serializes the derived index back to KTM1
+(the `matrix_export` example is the exporter the model registry's bulk
+builder drives). The Ruby binding exposes the same arm as
+`Kotoshu::Native::TypoEngine.matrix(model, tier, path)`.
+
 ## Features
 
 The DEFAULT feature set stays empty (P0 policy): without features the
