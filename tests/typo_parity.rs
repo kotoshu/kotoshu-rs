@@ -197,3 +197,40 @@ fn hybrid_slate_is_rescored_sorted_and_in_vocab_only() {
     // out-of-vocab query is honestly None (the hybrid's in-vocab rule)
     assert!(engine.suggest(&ft, "qwertyuiopzz", 5).is_none());
 }
+
+#[test]
+fn ktm1_round_trip_matches_derived_index() {
+    let Some((onnx, char_vocab, _)) = artifacts() else {
+        eprintln!("typo fixtures absent (skipped)");
+        return;
+    };
+    let model = kotoshu::typo::TypoModel::parse(&onnx, &char_vocab).expect("parse");
+    let mut ft = kotoshu::rerank::int8_model::Int8Model::parse(MINI_ONNX, MINI_VOCAB)
+        .expect("parse mini tier");
+
+    let derived = kotoshu::typo::TypoIndex::build(&model, ft.vocab());
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(b"KTM1");
+    bytes.extend_from_slice(&1u32.to_le_bytes());
+    bytes.extend_from_slice(&(derived.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(&(kotoshu::typo::OUT_DIM as u32).to_le_bytes());
+    derived.write_rows(&mut bytes);
+
+    let parsed = kotoshu::typo::TypoIndex::parse_ktm1(&bytes).expect("parse KTM1");
+    let parsed = parsed.with_vocab(ft.vocab().to_vec());
+    assert_eq!(parsed.len(), derived.len());
+    for i in 0..derived.len() {
+        let q = model.embed(&ft.vocab()[i]).expect("embed");
+        let a = derived.top_k(&q, 3, Some(i));
+        let b = parsed.top_k(&q, 3, Some(i));
+        let wa: Vec<_> = a.iter().map(|s| ft.vocab()[s.index].clone()).collect();
+        let wb: Vec<_> = b.iter().map(|s| ft.vocab()[s.index].clone()).collect();
+        assert_eq!(wa, wb, "row {i} diverged");
+    }
+
+    // and the bad-artifact rejections
+    assert!(kotoshu::typo::TypoIndex::parse_ktm1(b"XXXX----").is_err());
+    assert!(kotoshu::typo::TypoIndex::parse_ktm1(&bytes[..bytes.len() - 10]).is_err());
+
+    let _ = &mut ft;
+}

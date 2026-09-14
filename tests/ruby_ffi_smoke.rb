@@ -134,6 +134,18 @@ if File.exist?(TYPO_ONNX) && File.exist?(TYPO_VOCAB) && defined?(Kotoshu::Native
   assert("typo out-of-vocab returns empty", engine.typo_suggest("qwertyuiopzz") == [])
   again = engine.typo_suggest("love")
   assert("typo suggest is deterministic", again.map { |r| r["word"] } == rows.map { |r| r["word"] })
+  # Plan 136: prebuilt KTM1 matrix arming. Built from the same
+  # fixtures the derived path uses, so the slates must match.
+  matrix_path = ENV["KOTOSHU_TYPO_MATRIX"]
+  if matrix_path && File.exist?(matrix_path)
+    built = Kotoshu::Native::TypoEngine.matrix(typo, tier, matrix_path)
+    assert("matrix engine class", built.is_a?(Kotoshu::Native::TypoEngine))
+    a = engine.typo_suggest("love").map { |r| r["word"] }
+    b = built.typo_suggest("love").map { |r| r["word"] }
+    assert_equal("matrix slate matches derived", a, b)
+  else
+    puts "SKIP matrix arming (KOTOSHU_TYPO_MATRIX absent)"
+  end
 else
   puts "SKIP typo surface (fixtures or feature absent)"
 end

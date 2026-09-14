@@ -32,6 +32,28 @@ impl TypoEngine {
         }
     }
 
+    /// Build an engine from a PREBUILT KTM1 matrix artifact (plan
+    /// 136): arming becomes a download instead of the ~25 s
+    /// derivation. The encoder is still loaded (query embedding needs
+    /// it); the tier provides the vocabulary the artifact pairs with.
+    pub fn from_matrix(
+        model: TypoModel,
+        tier: &Int8Model,
+        matrix_bytes: &[u8],
+    ) -> Result<Self, String> {
+        let index = TypoIndex::parse_ktm1(matrix_bytes)?;
+        let index = index.with_vocab(tier.vocab().to_vec());
+        let engine = Self {
+            model,
+            index: OnceLock::new(),
+        };
+        engine
+            .index
+            .set(index)
+            .map_err(|_| "index already set".to_owned())?;
+        Ok(engine)
+    }
+
     /// The underlying encoder (parity probes, pack building).
     pub fn model(&self) -> &TypoModel {
         &self.model

@@ -162,6 +162,79 @@ impl TypoIndex {
         }
         best
     }
+
+    /// Load a KTM1 artifact (plan 136): prebuilt rows + scales,
+    /// index-parallel to the paired tier vocabulary. The vocabulary
+    /// itself is NOT carried — the engine owns it (the tier); the
+    /// artifact pairs with exactly the vocabulary it was built from
+    /// (the registry pins that pairing by sha).
+    pub fn parse_ktm1(bytes: &[u8]) -> Result<Self, String> {
+        const HEADER: usize = 4 + 4 + 4 + 4;
+        if bytes.len() < HEADER || &bytes[..4] != b"KTM1" {
+            return Err("not a KTM1 artifact (bad magic)".to_owned());
+        }
+        let version = u32::from_le_bytes(bytes[4..8].try_into().expect("4 bytes"));
+        if version != 1 {
+            return Err(format!("unsupported KTM1 version {version}"));
+        }
+        let count = u32::from_le_bytes(bytes[8..12].try_into().expect("4 bytes")) as usize;
+        let dims = u32::from_le_bytes(bytes[12..16].try_into().expect("4 bytes")) as usize;
+        if dims != OUT_DIM {
+            return Err(format!("KTM1 dims {dims} != {OUT_DIM}"));
+        }
+        let rows_len = count.checked_mul(dims).ok_or("count overflow")?;
+        let scales_len = count.checked_mul(4).ok_or("count overflow")?;
+        let total = HEADER
+            .checked_add(rows_len)
+            .and_then(|v| v.checked_add(scales_len))
+            .ok_or("size overflow")?;
+        if bytes.len() < total {
+            return Err(format!(
+                "KTM1 truncated: {} bytes, header wants {total}",
+                bytes.len()
+            ));
+        }
+        // SAFETY-free reinterpret: copy i8 view of the row bytes
+        let rows: Vec<i8> = bytes[HEADER..HEADER + rows_len]
+            .iter()
+            .map(|b| *b as i8)
+            .collect();
+        let scales: Vec<f32> = bytes[HEADER + rows_len..total]
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|c| f32::from_le_bytes(*c))
+            .collect();
+        if scales.len() != count {
+            return Err("KTM1 scale count mismatch".to_owned());
+        }
+        Ok(Self {
+            rows,
+            scales,
+            vocab: Vec::new(),
+        })
+    }
+
+    /// Adopt a vocabulary (index-parallel) for a parsed artifact; the
+    /// derived builder fills this itself, artifact loading pairs the
+    /// tier's.
+    pub fn with_vocab(mut self, vocab: Vec<String>) -> Self {
+        self.vocab = vocab;
+        self
+    }
+
+    /// Serialize rows + scales in the KTM1 artifact layout (count and
+    /// dims headers are written by the caller). Plan 136.
+    pub fn write_rows(&self, out: &mut Vec<u8>) {
+        // reinterpret the int8 rows as their raw bytes (KTM1 stores
+        // the quantized payload verbatim)
+        let rows_bytes =
+            unsafe { std::slice::from_raw_parts(self.rows.as_ptr().cast(), self.rows.len()) };
+        out.extend_from_slice(rows_bytes);
+        for scale in &self.scales {
+            out.extend_from_slice(&scale.to_le_bytes());
+        }
+    }
 }
 
 /// One retrieved candidate: vocabulary index and cosine score.
