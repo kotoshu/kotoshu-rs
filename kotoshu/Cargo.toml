@@ -98,6 +98,11 @@ required-features = ["model"]
 name = "typo_gate"
 required-features = ["model"]
 
+# Plan 136: KTM1 artifact export (prebuilt matrices).
+[[example]]
+name = "matrix_export"
+required-features = ["model"]
+
 # Conformance-vector runner lives at the workspace root (plan 66 layout).
 [[test]]
 name = "conformance"

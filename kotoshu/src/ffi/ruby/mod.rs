@@ -530,9 +530,36 @@ pub mod typo {
 
         let engine_class = RubyTypoEngine::class(ruby);
         engine_class.define_singleton_method("new", method!(typo_engine_new, 2))?;
+        engine_class.define_singleton_method("matrix", method!(typo_engine_from_matrix, 3))?;
         engine_class.define_method("typo_suggest", method!(typo_engine_suggest, 1))?;
         engine_class.define_method("build_index", method!(typo_engine_build_index, 1))?;
         Ok(())
+    }
+
+    /// `TypoEngine.matrix(typo_model, tier, matrix_path)` — build an
+    /// engine from a PREBUILT KTM1 artifact (plan 136): arming is a
+    /// download instead of the ~25 s derivation. The matrix bytes
+    /// must pair with the tier's vocabulary (the registry pins that
+    /// pairing). Failures reject with the Rust error message.
+    fn typo_engine_from_matrix(
+        ruby: &Ruby,
+        _class: RClass,
+        typo: Obj<RubyTypoModel>,
+        tier: Obj<RubyTypoTier>,
+        matrix_path: String,
+    ) -> Result<Obj<RubyTypoEngine>, Error> {
+        let bytes = std::fs::read(&matrix_path).map_err(|error| {
+            Error::new(
+                error_class(ruby),
+                format!("cannot read {matrix_path}: {error}"),
+            )
+        })?;
+        let engine = TypoEngine::from_matrix(typo.inner.clone(), &tier.inner, &bytes)
+            .map_err(|error| Error::new(error_class(ruby), error))?;
+        Ok(ruby.obj_wrap(RubyTypoEngine {
+            engine,
+            tier: tier.inner.clone(),
+        }))
     }
 
     /// `TypoEngine#build_index(tier)` — derive the per-language index
