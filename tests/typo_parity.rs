@@ -232,5 +232,22 @@ fn ktm1_round_trip_matches_derived_index() {
     assert!(kotoshu::typo::TypoIndex::parse_ktm1(b"XXXX----").is_err());
     assert!(kotoshu::typo::TypoIndex::parse_ktm1(&bytes[..bytes.len() - 10]).is_err());
 
+    // plan-14 guard: a matrix whose row count pairs with a DIFFERENT
+    // vocab length must be rejected at arm time, not armed - every row
+    // would retrieve a different word than it was quantized for.
+    let n = ft.vocab().len() - 5;
+    let short = kotoshu::typo::TypoIndex::build(&model, &ft.vocab()[..n]);
+    let mut sbytes = Vec::new();
+    sbytes.extend_from_slice(b"KTM1");
+    sbytes.extend_from_slice(&1u32.to_le_bytes());
+    sbytes.extend_from_slice(&(short.len() as u32).to_le_bytes());
+    sbytes.extend_from_slice(&(kotoshu::typo::OUT_DIM as u32).to_le_bytes());
+    short.write_rows(&mut sbytes);
+    let err = match kotoshu::typo::TypoEngine::from_matrix(model, &ft, &sbytes) {
+        Ok(_) => panic!("count/vocab mismatch must be rejected"),
+        Err(e) => e,
+    };
+    assert!(err.contains("do not pair"), "got: {err}");
+
     let _ = &mut ft;
 }
