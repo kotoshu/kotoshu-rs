@@ -36,7 +36,7 @@ the `ruby` and `wasm` features and the new `python` feature in
   (`word`/`distance`/`confidence`/`source`)); errors raise
   `KotoshuNativeError` carrying the Rust message. Engine calls run under
   `Python::detach` (pyo3 ≥ 0.26's rename of `allow_threads`) so the GIL
-  is released for loads and lookups. The `kotoshu-python` workspace
+  is released for loads and lookups. The `kotoshu-py` workspace
   member (thin `#[pymodule]` cdylib re-export, its own opt-in `python`
   feature) is the maturin wheel: distribution `kotoshu-native`, module
   `kotoshu_native`, 0.1.0 LIVE on PyPI (owner-published). CI builds and
@@ -44,7 +44,7 @@ the `ruby` and `wasm` features and the new `python` feature in
   (manylinux), macOS x86_64/arm64 and windows x64 — via
   `python-wheels.yml`, published keyless by `release-pypi.yml` behind the
   `kotoshu-native-v*` tag; the procedure and the owner-side PyPI
-  trusted-publisher registration live in `kotoshu-python/RELEASING.md`,
+  trusted-publisher registration live in `kotoshu-py/RELEASING.md`,
   which also documents how the PyPI `kotoshu` package consumes the wheel.
   Conformance chain: `scripts/python_smoke.sh` +
   `scripts/python_smoke.py` (real fixtures, frozen `hlelo` row) in
@@ -169,7 +169,7 @@ kotoshu/            core crate (rlib): dict/{aff,dic,casing,encoding,lookup},
                     ffi/{shared,registry,c,ruby,wasm,python}
 kotoshu-wasm/       @kotoshu/wasm packaging member (thin cdylib over ffi/wasm,
                     own opt-in wasm feature — wasm-pack builds it)
-kotoshu-python/     kotoshu-native packaging member (maturin #[pymodule] shim over
+kotoshu-py/     kotoshu-native packaging member (maturin #[pymodule] shim over
                     ffi/python, own opt-in python feature — provides kotoshu_native)
 tests/              conformance-vector runner + golden JSONL pack (+ synced fixtures, gitignored),
                     rerank_integration.rs (#[ignore]; real model, network + dylib) + registry.json,
@@ -222,7 +222,7 @@ core has zero third-party dependencies. Optional deps attach per phase:
 | `resources`| serde/serde_json + sha2 (P3) | registry parse, sha256 verify, model cache |
 | `ruby`     | magnus 0.8 (P4) | `Kotoshu::Native` bindings inside the core; the gem's ext cdylib forwards to `ffi::ruby::init` |
 | `wasm`     | wasm-bindgen/js-sys/console_error_panic_hook (P4) | `KotoshuWasm` JS class in `ffi/wasm` (in-memory sources, conformance-row shape); the `kotoshu-wasm` member packages it as `@kotoshu/wasm` (0.1.0 and 0.2.0 live on npm, keyless with provenance) |
-| `python`   | pyo3 0.29 (P4) | `kotoshu_native` module in `ffi/python` (`Dictionary.load`/`correct`/`suggest`, conformance-row dicts, GIL released for engine calls); the `kotoshu-python` member builds the `kotoshu-native` maturin wheel (0.1.0 live on PyPI; wheel matrix in `python-wheels.yml`, keyless publish in `release-pypi.yml`) |
+| `python`   | pyo3 0.29 (P4) | `kotoshu_native` module in `ffi/python` (`Dictionary.load`/`correct`/`suggest`, conformance-row dicts, GIL released for engine calls); the `kotoshu-py` member builds the `kotoshu-native` maturin wheel (0.1.0 live on PyPI; wheel matrix in `python-wheels.yml`, keyless publish in `release-pypi.yml`) |
 | `parallel` | rayon (P2) | parallel batch checking |
 | `logging`  | log (P2, deferred from P1) | diagnostics |
 
@@ -271,7 +271,7 @@ the Ruby gem, the C ABI and the WASM build; every failure raises
 (distribution `kotoshu-native`, module `kotoshu_native`) is 0.1.0 LIVE on
 PyPI; CI builds the cp310–cp313 matrix (linux x86_64/aarch64, macOS
 x86_64/arm64, windows x64) and publishes keyless behind the
-`kotoshu-native-v*` tag — see `kotoshu-python/RELEASING.md` for the
+`kotoshu-native-v*` tag — see `kotoshu-py/RELEASING.md` for the
 procedure and the one-time owner-side trusted-publisher registration.
 Build and smoke locally with `scripts/python_smoke.sh` (venv + maturin +
 the frozen `hlelo` row).
