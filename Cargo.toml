@@ -7,7 +7,7 @@ members = ["kotoshu", "kotoshu-wasm", "kotoshu-python"]
 exclude = ["tests/ruby_ext"]
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["Ribose Inc. <open.source@ribose.com>"]
 license = "BSD-2-Clause"
