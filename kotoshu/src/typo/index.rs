@@ -103,6 +103,14 @@ impl TypoIndex {
         self.vocab.len()
     }
 
+    /// Number of matrix rows - the count the artifact declares and the
+    /// index was quantized over. Distinct from len(): right after
+    /// parse_ktm1 the vocab is not bound yet, so len() is 0 while the
+    /// rows are all there (the plan-14 pairing guard reads this).
+    pub fn row_count(&self) -> usize {
+        self.rows.len() / OUT_DIM
+    }
+
     /// Whether the index is empty.
     pub fn is_empty(&self) -> bool {
         self.vocab.is_empty()
