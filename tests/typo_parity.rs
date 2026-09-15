@@ -249,5 +249,11 @@ fn ktm1_round_trip_matches_derived_index() {
     };
     assert!(err.contains("do not pair"), "got: {err}");
 
+    // and the ACCEPTANCE half the rejection test cannot prove: a
+    // full-count matrix arms. (The first guard read len() - the unbound
+    // vocab - and rejected EVERY valid matrix; gem CI caught it.)
+    let model2 = kotoshu::typo::TypoModel::parse(&onnx, &char_vocab).expect("re-parse");
+    assert!(kotoshu::typo::TypoEngine::from_matrix(model2, &ft, &bytes).is_ok());
+
     let _ = &mut ft;
 }

@@ -45,12 +45,13 @@ impl TypoEngine {
         // The rows are index-parallel to EXACTLY the vocab they were
         // derived over - a count mismatch means every row retrieves a
         // different word than it was quantized for (a rebuilt tier
-        // behind a stale matrix). Fail loudly instead.
+        // behind a stale matrix). row_count, not len: the vocab is not
+        // bound yet at this point. Fail loudly instead of arming.
         let vocab = tier.vocab();
-        if index.len() != vocab.len() {
+        if index.row_count() != vocab.len() {
             return Err(format!(
                 "KTM1 matrix rows ({}) do not pair with the tier vocabulary ({} words)",
-                index.len(),
+                index.row_count(),
                 vocab.len()
             ));
         }
