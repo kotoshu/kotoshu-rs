@@ -42,7 +42,19 @@ impl TypoEngine {
         matrix_bytes: &[u8],
     ) -> Result<Self, String> {
         let index = TypoIndex::parse_ktm1(matrix_bytes)?;
-        let index = index.with_vocab(tier.vocab().to_vec());
+        // The rows are index-parallel to EXACTLY the vocab they were
+        // derived over - a count mismatch means every row retrieves a
+        // different word than it was quantized for (a rebuilt tier
+        // behind a stale matrix). Fail loudly instead.
+        let vocab = tier.vocab();
+        if index.len() != vocab.len() {
+            return Err(format!(
+                "KTM1 matrix rows ({}) do not pair with the tier vocabulary ({} words)",
+                index.len(),
+                vocab.len()
+            ));
+        }
+        let index = index.with_vocab(vocab.to_vec());
         let engine = Self {
             model,
             index: OnceLock::new(),
