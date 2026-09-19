@@ -96,8 +96,49 @@ pub struct Urls {
     /// The GitHub release URL, or null when the registry was generated
     /// from an untagged tree.
     pub primary: Option<String>,
-    /// The raw-branch mirror.
-    pub mirror: String,
+    /// The raw-branch mirror - null for release-only entries (the
+    /// browser-unneeded tiers carry no mirror since the LFS-zero
+    /// storage model; models-fasttext-onnx TODO.deploy/2).
+    pub mirror: Option<String>,
+}
+
+#[cfg(test)]
+mod null_mirror_tests {
+    //! Regression (models-fasttext-onnx TODO.deploy/2): release-only
+    //! entries carry `mirror: null` - the whole registry must still
+    //! deserialize and the primary URL must serve.
+
+    use super::*;
+
+    const NULL_MIRROR_REGISTRY: &str = r#"{
+        "spec": "kotoshu.resources/v1",
+        "registry_version": 9,
+        "generated_at": "2026-09-19T00:00:00Z",
+        "release_tag": "v1.8.0",
+        "resources": {
+            "kotoshu://models/en/full": {
+                "type": "model",
+                "language": "en",
+                "tier": {"name": "full", "dims": 300, "vocab_size": 100000,
+                         "quantization": null},
+                "version": "1.8.0",
+                "urls": {"primary": "https://example.com/en.onnx", "mirror": null},
+                "vocab_url": null,
+                "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "size_bytes": 1,
+                "license": "CC-BY-SA-3.0",
+                "min_engine_version": "0.7",
+                "eval_ref": null
+            }
+        }
+    }"#;
+
+    #[test]
+    fn registry_with_null_mirror_parses_and_serves_primary() {
+        let registry = Registry::parse(NULL_MIRROR_REGISTRY).expect("null mirror must parse");
+        let resource = registry.resource("en", "full").expect("entry present");
+        assert!(resource.urls.mirror.is_none());
+    }
 }
 
 impl Registry {
@@ -389,7 +430,9 @@ impl ResourceCache {
         {
             urls.push(primary);
         }
-        urls.push(resource.urls.mirror.as_str());
+        if let Some(mirror) = resource.urls.mirror.as_deref().filter(|u| !u.is_empty()) {
+            urls.push(mirror);
+        }
 
         let mut last = ResourceError::NoUrl {
             language: resource.language.clone(),
