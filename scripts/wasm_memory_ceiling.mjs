@@ -61,7 +61,7 @@ const PROBES = {
 const { oov, expected } = PROBES[lang];
 
 const DICT_PIN = "1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d";
-const REGISTRY_TAG = "v1.5.0";
+const REGISTRY_TAG = "v1.8.0";
 
 // The site-worker instantiation: import the bundler glue, fetch the raw
 // bytes, instantiate with both import-object spellings, hand the exports

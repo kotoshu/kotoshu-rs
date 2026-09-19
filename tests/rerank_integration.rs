@@ -42,7 +42,7 @@ use kotoshu::rerank::dequant::RowFormat;
 use kotoshu::rerank::onnx::OrtProvider;
 use kotoshu::rerank::oov::SubwordFallback;
 use kotoshu::rerank::{Context, CosineReranker, EmbeddingProvider, cosine};
-use kotoshu::resource::{Registry, ResourceCache};
+use kotoshu::resource::{Registry, ResourceCache, Tier};
 
 /// sha256 of `fasttext.en.mini.onnx` at registry release v1.0.1.
 const EN_MINI_SHA256: &str = "a51ed7d8b8d7f25044569d50748261e01e5d95ab166e7dcef6cecf7a8bc62100";
@@ -78,8 +78,8 @@ fn real_model_registry_download_and_rerank() {
         .resource("en", "mini")
         .expect("registry fixture must contain kotoshu://models/en/mini");
     assert_eq!(resource.sha256, EN_MINI_SHA256);
-    assert_eq!(resource.tier.quantization.as_deref(), Some("int8-per-row"));
-    assert_eq!(resource.tier.dims, 300);
+    assert!(matches!(&resource.tier, Tier::Model(t) if t.quantization.as_deref() == Some("int8-per-row")));
+    assert!(matches!(&resource.tier, Tier::Model(t) if t.dims == 300));
 
     // 2. Download through the resource layer into a scratch cache
     //    (never the user's), sha-verified against the registry entry.
