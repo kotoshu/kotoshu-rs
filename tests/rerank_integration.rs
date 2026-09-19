@@ -23,7 +23,7 @@
 //!   Regenerate with:
 //!   `cp ../models-fasttext-onnx/registry.json tests/registry.json`.
 //! - The golden cosines below were computed ONCE against the real
-//!   en/mini artifact (sha256 `d81f36c5…`, the value asserted from the
+//!   en/mini artifact (sha256 `a51ed7d8…` (the IR-10 browser-compatibility re-export, models TODO.deploy/7), the value asserted from the
 //!   registry) with python + onnxruntime 1.23.2, and are asserted with
 //!   a 1e-4 tolerance. Regenerate with:
 //!
@@ -45,7 +45,7 @@ use kotoshu::rerank::{Context, CosineReranker, EmbeddingProvider, cosine};
 use kotoshu::resource::{Registry, ResourceCache};
 
 /// sha256 of `fasttext.en.mini.onnx` at registry release v1.0.1.
-const EN_MINI_SHA256: &str = "d81f36c5e0097414db95d48406ce615161dd07c697996fe973297186279d5e2f";
+const EN_MINI_SHA256: &str = "a51ed7d8b8d7f25044569d50748261e01e5d95ab166e7dcef6cecf7a8bc62100";
 
 /// Golden cosines from the real en/mini model (see the module docs for
 /// the regeneration snippet): `(word_a, word_b, expected_cosine)`.
