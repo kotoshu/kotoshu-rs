@@ -78,7 +78,9 @@ fn real_model_registry_download_and_rerank() {
         .resource("en", "mini")
         .expect("registry fixture must contain kotoshu://models/en/mini");
     assert_eq!(resource.sha256, EN_MINI_SHA256);
-    assert!(matches!(&resource.tier, Tier::Model(t) if t.quantization.as_deref() == Some("int8-per-row")));
+    assert!(
+        matches!(&resource.tier, Tier::Model(t) if t.quantization.as_deref() == Some("int8-per-row"))
+    );
     assert!(matches!(&resource.tier, Tier::Model(t) if t.dims == 300));
 
     // 2. Download through the resource layer into a scratch cache

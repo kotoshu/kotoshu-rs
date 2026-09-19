@@ -208,7 +208,9 @@ mod pack_entry_tests {
     fn registry_with_pack_entries_parses() {
         let registry = Registry::parse(PACK_REGISTRY).expect("pack entries must parse");
         assert!(registry.resource("en", "full").is_none());
-        let pack = registry.resource_by_id("kotoshu://packs/en").expect("pack present");
+        let pack = registry
+            .resource_by_id("kotoshu://packs/en")
+            .expect("pack present");
         assert!(matches!(pack.tier, Tier::Pack(ref s) if s == "mini"));
     }
 }
@@ -610,9 +612,27 @@ mod tests {
         let mini = registry.resource("en", "mini").unwrap();
         assert_eq!(mini.language, "en");
         assert_eq!(mini.tier.name(), "mini");
-        assert_eq!(match &mini.tier { Tier::Model(t) => t.dims, _ => 0 }, 300);
-        assert_eq!(match &mini.tier { Tier::Model(t) => t.vocab_size, _ => 0 }, 10000);
-        assert_eq!(match &mini.tier { Tier::Model(t) => t.quantization.as_deref(), _ => None }, Some("int8-per-row"));
+        assert_eq!(
+            match &mini.tier {
+                Tier::Model(t) => t.dims,
+                _ => 0,
+            },
+            300
+        );
+        assert_eq!(
+            match &mini.tier {
+                Tier::Model(t) => t.vocab_size,
+                _ => 0,
+            },
+            10000
+        );
+        assert_eq!(
+            match &mini.tier {
+                Tier::Model(t) => t.quantization.as_deref(),
+                _ => None,
+            },
+            Some("int8-per-row")
+        );
         assert_eq!(mini.size_bytes, 3040752);
         assert_eq!(
             mini.urls.primary.as_deref(),
@@ -624,7 +644,13 @@ mod tests {
         );
 
         let full = registry.resource("en", "full").unwrap();
-        assert_eq!(match &full.tier { Tier::Model(t) => t.quantization.as_deref(), _ => Some("") }, None);
+        assert_eq!(
+            match &full.tier {
+                Tier::Model(t) => t.quantization.as_deref(),
+                _ => Some(""),
+            },
+            None
+        );
         assert_eq!(full.urls.primary, None);
         assert_eq!(full.vocab_url, None);
 
