@@ -109,8 +109,15 @@ const registryRes = await fetch(
 if (!registryRes.ok) throw new Error(`registry download failed: HTTP ${registryRes.status}`);
 const registry = await registryRes.json();
 const resources = registry.resources ?? {};
-const mini = resources[`kotoshu://models/${lang}/mini`]?.urls?.mirror;
-const buckets = resources[`kotoshu://models/${lang}/buckets`]?.urls?.mirror;
+// Node fetches without CORS constraints: mirror first (plain git),
+// release primary as fallback (release-only buckets carry null mirrors
+// since the LFS-zero storage model).
+const pickUrl = (id) => {
+  const urls = resources[id]?.urls;
+  return urls?.mirror ?? urls?.primary;
+};
+const mini = pickUrl(`kotoshu://models/${lang}/mini`);
+const buckets = pickUrl(`kotoshu://models/${lang}/buckets`);
 if (!mini) throw new Error(`no mini tier for ${lang} in registry ${REGISTRY_TAG}`);
 if (!buckets) throw new Error(`no buckets sibling for ${lang} in registry ${REGISTRY_TAG}`);
 
