@@ -41,7 +41,7 @@ import { SEMANTIC_SUGGEST_K, mergeSemanticCandidates } from './semantic-merge.js
 /** Default pins: the exact sources the live playground resolves. */
 export const DEFAULT_WASM_VERSION = '0.4.0'
 export const DEFAULT_DICT_PIN = '1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d'
-export const DEFAULT_REGISTRY_TAG = 'v1.5.0'
+export const DEFAULT_REGISTRY_TAG = 'v1.8.0'
 export const DEFAULT_CACHE_NAME = 'kotoshu-worker-v1'
 
 /**
