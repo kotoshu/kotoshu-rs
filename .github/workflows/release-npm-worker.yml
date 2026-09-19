@@ -35,6 +35,11 @@ jobs:
         run: ./scripts/wasm_build.sh
       - name: Assemble the worker package payload
         run: ./scripts/worker_build.sh
+      - name: Sync conformance fixtures (the smoke reads gem hunspell fixtures)
+        run: |
+          git clone --depth 1 https://github.com/kotoshu/kotoshu "$RUNNER_TEMP/kotoshu" || true
+          git clone --depth 1 https://github.com/kotoshu/models-fasttext-onnx "$RUNNER_TEMP/models" || true
+          KOTOSHU_GEM_DIR="$RUNNER_TEMP/kotoshu" KOTOSHU_MODELS_DIR="$RUNNER_TEMP/models" ./scripts/sync_conformance.sh
       - name: Node smoke against both built packages
         run: node scripts/worker_node_smoke.mjs
       - name: Publish with provenance
