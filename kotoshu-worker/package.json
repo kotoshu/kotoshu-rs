@@ -1,6 +1,6 @@
 {
   "name": "@kotoshu/worker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The kotoshu engine worker: load/check/suggest-batch/semantic/detect protocol over the @kotoshu/wasm engine, dictionaries, and model tiers",
   "type": "module",
   "license": "BSD-2-Clause",
