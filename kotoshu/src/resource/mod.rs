@@ -76,9 +76,29 @@ pub struct Resource {
     pub min_engine_version: String,
 }
 
-/// Tier metadata of a resource.
+/// Tier metadata of a resource. Model entries carry the struct form;
+/// pack entries (plan 113) carry the packed tier as a plain string
+/// (`"mini"`) — the live registry ships both since v1.5.0.
 #[derive(Debug, Clone, Deserialize)]
-pub struct Tier {
+#[serde(untagged)]
+pub enum Tier {
+    Model(ModelTier),
+    Pack(String),
+}
+
+impl Tier {
+    /// The tier name in either form (`"mini"` for a pack).
+    pub fn name(&self) -> &str {
+        match self {
+            Tier::Model(t) => &t.name,
+            Tier::Pack(name) => name,
+        }
+    }
+}
+
+/// Tier metadata of a model resource.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ModelTier {
     /// `full` | `fluency` | `mini`.
     pub name: String,
     /// Embedding dimensionality (300 for all current tiers).
@@ -141,6 +161,58 @@ mod null_mirror_tests {
     }
 }
 
+#[cfg(test)]
+mod pack_entry_tests {
+    //! Regression: pack resources (plan 113) carry `tier` as a plain
+    //! string; the registry must deserialize with them present.
+
+    use super::*;
+
+    const PACK_REGISTRY: &str = r#"{
+        "spec": "kotoshu.resources/v1",
+        "registry_version": 9,
+        "generated_at": "2026-09-20T00:00:00Z",
+        "release_tag": "v1.8.0",
+        "resources": {
+            "kotoshu://packs/en": {
+                "type": "pack",
+                "language": "en",
+                "version": "1.5.0",
+                "tier": "mini",
+                "dictionary_pin": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "urls": {"primary": null, "mirror": "https://example.com/en-1.5.0.bin"},
+                "contents": ["model", "vocab", "buckets", "aff", "dic"],
+                "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "size_bytes": 2,
+                "licenses": ["BSD-2-Clause"],
+                "min_engine_version": "1.1"
+            },
+            "kotoshu://models/en/mini": {
+                "type": "model",
+                "language": "en",
+                "tier": {"name": "mini", "dims": 300, "vocab_size": 10000,
+                         "quantization": "int8-per-row"},
+                "version": "1.8.0",
+                "urls": {"primary": "https://example.com/m.onnx", "mirror": null},
+                "vocab_url": null,
+                "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "size_bytes": 1,
+                "license": "CC-BY-SA-3.0",
+                "min_engine_version": "0.7",
+                "eval_ref": null
+            }
+        }
+    }"#;
+
+    #[test]
+    fn registry_with_pack_entries_parses() {
+        let registry = Registry::parse(PACK_REGISTRY).expect("pack entries must parse");
+        assert!(registry.resource("en", "full").is_none());
+        let pack = registry.resource_by_id("kotoshu://packs/en").expect("pack present");
+        assert!(matches!(pack.tier, Tier::Pack(ref s) if s == "mini"));
+    }
+}
+
 impl Registry {
     /// Parse and validate registry JSON (`spec` must be [`SPEC`]).
     pub fn parse(json: &str) -> Result<Self, ResourceError> {
@@ -163,7 +235,7 @@ impl Registry {
     pub fn resource(&self, language: &str, tier: &str) -> Option<&Resource> {
         let id = format!("kotoshu://models/{language}/{tier}");
         let resource = self.resource_by_id(&id)?;
-        if resource.language == language && resource.tier.name == tier {
+        if resource.language == language && resource.tier.name() == tier {
             Some(resource)
         } else {
             None
@@ -436,7 +508,7 @@ impl ResourceCache {
 
         let mut last = ResourceError::NoUrl {
             language: resource.language.clone(),
-            tier: resource.tier.name.clone(),
+            tier: resource.tier.name().to_string(),
         };
         for url in urls {
             match fetch(url) {
@@ -537,10 +609,10 @@ mod tests {
 
         let mini = registry.resource("en", "mini").unwrap();
         assert_eq!(mini.language, "en");
-        assert_eq!(mini.tier.name, "mini");
-        assert_eq!(mini.tier.dims, 300);
-        assert_eq!(mini.tier.vocab_size, 10000);
-        assert_eq!(mini.tier.quantization.as_deref(), Some("int8-per-row"));
+        assert_eq!(mini.tier.name(), "mini");
+        assert_eq!(match &mini.tier { Tier::Model(t) => t.dims, _ => 0 }, 300);
+        assert_eq!(match &mini.tier { Tier::Model(t) => t.vocab_size, _ => 0 }, 10000);
+        assert_eq!(match &mini.tier { Tier::Model(t) => t.quantization.as_deref(), _ => None }, Some("int8-per-row"));
         assert_eq!(mini.size_bytes, 3040752);
         assert_eq!(
             mini.urls.primary.as_deref(),
@@ -552,7 +624,7 @@ mod tests {
         );
 
         let full = registry.resource("en", "full").unwrap();
-        assert_eq!(full.tier.quantization, None);
+        assert_eq!(match &full.tier { Tier::Model(t) => t.quantization.as_deref(), _ => Some("") }, None);
         assert_eq!(full.urls.primary, None);
         assert_eq!(full.vocab_url, None);
 
