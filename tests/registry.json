@@ -1,9 +1,576 @@
 {
   "spec": "kotoshu.resources/v1",
-  "registry_version": 1,
-  "generated_at": "2026-09-03T05:38:55Z",
-  "release_tag": "v1.0.1",
+  "registry_version": 7,
+  "generated_at": "2026-09-19T10:22:29Z",
+  "release_tag": "v1.8.0",
   "resources": {
+    "kotoshu://models/ar/fluency": {
+      "type": "model",
+      "language": "ar",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ar.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ar.fluency.vocab.json",
+      "sha256": "966a4222d3f7d8eea642c02fbc44821ab2e456d07f26751c259abaefdd6541e4",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ar.fluency.json"
+    },
+    "kotoshu://models/ar/full": {
+      "type": "model",
+      "language": "ar",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ar.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ar.vocab.json",
+      "sha256": "2089a9b0123eea56faf21ecc807959e2cb8b1e84863034c3055fb2edb7da73af",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ar/mini": {
+      "type": "model",
+      "language": "ar",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ar.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ar/fasttext.ar.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ar.mini.vocab.json",
+      "sha256": "22c6dcfb5095c847109fc9ebd7c821048b039c9d1fae3fc302904945718260e1",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ar.mini.json"
+    },
+    "kotoshu://models/bg/buckets": {
+      "type": "model",
+      "language": "bg",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37834,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "2e01c506e4d32949df5ae2ca4b0dfd8b4220d4d0e84f177ee2f4dbf83633bca1",
+      "size_bytes": 11805071,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/bg.buckets.json"
+    },
+    "kotoshu://models/bg/fluency": {
+      "type": "model",
+      "language": "bg",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.fluency.vocab.json",
+      "sha256": "5ca7cf93ce6cdb83f94ebab500bfcb627a275644039998ae95413b02795d2406",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/bg.fluency.json"
+    },
+    "kotoshu://models/bg/full": {
+      "type": "model",
+      "language": "bg",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.vocab.json",
+      "sha256": "b5a207860452f27f11c64dbe86765491c39f13e89f0f7f27b0e2d0d3cc211618",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/bg/mini": {
+      "type": "model",
+      "language": "bg",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/bg/fasttext.bg.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.bg.mini.vocab.json",
+      "sha256": "5dadc9c6566a3f2f83e16b72534e5d76372ce603df54676b411931829c425847",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/bg.mini.json"
+    },
+    "kotoshu://models/br/buckets": {
+      "type": "model",
+      "language": "br",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37713,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "10a336db6945a2d9b5f620290caa95a09c5aaccedb573f31919742bc323fff04",
+      "size_bytes": 11767319,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/br.buckets.json"
+    },
+    "kotoshu://models/br/fluency": {
+      "type": "model",
+      "language": "br",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.fluency.vocab.json",
+      "sha256": "152c4df2242b94fc62e524b447d5b6503651009a955f9eabecc54550b9de3705",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/br.fluency.json"
+    },
+    "kotoshu://models/br/full": {
+      "type": "model",
+      "language": "br",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.vocab.json",
+      "sha256": "0b72e30746021f43c16c25e78c6d80f4a2279b9187c8db989cfb9b99446de3fb",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/br/mini": {
+      "type": "model",
+      "language": "br",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/br/fasttext.br.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.br.mini.vocab.json",
+      "sha256": "52c967b313fb39702ff1ac2f0258b07e586f36a4fb7a59e277d1109ffddfd8f1",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/br.mini.json"
+    },
+    "kotoshu://models/ca/buckets": {
+      "type": "model",
+      "language": "ca",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37995,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "97895b51cf9521fa59d404919599150ae71ce7059afa8b4ac7a5e07b0f639ae1",
+      "size_bytes": 11855303,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ca.buckets.json"
+    },
+    "kotoshu://models/ca/fluency": {
+      "type": "model",
+      "language": "ca",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.fluency.vocab.json",
+      "sha256": "154b626c906edee6d813e1a7224d1307d1c71be5fd33566906ccff276e541427",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ca.fluency.json"
+    },
+    "kotoshu://models/ca/full": {
+      "type": "model",
+      "language": "ca",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.vocab.json",
+      "sha256": "59b1526cb690e8934f37ac3b25c202de99fa9c3ebb700ce5bc9f4ed15c637dfe",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ca/mini": {
+      "type": "model",
+      "language": "ca",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ca/fasttext.ca.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ca.mini.vocab.json",
+      "sha256": "da187d3db24a086d4179b11575b5b83106fcedba246939f6bf080f4cd7b9d3cb",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ca.mini.json"
+    },
+    "kotoshu://models/cs/fluency": {
+      "type": "model",
+      "language": "cs",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cs.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cs.fluency.vocab.json",
+      "sha256": "72e7ebffced56ddc7d657110aeef9187af61c453ab56baa6d4b3bb9f9d9f112f",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/cs.fluency.json"
+    },
+    "kotoshu://models/cs/full": {
+      "type": "model",
+      "language": "cs",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cs.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cs.vocab.json",
+      "sha256": "0a1bf2be175436a42c37289a45bcda7756d23b7ae852641dfc56a87506ef38f7",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/cs/mini": {
+      "type": "model",
+      "language": "cs",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cs.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/cs/fasttext.cs.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cs.mini.vocab.json",
+      "sha256": "e36cc237b3abd56c2f00d3dd77a8d694590f1276a3c232fe743d299c69dd9ee9",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/cs.mini.json"
+    },
+    "kotoshu://models/cy/buckets": {
+      "type": "model",
+      "language": "cy",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37831,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "451696560cbcfefd8eecb71733353bb816365446b1876a9e0b2ef5b43f88ab42",
+      "size_bytes": 11804135,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/cy.buckets.json"
+    },
+    "kotoshu://models/cy/fluency": {
+      "type": "model",
+      "language": "cy",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.fluency.vocab.json",
+      "sha256": "1e4b0fd9970a09dce21c5ee7e0bb5720c3dd5a17a0b4b6b9bb1e6dd3795db6ac",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/cy.fluency.json"
+    },
+    "kotoshu://models/cy/full": {
+      "type": "model",
+      "language": "cy",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.vocab.json",
+      "sha256": "c8e756c2a009fe66aca9810fbf3898544509358f8d075c24c720fb8aebf0944e",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/cy/mini": {
+      "type": "model",
+      "language": "cy",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/cy/fasttext.cy.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.cy.mini.vocab.json",
+      "sha256": "aa5ea2c000565a950130099d5ce5de29a9363ecbfe7b32378bb6bed87d5401d4",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/cy.mini.json"
+    },
+    "kotoshu://models/da/buckets": {
+      "type": "model",
+      "language": "da",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37701,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "cee3bfa20b84f014c10f5c61a84923cd368a304be694cd5e8d670fa05b02676b",
+      "size_bytes": 11763575,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/da.buckets.json"
+    },
+    "kotoshu://models/da/fluency": {
+      "type": "model",
+      "language": "da",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.fluency.vocab.json",
+      "sha256": "97565dfb842508f0a56e2c8859eef925fa580f6c183542023f45a6cd3c5d32ee",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/da.fluency.json"
+    },
+    "kotoshu://models/da/full": {
+      "type": "model",
+      "language": "da",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.vocab.json",
+      "sha256": "58f291b4c8f17fcf3cca43fbf93a81d384513ef5cec9760b7055f7c35ee15e64",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/da/mini": {
+      "type": "model",
+      "language": "da",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/da/fasttext.da.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.da.mini.vocab.json",
+      "sha256": "00823858ecd3ec82795eb600edc49f8e40108838b2221d520f23616480c7f1b9",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/da.mini.json"
+    },
+    "kotoshu://models/de/buckets": {
+      "type": "model",
+      "language": "de",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32878,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "a11de192e0c31d331deeb1b47a3c4086e91801edaadb0a807731faf3826f072d",
+      "size_bytes": 10258799,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/de.buckets.json"
+    },
     "kotoshu://models/de/fluency": {
       "type": "model",
       "language": "de",
@@ -13,12 +580,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.de.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/de/fasttext.de.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.de.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.fluency.vocab.json",
       "sha256": "cf0336221bf9496524291facb8690ab0fb0adbe7379b0c02fb65d06aeda817e9",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -34,12 +601,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.de.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/de/fasttext.de.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.de.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.vocab.json",
       "sha256": "ec110016475e4760f043e18ec409d406332ad71f5028619020512a40c64b0196",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -55,17 +622,144 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.de.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/de/fasttext.de.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/de/fasttext.de.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.de.mini.vocab.json",
-      "sha256": "aa724e7eea8580d81a0e2e6c6aec3108b8b90f65381ae7bc2baeb830b1a90f69",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.de.mini.vocab.json",
+      "sha256": "4ce3197de1d77d22a889f24d42c930a27bafe3c2c5cf9b62cea45fc443736941",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/de.mini.json"
+    },
+    "kotoshu://models/de/typo-matrix": {
+      "type": "model",
+      "language": "de",
+      "tier": {
+        "name": "typo-matrix",
+        "dims": 256,
+        "vocab_size": 100000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/typo.matrix.de.ktm1",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "ab787c8837993e06cdc2cdb74dbd4bd53b49edde3aac7bd648458c99fbb33056",
+      "size_bytes": 26000016,
+      "paired_vocab_sha256": "ec110016475e4760f043e18ec409d406332ad71f5028619020512a40c64b0196",
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "1.1",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/el/buckets": {
+      "type": "model",
+      "language": "el",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38195,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "27a521427fc694ecf4178fc26ff6f156612c12bcb06b4ddcc2a7397d3a00705c",
+      "size_bytes": 11917703,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/el.buckets.json"
+    },
+    "kotoshu://models/el/fluency": {
+      "type": "model",
+      "language": "el",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.fluency.vocab.json",
+      "sha256": "1f13973769f42b4576711f9f0a3f4f9bd57b3623d145cc6d6ba1d4464025d77c",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/el.fluency.json"
+    },
+    "kotoshu://models/el/full": {
+      "type": "model",
+      "language": "el",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.vocab.json",
+      "sha256": "bdecc0b4ea87d524eb9590b382ef759b73f3fd57884b91b643ee6c2bc88e2e61",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/el/mini": {
+      "type": "model",
+      "language": "el",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/el/fasttext.el.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.el.mini.vocab.json",
+      "sha256": "cd6cd30817402677cf70ee45fd6b6d7e6d20762a94909ced433159e27fa75e30",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/el.mini.json"
+    },
+    "kotoshu://models/en/buckets": {
+      "type": "model",
+      "language": "en",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 36456,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.buckets.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/en/fasttext.en.buckets.onnx"
+      },
+      "vocab_url": null,
+      "sha256": "88256852406a1f39b5b879f02b87149ca6ce26a57e3c32fb7eff1160073b776a",
+      "size_bytes": 11375135,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/en.buckets.json"
     },
     "kotoshu://models/en/fluency": {
       "type": "model",
@@ -76,12 +770,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.en.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/en/fasttext.en.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.en.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.fluency.vocab.json",
       "sha256": "f8fc02db13a7c7878cf15c9bfe1e559c6dad82b1e5558c80e1ed4670de3f1cc6",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -97,12 +791,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.en.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/en/fasttext.en.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.en.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.vocab.json",
       "sha256": "cf826747600aa353d9be18a47e63cbd3929e742088af338096edcf54aad17d36",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -118,17 +812,144 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.en.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/en/fasttext.en.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/en/fasttext.en.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.en.mini.vocab.json",
-      "sha256": "d81f36c5e0097414db95d48406ce615161dd07c697996fe973297186279d5e2f",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.en.mini.vocab.json",
+      "sha256": "a51ed7d8b8d7f25044569d50748261e01e5d95ab166e7dcef6cecf7a8bc62100",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/en.mini.json"
+    },
+    "kotoshu://models/en/typo-matrix": {
+      "type": "model",
+      "language": "en",
+      "tier": {
+        "name": "typo-matrix",
+        "dims": 256,
+        "vocab_size": 100000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/typo.matrix.en.ktm1",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "df1a7b2cd55015efcd9639794c2c9cdd34ce2e2f42c764d3e0c40a873ad89321",
+      "size_bytes": 26000016,
+      "paired_vocab_sha256": "cf826747600aa353d9be18a47e63cbd3929e742088af338096edcf54aad17d36",
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "1.1",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/eo/buckets": {
+      "type": "model",
+      "language": "eo",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37962,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "616cb12d9c63d3672b2e2d8258b86783273ac1289ef88c5fc23607d2ea103c5b",
+      "size_bytes": 11845007,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/eo.buckets.json"
+    },
+    "kotoshu://models/eo/fluency": {
+      "type": "model",
+      "language": "eo",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.fluency.vocab.json",
+      "sha256": "73f51b020b96b2eb4bfe4ccdd7372f50daff3940887a727aeef2bceaf194e599",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/eo.fluency.json"
+    },
+    "kotoshu://models/eo/full": {
+      "type": "model",
+      "language": "eo",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.vocab.json",
+      "sha256": "22f22d1f7f7ffd1d9f60ac95b077325dd9f272f0c14b7cd3891142d6fa5c2a0c",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/eo/mini": {
+      "type": "model",
+      "language": "eo",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/eo/fasttext.eo.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eo.mini.vocab.json",
+      "sha256": "fb920dd55bce105b6b380cba3888fa9e13217fd3d68ac6cbe6c471ed3474a906",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/eo.mini.json"
+    },
+    "kotoshu://models/es/buckets": {
+      "type": "model",
+      "language": "es",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32916,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "9fa30f7cf037b7336722adef600a678b58c8f5e44f0cc80fe442e7c31089a11a",
+      "size_bytes": 10270655,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/es.buckets.json"
     },
     "kotoshu://models/es/fluency": {
       "type": "model",
@@ -139,12 +960,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.es.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/es/fasttext.es.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.es.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.fluency.vocab.json",
       "sha256": "7326f515d0055ebeea178760696b6dd780ef1bb58dd38e8f89acfe8fe8d5287f",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -160,12 +981,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.es.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/es/fasttext.es.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.es.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.vocab.json",
       "sha256": "8072789f1d4862474bb833de6b646471f853f28d24486237a95ad169c7500c64",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -181,17 +1002,291 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.es.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/es/fasttext.es.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/es/fasttext.es.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.es.mini.vocab.json",
-      "sha256": "ce2c03127ad84c711503f6d9118bcaf5784faa0336d21998b110138f6fb51232",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.es.mini.vocab.json",
+      "sha256": "d84f7b5ab585ff06ca60b2203de8bb717ac00aa449bce3b8efbe3e0c3e1b7c42",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/es.mini.json"
+    },
+    "kotoshu://models/es/typo-matrix": {
+      "type": "model",
+      "language": "es",
+      "tier": {
+        "name": "typo-matrix",
+        "dims": 256,
+        "vocab_size": 100000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/typo.matrix.es.ktm1",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "707aa54000beb1efda47f5954f82122a111df950555424be04781920e386a445",
+      "size_bytes": 26000016,
+      "paired_vocab_sha256": "8072789f1d4862474bb833de6b646471f853f28d24486237a95ad169c7500c64",
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "1.1",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/et/buckets": {
+      "type": "model",
+      "language": "et",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37922,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "db785be8eb0052b3b2425853a7b85861cf1e4efbe45b3bbdcd4cf0bce8595931",
+      "size_bytes": 11832527,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/et.buckets.json"
+    },
+    "kotoshu://models/et/fluency": {
+      "type": "model",
+      "language": "et",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.fluency.vocab.json",
+      "sha256": "cf4ea8ad797e74113e991580c900d463f03b31a71758b92fd74875012c2c4703",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/et.fluency.json"
+    },
+    "kotoshu://models/et/full": {
+      "type": "model",
+      "language": "et",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.vocab.json",
+      "sha256": "a9a6c20fb161693e7be2ac2e085cd975d19ef3c1bd9bce30e83d7185b8fc9611",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/et/mini": {
+      "type": "model",
+      "language": "et",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/et/fasttext.et.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.et.mini.vocab.json",
+      "sha256": "c2b86cf059de6df12a8eb3062fc65520a571b27f27fef2cf2380b795e9cb4612",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/et.mini.json"
+    },
+    "kotoshu://models/eu/buckets": {
+      "type": "model",
+      "language": "eu",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37900,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "ac520710294937b91ce192fefa8c87c4f68bb373ac2c2c38550a66151352e3ac",
+      "size_bytes": 11825663,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/eu.buckets.json"
+    },
+    "kotoshu://models/eu/fluency": {
+      "type": "model",
+      "language": "eu",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.fluency.vocab.json",
+      "sha256": "f2530c456f70402c049ae910428bc57f85cd50830081ff99686916ab10a99ae1",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/eu.fluency.json"
+    },
+    "kotoshu://models/eu/full": {
+      "type": "model",
+      "language": "eu",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.vocab.json",
+      "sha256": "81de41306ee6532486770945ede97a5e2c4b817bbd48b45523f6fcfbf5426559",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/eu/mini": {
+      "type": "model",
+      "language": "eu",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/eu/fasttext.eu.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.eu.mini.vocab.json",
+      "sha256": "a87a1943711d67fa13713cada59b14cdc16dad761bf378568adab17d1b9c22a0",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/eu.mini.json"
+    },
+    "kotoshu://models/fa/fluency": {
+      "type": "model",
+      "language": "fa",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fa.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fa.fluency.vocab.json",
+      "sha256": "b88a2af9f73ca8d1bf1288a3019eab572aa3c9a7e55be2d3e0f4ee05103527a4",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/fa.fluency.json"
+    },
+    "kotoshu://models/fa/full": {
+      "type": "model",
+      "language": "fa",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fa.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fa.vocab.json",
+      "sha256": "ba787edf5f1e5bef408057bc8cf594cfa2e59dd5b6f575c4c170da8d94a27533",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/fa/mini": {
+      "type": "model",
+      "language": "fa",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fa.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/fa/fasttext.fa.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fa.mini.vocab.json",
+      "sha256": "dba367b001820d91d859e1b437946f9cbdef71de17568b3442f0e17c91033190",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/fa.mini.json"
+    },
+    "kotoshu://models/fr/buckets": {
+      "type": "model",
+      "language": "fr",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32972,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "10ae49a38d89e64c3bfa5e142ef9a047d35116ef13c3d493919ab0930384577c",
+      "size_bytes": 10288127,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/fr.buckets.json"
     },
     "kotoshu://models/fr/fluency": {
       "type": "model",
@@ -202,12 +1297,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.fr.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/fr/fasttext.fr.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.fr.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.fluency.vocab.json",
       "sha256": "fcb375a340b4c90cbe1550a7265fb655d0ba76f777015582ee9cc214ce360331",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -223,12 +1318,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.fr.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/fr/fasttext.fr.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.fr.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.vocab.json",
       "sha256": "f76468d726289f998ac2cbbd473787e07f8740bc31518bef1387c7c4c6077f06",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -244,17 +1339,1026 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.fr.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/fr/fasttext.fr.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/fr/fasttext.fr.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.fr.mini.vocab.json",
-      "sha256": "8ab81dac1d85f34b423a7ef870f089f65acd937163f21a26ba83478a3fc67029",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fr.mini.vocab.json",
+      "sha256": "f2f2e8bad9d710a15a2abf93b996f04442c105ad8ad4e16200e3064809470d79",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/fr.mini.json"
+    },
+    "kotoshu://models/fr/typo-matrix": {
+      "type": "model",
+      "language": "fr",
+      "tier": {
+        "name": "typo-matrix",
+        "dims": 256,
+        "vocab_size": 100000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/typo.matrix.fr.ktm1",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "8cb08703d572d592a42df522458a929c1606724d3a03fafd20ceef5041a43580",
+      "size_bytes": 26000016,
+      "paired_vocab_sha256": "f76468d726289f998ac2cbbd473787e07f8740bc31518bef1387c7c4c6077f06",
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "1.1",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/fy/buckets": {
+      "type": "model",
+      "language": "fy",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37986,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "cb642e4d6b5560defed63765f1fc31b3c5ed25fd7d4833812c5c7fdc54f9a7e8",
+      "size_bytes": 11852495,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/fy.buckets.json"
+    },
+    "kotoshu://models/fy/fluency": {
+      "type": "model",
+      "language": "fy",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.fluency.vocab.json",
+      "sha256": "4c14d70969a1e120fcf31c4e0e180435f9e2f1e88df131ecea5e7ef1a0ab1a5e",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/fy.fluency.json"
+    },
+    "kotoshu://models/fy/full": {
+      "type": "model",
+      "language": "fy",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.vocab.json",
+      "sha256": "19fd0f476bbc455e85da0fc01d12a5ef73e029431db71f1933979eb9e86e5c37",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/fy/mini": {
+      "type": "model",
+      "language": "fy",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/fy/fasttext.fy.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.fy.mini.vocab.json",
+      "sha256": "9c5c91fc03c8149092e86e4d08b523b37bfe018fc33bb4234cb5b5fc9c838cdf",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/fy.mini.json"
+    },
+    "kotoshu://models/ga/buckets": {
+      "type": "model",
+      "language": "ga",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37742,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "985ac8313f0da81a0fa43bff6ef9df234db9d44ead17ba501e1a6e1eb7603ebb",
+      "size_bytes": 11776367,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ga.buckets.json"
+    },
+    "kotoshu://models/ga/fluency": {
+      "type": "model",
+      "language": "ga",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.fluency.vocab.json",
+      "sha256": "f542503c2cd34454ad565f3c093bccdfe41a4f3335a061bf6c7bc19bfe74ab49",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ga.fluency.json"
+    },
+    "kotoshu://models/ga/full": {
+      "type": "model",
+      "language": "ga",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.vocab.json",
+      "sha256": "307f8366df2523ea315f17e75bb8fb243c83483ac6b5a7a08d6ec38b7519ed22",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ga/mini": {
+      "type": "model",
+      "language": "ga",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ga/fasttext.ga.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ga.mini.vocab.json",
+      "sha256": "21455a22b466ae6e05fa8a167a6fc95b93d7023e9029e189ad6261284fe4b26c",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ga.mini.json"
+    },
+    "kotoshu://models/gd/buckets": {
+      "type": "model",
+      "language": "gd",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37738,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "346e7961d146afe347fd8c06e18ef791ea569eefd11e5a046af78d5da17b7a0a",
+      "size_bytes": 11775119,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/gd.buckets.json"
+    },
+    "kotoshu://models/gd/fluency": {
+      "type": "model",
+      "language": "gd",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.fluency.vocab.json",
+      "sha256": "1a6e68b49ec31495a6990e71f8800ddb31281fbb2826773dc223c0e8d7fce673",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/gd.fluency.json"
+    },
+    "kotoshu://models/gd/full": {
+      "type": "model",
+      "language": "gd",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.vocab.json",
+      "sha256": "fcebfd941749cd466cf659769b5176294b7e51ecdff3eda66d94ed66e20b3e0d",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/gd/mini": {
+      "type": "model",
+      "language": "gd",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/gd/fasttext.gd.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gd.mini.vocab.json",
+      "sha256": "11db80f3643f0062fced9d39513a8ca7842322a9c7e6a0a4c5a04784efbadedf",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/gd.mini.json"
+    },
+    "kotoshu://models/gl/buckets": {
+      "type": "model",
+      "language": "gl",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37968,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "a8971ab973470ec09d8002915641361838088cc8c90bb1af2cac1b8fdc6b27ce",
+      "size_bytes": 11846879,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/gl.buckets.json"
+    },
+    "kotoshu://models/gl/fluency": {
+      "type": "model",
+      "language": "gl",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.fluency.vocab.json",
+      "sha256": "1b9d24b8b57aa9cd3d105e5856792b1b4d8432bdd7c9639b8f44dbc677b78d59",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/gl.fluency.json"
+    },
+    "kotoshu://models/gl/full": {
+      "type": "model",
+      "language": "gl",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.vocab.json",
+      "sha256": "66f6aac6f221f59d2fddf4b30bb24d520e34b71133030ad67c37d76ab232d859",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/gl/mini": {
+      "type": "model",
+      "language": "gl",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/gl/fasttext.gl.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.gl.mini.vocab.json",
+      "sha256": "2f64901e18acfac889a12a120b51eb2174f094624db92f11996b8ce2353ea778",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/gl.mini.json"
+    },
+    "kotoshu://models/he/fluency": {
+      "type": "model",
+      "language": "he",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.he.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.he.fluency.vocab.json",
+      "sha256": "dd16fe610052edaf2de787f172cab2ecb4769076c2c5b68773c513387898f440",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/he.fluency.json"
+    },
+    "kotoshu://models/he/full": {
+      "type": "model",
+      "language": "he",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.he.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.he.vocab.json",
+      "sha256": "88f8dd8651fce4a0c44513ed6407475745f77780cb3acee59e71ff51b76a4701",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/he/mini": {
+      "type": "model",
+      "language": "he",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.he.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/he/fasttext.he.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.he.mini.vocab.json",
+      "sha256": "f97351cc3fac2d7cecd7d7ad2814ffc129b0fa38c4ce60affad8b0803b5fa29d",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/he.mini.json"
+    },
+    "kotoshu://models/hr/buckets": {
+      "type": "model",
+      "language": "hr",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37924,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "ac77d8c8036bb1a3022e9035bcadb531ab51424828ce3cd6fb2d567ae7d64bff",
+      "size_bytes": 11833151,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hr.buckets.json"
+    },
+    "kotoshu://models/hr/fluency": {
+      "type": "model",
+      "language": "hr",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.fluency.vocab.json",
+      "sha256": "b23acdf9fdac4687c949c04a796cec775ee20309b1821ac52be794c785ff21d4",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hr.fluency.json"
+    },
+    "kotoshu://models/hr/full": {
+      "type": "model",
+      "language": "hr",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.vocab.json",
+      "sha256": "8b7900814a092888b08e6199b40bd458eda19ed94837afa6c7b541617c11619d",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/hr/mini": {
+      "type": "model",
+      "language": "hr",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/hr/fasttext.hr.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hr.mini.vocab.json",
+      "sha256": "6dece08ceae3f36d09bd969f7a23c6e324f6045d79ec321ff380719c1c79abd8",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hr.mini.json"
+    },
+    "kotoshu://models/hu/buckets": {
+      "type": "model",
+      "language": "hu",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38167,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "d2d5446496345803fcf8875127a763fe2f980159ec6fc6b753dcb274797e0d5c",
+      "size_bytes": 11908967,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hu.buckets.json"
+    },
+    "kotoshu://models/hu/fluency": {
+      "type": "model",
+      "language": "hu",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.fluency.vocab.json",
+      "sha256": "c1244fce76a9a0b1da053b929866f7179447e5ba22cee7126245316721ee29d3",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hu.fluency.json"
+    },
+    "kotoshu://models/hu/full": {
+      "type": "model",
+      "language": "hu",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.vocab.json",
+      "sha256": "9dcf3cfcc633acd11830b50320110b0bcb9a66d721e757617d03f220fdf43c8d",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/hu/mini": {
+      "type": "model",
+      "language": "hu",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/hu/fasttext.hu.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hu.mini.vocab.json",
+      "sha256": "6ab84ada9fcb73307c4979a36f58e95066b9096b4e97a8bc5357d8e5b50f9cdb",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hu.mini.json"
+    },
+    "kotoshu://models/hy/buckets": {
+      "type": "model",
+      "language": "hy",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38233,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "e53a9ae3b585b435d1523f0fa9f6f6452b1bd587d8a731ea7614268ddabc5877",
+      "size_bytes": 11929559,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hy.buckets.json"
+    },
+    "kotoshu://models/hy/fluency": {
+      "type": "model",
+      "language": "hy",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.fluency.vocab.json",
+      "sha256": "521905db4a6dc6ca1515b482f6c8a9e498228f4bcd5379aeebb15ded15576d73",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hy.fluency.json"
+    },
+    "kotoshu://models/hy/full": {
+      "type": "model",
+      "language": "hy",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.vocab.json",
+      "sha256": "d7bccae6e7d269e7726f6368d99d577ca0cba64009d48a96cfeecd7deddc09bd",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/hy/mini": {
+      "type": "model",
+      "language": "hy",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/hy/fasttext.hy.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.hy.mini.vocab.json",
+      "sha256": "33cbf62a8e93a90b3cec4e84ebdbdc7a8fe0c259473df735e77f5ffecf877a26",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hy.mini.json"
+    },
+    "kotoshu://models/ia/buckets": {
+      "type": "model",
+      "language": "ia",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38210,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "09c22db89e6033b5cfdfab57d7cb87552ec87dc7b12e1b0b979bb42f7fc37812",
+      "size_bytes": 11922383,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ia.buckets.json"
+    },
+    "kotoshu://models/ia/fluency": {
+      "type": "model",
+      "language": "ia",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.fluency.vocab.json",
+      "sha256": "7576222c7c0885e5927329053cb223bd402ebcaeee2434ce78448b14d8e5267e",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ia.fluency.json"
+    },
+    "kotoshu://models/ia/full": {
+      "type": "model",
+      "language": "ia",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.vocab.json",
+      "sha256": "33589f5f774fcd72fb4d57a29da0a9f4d79ef7b39bc86c69501a4afcd3634b5b",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ia/mini": {
+      "type": "model",
+      "language": "ia",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ia/fasttext.ia.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ia.mini.vocab.json",
+      "sha256": "f6d96fdd41e8530d3e28596435d3ff1ce415042475dbba8635c96ea0718008d4",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ia.mini.json"
+    },
+    "kotoshu://models/id/buckets": {
+      "type": "model",
+      "language": "id",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37923,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "9f8ffe851d1c6906af38dab7c6b8fb7cef9cfb22dc09e3fd9d65085cac52bfc2",
+      "size_bytes": 11832839,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/id.buckets.json"
+    },
+    "kotoshu://models/id/fluency": {
+      "type": "model",
+      "language": "id",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.fluency.vocab.json",
+      "sha256": "ef61cf6fe2e1b1276f3663ada0860d0ccb5ff4d801f82951aac1c30c0bd79eb9",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/id.fluency.json"
+    },
+    "kotoshu://models/id/full": {
+      "type": "model",
+      "language": "id",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.vocab.json",
+      "sha256": "36e97f991281b5cfcedc540a7a81f085d3e5bbb4a61bf3615cc7384578c7fc09",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/id/mini": {
+      "type": "model",
+      "language": "id",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/id/fasttext.id.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.id.mini.vocab.json",
+      "sha256": "9888528b76176c7e0cfc74d90b241decd037be88fdb4da9f380bb4247b51e781",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/id.mini.json"
+    },
+    "kotoshu://models/is/buckets": {
+      "type": "model",
+      "language": "is",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37752,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "308d46669fbf066a7d187e8184b30926df162dcfae3f2ab12e749131d304231b",
+      "size_bytes": 11779487,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/is.buckets.json"
+    },
+    "kotoshu://models/is/fluency": {
+      "type": "model",
+      "language": "is",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.fluency.vocab.json",
+      "sha256": "2309b2f8a8f40e2f697ae9eb3eeb999e76bf83175c9212d02c8c6087c434be72",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/is.fluency.json"
+    },
+    "kotoshu://models/is/full": {
+      "type": "model",
+      "language": "is",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.vocab.json",
+      "sha256": "0683006ad311bfa6c8fb00ec4c9837e770d0bb786ee8d30757e1aa9ae17c1b8b",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/is/mini": {
+      "type": "model",
+      "language": "is",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/is/fasttext.is.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.is.mini.vocab.json",
+      "sha256": "9c999ae50b6c1a9ab96bd42153a6434eaa7f092c6e48f2a1970d0fc46c315436",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/is.mini.json"
+    },
+    "kotoshu://models/it/buckets": {
+      "type": "model",
+      "language": "it",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37859,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "f49ec4286195b7a95197ad608fa8549378e8a6b1d7af974dac98e8bea13bdae6",
+      "size_bytes": 11812871,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/it.buckets.json"
+    },
+    "kotoshu://models/it/fluency": {
+      "type": "model",
+      "language": "it",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.fluency.vocab.json",
+      "sha256": "2917ae0ac6aa3f34f93ca857032d0ec4b7229cf3887d4744685d2d4cc8760935",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/it.fluency.json"
+    },
+    "kotoshu://models/it/full": {
+      "type": "model",
+      "language": "it",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.vocab.json",
+      "sha256": "f86bf198167869066541610ee78f0d6cb72bab6d79173f3cb231271caea9b8cf",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/it/mini": {
+      "type": "model",
+      "language": "it",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/it/fasttext.it.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.it.mini.vocab.json",
+      "sha256": "fc8756612e30d9566ce8d10f40173a17317efa86db20524969753bbc415cf321",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/it.mini.json"
     },
     "kotoshu://models/ja/fluency": {
       "type": "model",
@@ -265,12 +2369,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ja.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ja/fasttext.ja.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ja.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ja.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ja.fluency.vocab.json",
       "sha256": "d8315e3a383f98fa10794c464726ff8777d138f8ca9d5ac8918b2f6128221d3c",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -286,12 +2390,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ja.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ja/fasttext.ja.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ja.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ja.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ja.vocab.json",
       "sha256": "ca6203ebd550dad23a2469cd39ecf2cb3a81ce65fe0a88b69932b434cfd500b9",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -307,17 +2411,122 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ja.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ja/fasttext.ja.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ja.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ja/fasttext.ja.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ja.mini.vocab.json",
-      "sha256": "cea8ded8ebcb98de8b39cc29e7bf222f1172b8b28dc371c68c375041173e405b",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ja.mini.vocab.json",
+      "sha256": "3c5cfcf9f4e12c83ede294e41d5de8fff32ea7e7a2abf75ee8787bea71f54daf",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/ja.mini.json"
+    },
+    "kotoshu://models/ka/buckets": {
+      "type": "model",
+      "language": "ka",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38362,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "90df663b664a081bfa847598b3e0b5e594f0e526f2752d3b76715ada433d2fe4",
+      "size_bytes": 11969807,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ka.buckets.json"
+    },
+    "kotoshu://models/ka/fluency": {
+      "type": "model",
+      "language": "ka",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.fluency.vocab.json",
+      "sha256": "f36238d439a4883757847f3d33fe6a1f4c45d2fe5338c15b8ebe7adbdd9ab583",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ka.fluency.json"
+    },
+    "kotoshu://models/ka/full": {
+      "type": "model",
+      "language": "ka",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.vocab.json",
+      "sha256": "31267166a2be94c0b6b90a6cfc92e32ebef9ae58f3fe006372a35df0d560093b",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ka/mini": {
+      "type": "model",
+      "language": "ka",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ka/fasttext.ka.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ka.mini.vocab.json",
+      "sha256": "9874c3b9f9e2278f152a19e3e63431baa2fe06fdda54f4fc31005e34c26c048f",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ka.mini.json"
+    },
+    "kotoshu://models/ko/buckets": {
+      "type": "model",
+      "language": "ko",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32810,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "1b27f78136a6b98c813db67898e3dddb65f2d34054947535da95cd40e587a113",
+      "size_bytes": 10237583,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ko.buckets.json"
     },
     "kotoshu://models/ko/fluency": {
       "type": "model",
@@ -328,12 +2537,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ko.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ko/fasttext.ko.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ko.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.fluency.vocab.json",
       "sha256": "b12fd692674774567aad187a0c2c092315c28be537536ab9687694d30818197c",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -349,12 +2558,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ko.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ko/fasttext.ko.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ko.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.vocab.json",
       "sha256": "e01d445ffaccc56b06c1bd5d6bfb1260c2308bfebc044149090b64c460cbf84e",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -370,17 +2579,1046 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ko.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ko/fasttext.ko.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ko/fasttext.ko.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ko.mini.vocab.json",
-      "sha256": "1dad86dbe8dd924054a8bb6ca24ab91781c737810f22b2b4948c2fba87067288",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ko.mini.vocab.json",
+      "sha256": "f1aad2d5807939782f087502650ae186acd7fb351a70ee5107e1c03f2e61d04c",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/ko.mini.json"
+    },
+    "kotoshu://models/la/buckets": {
+      "type": "model",
+      "language": "la",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37796,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "f83756f451f5f1851f824dcfd6a0b98e744e8c316b52a3f57d2466743f9451ea",
+      "size_bytes": 11793215,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/la.buckets.json"
+    },
+    "kotoshu://models/la/fluency": {
+      "type": "model",
+      "language": "la",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.fluency.vocab.json",
+      "sha256": "1b179ed1abac5256e0e6197d2a79ab79daf84393fea649f3bfe1169e3fd38e9d",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/la.fluency.json"
+    },
+    "kotoshu://models/la/full": {
+      "type": "model",
+      "language": "la",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.vocab.json",
+      "sha256": "cb3dfdb79fe1fa5194fdfc8491657123f05c2f8637c615071c5f7148c57264f3",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/la/mini": {
+      "type": "model",
+      "language": "la",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/la/fasttext.la.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.la.mini.vocab.json",
+      "sha256": "c55904430f652866aeaf8f00c445b9e85ab4b914fc1663dfbebc114efb220782",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/la.mini.json"
+    },
+    "kotoshu://models/lb/buckets": {
+      "type": "model",
+      "language": "lb",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37875,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "224987e4f395c382a5c9c29aff57824edd23e10bf79210d055037bb526623840",
+      "size_bytes": 11817863,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lb.buckets.json"
+    },
+    "kotoshu://models/lb/fluency": {
+      "type": "model",
+      "language": "lb",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.fluency.vocab.json",
+      "sha256": "a452dfdcdfba014ea41b89ce80c0a901f6d6811d323e989cbb42552b8d6f9fbf",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lb.fluency.json"
+    },
+    "kotoshu://models/lb/full": {
+      "type": "model",
+      "language": "lb",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.vocab.json",
+      "sha256": "8fc7a1aac8f0b6c46974003082807deed6bed9b4d63ca12d7d8ac5705232220f",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/lb/mini": {
+      "type": "model",
+      "language": "lb",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/lb/fasttext.lb.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lb.mini.vocab.json",
+      "sha256": "cc50b50221e20c8c0b7851bd4cd9950281c3da6be28bd8b5ca6dbfe74bfe3014",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lb.mini.json"
+    },
+    "kotoshu://models/lid/lid-176": {
+      "type": "model",
+      "language": "lid",
+      "tier": {
+        "name": "lid-176",
+        "dims": 16,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/lid.176.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/lid/lid.176.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/lid.176.vocab.json",
+      "sha256": "6f77b89d29d2591c305eca294f85acff9b1d8ace5c50a119dccb3b31a6f62ed0",
+      "size_bytes": 1012025,
+      "license": "MIT",
+      "min_engine_version": "0.3",
+      "eval_ref": "eval/reports/lid.176.json"
+    },
+    "kotoshu://models/lt/buckets": {
+      "type": "model",
+      "language": "lt",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38242,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "9275b5a627b2361c97f23d090228f770cb96daac3fdfe71b15edb0ec1cdf65c2",
+      "size_bytes": 11932367,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lt.buckets.json"
+    },
+    "kotoshu://models/lt/fluency": {
+      "type": "model",
+      "language": "lt",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.fluency.vocab.json",
+      "sha256": "49545973d119e41543f8d892a1e12fe7bbb9dd5285e5f1828502b7aa356ff988",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lt.fluency.json"
+    },
+    "kotoshu://models/lt/full": {
+      "type": "model",
+      "language": "lt",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.vocab.json",
+      "sha256": "8bf81a5f95c03eaf89f69f7dd37371f8ae55172879f0f19a5315f687b4c1e0a0",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/lt/mini": {
+      "type": "model",
+      "language": "lt",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/lt/fasttext.lt.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lt.mini.vocab.json",
+      "sha256": "609d6a403dae1197cf94cb11d5ffc1df6a3186ae9a7e3992e485284747065a9d",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lt.mini.json"
+    },
+    "kotoshu://models/lv/buckets": {
+      "type": "model",
+      "language": "lv",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38176,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "cdd43384d43e9f2440fa4366886b6d62c319ba76527ef62ee37b12aeaf9d2fb0",
+      "size_bytes": 11911775,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lv.buckets.json"
+    },
+    "kotoshu://models/lv/fluency": {
+      "type": "model",
+      "language": "lv",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.fluency.vocab.json",
+      "sha256": "01d07d538b4d24bd60c6c9e920284d7e9efa4a6165a691f0c8aaa5f6e1d38b55",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lv.fluency.json"
+    },
+    "kotoshu://models/lv/full": {
+      "type": "model",
+      "language": "lv",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.vocab.json",
+      "sha256": "fb407947404815ffc64cb8db72af5eb7b2ce9479168ba6a7360fd87a60d24a73",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/lv/mini": {
+      "type": "model",
+      "language": "lv",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/lv/fasttext.lv.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.lv.mini.vocab.json",
+      "sha256": "4678a8cfb53fa4a3b236454238fe18eb095dcd64cb4074fbf249bc5b86c794e9",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/lv.mini.json"
+    },
+    "kotoshu://models/mk/buckets": {
+      "type": "model",
+      "language": "mk",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37914,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "6d0c0801d95e516c41ffcb93d8d06d2e47d81f841d4a329ebf458936e5ff306d",
+      "size_bytes": 11830031,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/mk.buckets.json"
+    },
+    "kotoshu://models/mk/fluency": {
+      "type": "model",
+      "language": "mk",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.fluency.vocab.json",
+      "sha256": "c38e97543d39757b94ce5a20f661ffa23ba3d2ca78368f98309614ec87412cf0",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/mk.fluency.json"
+    },
+    "kotoshu://models/mk/full": {
+      "type": "model",
+      "language": "mk",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.vocab.json",
+      "sha256": "4d50ab2b4d2373803ec698ea6d3415ca4d8bd9a2514382e16c6a0675f3c70e9e",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/mk/mini": {
+      "type": "model",
+      "language": "mk",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/mk/fasttext.mk.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mk.mini.vocab.json",
+      "sha256": "a4bf710e5ee638e56f8e7ee0c51945e7a41fe9e04b8c8b088247008e5d7cea2e",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/mk.mini.json"
+    },
+    "kotoshu://models/mn/buckets": {
+      "type": "model",
+      "language": "mn",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37675,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "b3bcf36f13b056f5a1e2f214ffa1b146e48452de96beb3b17fbd9a61f89b5827",
+      "size_bytes": 11755463,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/mn.buckets.json"
+    },
+    "kotoshu://models/mn/fluency": {
+      "type": "model",
+      "language": "mn",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.fluency.vocab.json",
+      "sha256": "5640659348025237a84783f5f540a9d98d4eb5887d9f339f26f8d21f32b9890d",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/mn.fluency.json"
+    },
+    "kotoshu://models/mn/full": {
+      "type": "model",
+      "language": "mn",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.vocab.json",
+      "sha256": "04ff1ab0a8f589dbc0ac756f08af90b088bc2d2982f073aed7f1c76d80850be9",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/mn/mini": {
+      "type": "model",
+      "language": "mn",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/mn/fasttext.mn.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.mn.mini.vocab.json",
+      "sha256": "42c9b6db3c54b71e5c46ce12520912a9d1e5605b4c1e836be0a44f499de54777",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/mn.mini.json"
+    },
+    "kotoshu://models/nb/buckets": {
+      "type": "model",
+      "language": "nb",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37841,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "0d9ec862b785f839f5d32059a0608d5b2e90c4806990e9e272bb164eff228126",
+      "size_bytes": 11807255,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nb.buckets.json"
+    },
+    "kotoshu://models/nb/fluency": {
+      "type": "model",
+      "language": "nb",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.fluency.vocab.json",
+      "sha256": "13feee1424c447b02ca90cbd5d6dc3ed63b70202e18fca7d6eeff7c1e5885abf",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nb.fluency.json"
+    },
+    "kotoshu://models/nb/full": {
+      "type": "model",
+      "language": "nb",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.vocab.json",
+      "sha256": "5b4f58b1df6c63cc17ef8a6061c3481d4578838b350e2e65e15f5582d5dc6c3e",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/nb/mini": {
+      "type": "model",
+      "language": "nb",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/nb/fasttext.nb.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nb.mini.vocab.json",
+      "sha256": "9ad8feef5f247795b55ebcc28cdb746680a7f4024c049ac2ef6ac803fbf04681",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nb.mini.json"
+    },
+    "kotoshu://models/ne/buckets": {
+      "type": "model",
+      "language": "ne",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 34004,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "998b2817aff51bc761614cf9590c68c93bf4391c0fd68602754d3ededdc22ff2",
+      "size_bytes": 10610111,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ne.buckets.json"
+    },
+    "kotoshu://models/ne/fluency": {
+      "type": "model",
+      "language": "ne",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 60000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.fluency.vocab.json",
+      "sha256": "6d03ae70d2283032178dc21db9d8ca6549d1d9fe49202e90607b35afa46ccdd5",
+      "size_bytes": 18240760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ne.fluency.json"
+    },
+    "kotoshu://models/ne/full": {
+      "type": "model",
+      "language": "ne",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.vocab.json",
+      "sha256": "1fcfd0afa2d377e0671f86f3252b9f23ba8dd4068a4458eb201c5efd0a4d72d5",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ne/mini": {
+      "type": "model",
+      "language": "ne",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ne/fasttext.ne.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ne.mini.vocab.json",
+      "sha256": "a3898d952a79961820286a7ac8a7cde84619e7206f31a70db84ad0c7676520d9",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ne.mini.json"
+    },
+    "kotoshu://models/nl/buckets": {
+      "type": "model",
+      "language": "nl",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37813,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "837dfe6f996d611b23bafd7b9c19ffe87170c61d6c42743b371a40d9cbe7a7a6",
+      "size_bytes": 11798519,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nl.buckets.json"
+    },
+    "kotoshu://models/nl/fluency": {
+      "type": "model",
+      "language": "nl",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.fluency.vocab.json",
+      "sha256": "5cf2d10364b9472ce7bcbca8a2cf450cf71a2efc24495b33a2fb47f4e00ec814",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nl.fluency.json"
+    },
+    "kotoshu://models/nl/full": {
+      "type": "model",
+      "language": "nl",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.vocab.json",
+      "sha256": "71cdce125467b49fb7029fbed9a47a344535beb6603e3d797525648c33b205ae",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/nl/mini": {
+      "type": "model",
+      "language": "nl",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/nl/fasttext.nl.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nl.mini.vocab.json",
+      "sha256": "e98e396d0b50ff59134b5822f1f0774f253f78589bcbed554356cb6d81d8bd1b",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nl.mini.json"
+    },
+    "kotoshu://models/nn/buckets": {
+      "type": "model",
+      "language": "nn",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37703,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "cb378c77dbd04b55c0992aa0a4d21a23df9c80794c09c24aea085c23f22199f8",
+      "size_bytes": 11764199,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nn.buckets.json"
+    },
+    "kotoshu://models/nn/fluency": {
+      "type": "model",
+      "language": "nn",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.fluency.vocab.json",
+      "sha256": "361122853a1127f31a20c3af85b0f11c0ef353413100f36b12aa3e7c650988bc",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nn.fluency.json"
+    },
+    "kotoshu://models/nn/full": {
+      "type": "model",
+      "language": "nn",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.vocab.json",
+      "sha256": "c8ad1d04460a03645c9a9011add82dd697da95621400e6fbd9259cbef5bb4987",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/nn/mini": {
+      "type": "model",
+      "language": "nn",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/nn/fasttext.nn.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.nn.mini.vocab.json",
+      "sha256": "377943eed8e8818a992787cab0cee7d49d20a19976ae57c9f3698acb99e2b447",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/nn.mini.json"
+    },
+    "kotoshu://models/oc/buckets": {
+      "type": "model",
+      "language": "oc",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37883,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "eb2a4e496a84f1728f8be445fd798597817f2156a309e98de35fb6eb215dc6d5",
+      "size_bytes": 11820359,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/oc.buckets.json"
+    },
+    "kotoshu://models/oc/fluency": {
+      "type": "model",
+      "language": "oc",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.fluency.vocab.json",
+      "sha256": "e7cc59d328bfa3a492f94beb94274eda20a278170c9abfc0508194a853c35e3f",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/oc.fluency.json"
+    },
+    "kotoshu://models/oc/full": {
+      "type": "model",
+      "language": "oc",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.vocab.json",
+      "sha256": "b68a7bdbf6c06136effee74e462b2f145b3a455966c697b89eb86237081e6fe4",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/oc/mini": {
+      "type": "model",
+      "language": "oc",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/oc/fasttext.oc.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.oc.mini.vocab.json",
+      "sha256": "66d77261f93785b1ff8865a323b1d0f181a1fe6e8b4ce6c9a351e10dffb6d253",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/oc.mini.json"
+    },
+    "kotoshu://models/pl/fluency": {
+      "type": "model",
+      "language": "pl",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pl.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pl.fluency.vocab.json",
+      "sha256": "a912ad7c33b8ea975e57bdb01df046905f17e6e67b40906f109ab0d769d174f3",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/pl.fluency.json"
+    },
+    "kotoshu://models/pl/full": {
+      "type": "model",
+      "language": "pl",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pl.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pl.vocab.json",
+      "sha256": "f8726ec5711747dde1d0e7031917b399a732598469e53a565b42a309cf837574",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/pl/mini": {
+      "type": "model",
+      "language": "pl",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pl.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/pl/fasttext.pl.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pl.mini.vocab.json",
+      "sha256": "79c7792c9727c9da6c88ff48e8c5aa6e175bee505f8a469ea7e957a185e48dd3",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/pl.mini.json"
+    },
+    "kotoshu://models/pt/buckets": {
+      "type": "model",
+      "language": "pt",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32955,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "118d831e3af91ea43047446b7e1de59221f5b0a3bc3f45ac93ba3d6f0bf40691",
+      "size_bytes": 10282823,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/pt.buckets.json"
     },
     "kotoshu://models/pt/fluency": {
       "type": "model",
@@ -391,12 +3629,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.pt.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/pt/fasttext.pt.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.pt.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.fluency.vocab.json",
       "sha256": "fb8695c4be60d238e9aaa0f211defb93ea4d94fea5cb85ad282bb87dc5402494",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -412,12 +3650,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.pt.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/pt/fasttext.pt.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.pt.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.vocab.json",
       "sha256": "2905cfd281d5d338667525230cc348a2d720f069c318270d6436689ce0445839",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -433,17 +3671,144 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.pt.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/pt/fasttext.pt.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/pt/fasttext.pt.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.pt.mini.vocab.json",
-      "sha256": "5fb94c7a2589d8222eea4f8174bf361c038a828c80787befa9edd0d650d8674c",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.pt.mini.vocab.json",
+      "sha256": "f0e0251e082d9fe83606351c3048be621400761cb9686baaa4989123d4105795",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/pt.mini.json"
+    },
+    "kotoshu://models/pt/typo-matrix": {
+      "type": "model",
+      "language": "pt",
+      "tier": {
+        "name": "typo-matrix",
+        "dims": 256,
+        "vocab_size": 100000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/typo.matrix.pt.ktm1",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "9ddc4178c13dd75e0d770da36e0bf380c10e8980d5a0ca61ceff09de932cf18a",
+      "size_bytes": 26000016,
+      "paired_vocab_sha256": "2905cfd281d5d338667525230cc348a2d720f069c318270d6436689ce0445839",
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "1.1",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/ro/buckets": {
+      "type": "model",
+      "language": "ro",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37817,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "29b05cd18be1566c7ac146487f73876af3b0ff444c14510a1dc82a88a85fffa4",
+      "size_bytes": 11799767,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ro.buckets.json"
+    },
+    "kotoshu://models/ro/fluency": {
+      "type": "model",
+      "language": "ro",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.fluency.vocab.json",
+      "sha256": "20fd6e5165d53d7ecd267473360efaa56e2688534c92e1c932aebde0d59094a9",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ro.fluency.json"
+    },
+    "kotoshu://models/ro/full": {
+      "type": "model",
+      "language": "ro",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.vocab.json",
+      "sha256": "3a1d000b5bcaed1b90e510d4437c16d183c18d3851346177941dbdc5373fc63b",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/ro/mini": {
+      "type": "model",
+      "language": "ro",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ro/fasttext.ro.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ro.mini.vocab.json",
+      "sha256": "37653767b4453425ae0a66c6bdbfdbf749524292af497a26f4112f065c361839",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ro.mini.json"
+    },
+    "kotoshu://models/ru/buckets": {
+      "type": "model",
+      "language": "ru",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 33196,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "6b0622a7df933c21d4444bc7747bf80c835aa43e0bed1284cf9b22b831a07581",
+      "size_bytes": 10358015,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/ru.buckets.json"
     },
     "kotoshu://models/ru/fluency": {
       "type": "model",
@@ -454,12 +3819,12 @@
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ru.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ru/fasttext.ru.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ru.fluency.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.fluency.vocab.json",
       "sha256": "0262c415c2540d3252929180978ec9505e3305113a89a3023b7058613ddd1757",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
@@ -475,12 +3840,12 @@
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ru.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ru/fasttext.ru.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ru.vocab.json",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.vocab.json",
       "sha256": "da4c11be5dd9a50ef7fc34304f22881de2ce4ecfde63fb11321d1a8bdb8f3e15",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
@@ -496,80 +3861,1116 @@
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ru.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/ru/fasttext.ru.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/ru/fasttext.ru.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.ru.mini.vocab.json",
-      "sha256": "94b3533ef70202280b8268dbdce3dcddfb699382b707506c58ac1cec22890f26",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.ru.mini.vocab.json",
+      "sha256": "c93c0f1b7efaf4991a667d0510b0f2e2f7b1c2b82ef0f043df820dfd27d977e3",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": "eval/reports/ru.mini.json"
     },
-    "kotoshu://models/zh/fluency": {
+    "kotoshu://models/ru/typo-matrix": {
       "type": "model",
-      "language": "zh",
+      "language": "ru",
+      "tier": {
+        "name": "typo-matrix",
+        "dims": 256,
+        "vocab_size": 100000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/typo.matrix.ru.ktm1",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "b9cbe74320c219274641aff335420014eb3be3654310a4fdafb7e040c002de3d",
+      "size_bytes": 26000016,
+      "paired_vocab_sha256": "da4c11be5dd9a50ef7fc34304f22881de2ce4ecfde63fb11321d1a8bdb8f3e15",
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "1.1",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/sk/buckets": {
+      "type": "model",
+      "language": "sk",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 70520,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "1095441b0ae8c64971bc04b1a982c4bb26d37cdff4f9997ec6d5cbb20789fce3",
+      "size_bytes": 22003103,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sk.buckets.json"
+    },
+    "kotoshu://models/sk/fluency": {
+      "type": "model",
+      "language": "sk",
       "tier": {
         "name": "fluency",
         "dims": 300,
         "vocab_size": 50000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.zh.fluency.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/zh/fasttext.zh.fluency.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.fluency.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.zh.fluency.vocab.json",
-      "sha256": "93f62551246dbcff5dcdd5a9c73b9aa4ab353ff1712d96c5f0dfbb20376419a4",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.fluency.vocab.json",
+      "sha256": "85450c89fdd450b3ff7679d2708714f1456fa0a4f27a3e1b057a9c3748655a15",
       "size_bytes": 15200760,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
-      "eval_ref": "eval/reports/zh.fluency.json"
+      "eval_ref": "eval/reports/sk.fluency.json"
     },
-    "kotoshu://models/zh/full": {
+    "kotoshu://models/sk/full": {
       "type": "model",
-      "language": "zh",
+      "language": "sk",
       "tier": {
         "name": "full",
         "dims": 300,
         "vocab_size": 100000,
         "quantization": null
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.zh.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/zh/fasttext.zh.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.onnx",
+        "mirror": null
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.zh.vocab.json",
-      "sha256": "5e137d691bd1170f728dad951af9c38be6430cb4738e13154065dafa5246336c",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.vocab.json",
+      "sha256": "b0b66d045c552a095a46040b47e8338f89e6fbc5c1a66dde7b344f9eb7cd2ece",
       "size_bytes": 120000415,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
       "eval_ref": null
     },
-    "kotoshu://models/zh/mini": {
+    "kotoshu://models/sk/mini": {
       "type": "model",
-      "language": "zh",
+      "language": "sk",
       "tier": {
         "name": "mini",
         "dims": 300,
         "vocab_size": 10000,
         "quantization": "int8-per-row"
       },
-      "version": "1.0.1",
+      "version": "1.8.0",
       "urls": {
-        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.zh.mini.onnx",
-        "mirror": "https://github.com/kotoshu/models-fasttext-onnx/raw/main/models/zh/fasttext.zh.mini.onnx"
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/sk/fasttext.sk.mini.onnx"
       },
-      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.0.1/fasttext.zh.mini.vocab.json",
-      "sha256": "5b1b49324325bd166c7f8449ebf83cdf82b967cbd1fca774107e6ee592a048b3",
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sk.mini.vocab.json",
+      "sha256": "5067c2652b4c3d677cc39bf22bed18ff945a8d03390b76d02412985868d3e03f",
       "size_bytes": 3040752,
       "license": "CC-BY-SA-3.0",
       "min_engine_version": "0.7",
-      "eval_ref": "eval/reports/zh.mini.json"
+      "eval_ref": "eval/reports/sk.mini.json"
+    },
+    "kotoshu://models/sl/buckets": {
+      "type": "model",
+      "language": "sl",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37913,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "46eccb2c1031e96661e09e4cf9b2028569a8de01e6f3906d4f72edd557e182c5",
+      "size_bytes": 11829719,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sl.buckets.json"
+    },
+    "kotoshu://models/sl/fluency": {
+      "type": "model",
+      "language": "sl",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.fluency.vocab.json",
+      "sha256": "5ab4060b58ec0b3b4b4507c8e2e4cf3508ed8256857250045f5363a600cae3a8",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sl.fluency.json"
+    },
+    "kotoshu://models/sl/full": {
+      "type": "model",
+      "language": "sl",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.vocab.json",
+      "sha256": "8461122476c18b133a6d465802c57868b4d37039a612ee57a1066b4c562aafb0",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/sl/mini": {
+      "type": "model",
+      "language": "sl",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/sl/fasttext.sl.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sl.mini.vocab.json",
+      "sha256": "91bc8f5cd50d352bce9a285aa578c252537fdb70eb72a792f3b445051d790908",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sl.mini.json"
+    },
+    "kotoshu://models/sr/buckets": {
+      "type": "model",
+      "language": "sr",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 70335,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "1ec1aba17b260f0274f3abf44949d66c72b551c6da9f6aedffdb6415ab0502e6",
+      "size_bytes": 21945383,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sr.buckets.json"
+    },
+    "kotoshu://models/sr/fluency": {
+      "type": "model",
+      "language": "sr",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.fluency.vocab.json",
+      "sha256": "71ef72a2def45754455f0b4cb1a3fb02319f839673db4011dc0f4de3c39782fb",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sr.fluency.json"
+    },
+    "kotoshu://models/sr/full": {
+      "type": "model",
+      "language": "sr",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.vocab.json",
+      "sha256": "74d0852aa2bc0ab38a9d82eba42e49d6d791fffac3bc5487d1b1ff452371f8fe",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/sr/mini": {
+      "type": "model",
+      "language": "sr",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/sr/fasttext.sr.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sr.mini.vocab.json",
+      "sha256": "79b4e4dea938356a54ff8019045aeabcf630cd9e40fbb281b661ccfb1f6fb717",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sr.mini.json"
+    },
+    "kotoshu://models/sv/buckets": {
+      "type": "model",
+      "language": "sv",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 70303,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "3c9511195ca8ef11d8cc7c35173c33d25eb7a382439096f085b91957efa1719c",
+      "size_bytes": 21935399,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sv.buckets.json"
+    },
+    "kotoshu://models/sv/fluency": {
+      "type": "model",
+      "language": "sv",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.fluency.vocab.json",
+      "sha256": "01f1a81ed9067835214217688a6fcfbea4607b311a7be076f49bc9af8f9215af",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sv.fluency.json"
+    },
+    "kotoshu://models/sv/full": {
+      "type": "model",
+      "language": "sv",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.vocab.json",
+      "sha256": "db134b7756aa3ec5da7cdfb26592c97ee621d89c1a9ef446fbed246ca399bf0a",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/sv/mini": {
+      "type": "model",
+      "language": "sv",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/sv/fasttext.sv.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.sv.mini.vocab.json",
+      "sha256": "e7c9fd0f4a1474157a98562e02acc13fd5915212e6814d3bc76463ebec133aec",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/sv.mini.json"
+    },
+    "kotoshu://models/tk/buckets": {
+      "type": "model",
+      "language": "tk",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38038,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "7fa9f76164c6f4f3f8dd8d6f5fb6dd1986c538d2a7b24453d6843bc91a8c0110",
+      "size_bytes": 11868719,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/tk.buckets.json"
+    },
+    "kotoshu://models/tk/fluency": {
+      "type": "model",
+      "language": "tk",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.fluency.vocab.json",
+      "sha256": "c6f361e82a930a83068424352083afed5b191ef42b713a058b05ccfb00fce89a",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/tk.fluency.json"
+    },
+    "kotoshu://models/tk/full": {
+      "type": "model",
+      "language": "tk",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.vocab.json",
+      "sha256": "c084e37ef01f63c19f42da3f86c634a1198f0ece02a162f13c35959b31ab895a",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/tk/mini": {
+      "type": "model",
+      "language": "tk",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/tk/fasttext.tk.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tk.mini.vocab.json",
+      "sha256": "a4b06c81d483aed28de28c6d8952dcfbbd476b649369e4d676b4b8fdc6c99ff9",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/tk.mini.json"
+    },
+    "kotoshu://models/tr/buckets": {
+      "type": "model",
+      "language": "tr",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 37775,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "9398e0bdcb13a86d8da37ef21975993c4a7db3c05f071844db4b34faa72cf4b9",
+      "size_bytes": 11786663,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/tr.buckets.json"
+    },
+    "kotoshu://models/tr/fluency": {
+      "type": "model",
+      "language": "tr",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.fluency.vocab.json",
+      "sha256": "b061bde6edee0712bb6b7d49deee3f7f14c3bc6ffc5c8c5fecc229371b1faac8",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/tr.fluency.json"
+    },
+    "kotoshu://models/tr/full": {
+      "type": "model",
+      "language": "tr",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.vocab.json",
+      "sha256": "31efe1e736bf7b4c18f958e08ce5e5731af89d0d0e0d64519a802cab1c6ec923",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/tr/mini": {
+      "type": "model",
+      "language": "tr",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/tr/fasttext.tr.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.tr.mini.vocab.json",
+      "sha256": "1ee533157420a4eaa7b9cfb02e253c2b046e23f5fd301d67b9b508f677db9392",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/tr.mini.json"
+    },
+    "kotoshu://models/typo/typo-biencoder": {
+      "type": "model",
+      "language": "typo",
+      "tier": {
+        "name": "typo-biencoder",
+        "dims": 256,
+        "vocab_size": 1821,
+        "quantization": "int8-dynamic"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.7.0/typo.biencoder.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/typo/typo.biencoder.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.7.0/typo.biencoder.vocab.json",
+      "sha256": "9fc0f58da83367637d10d7ccba3bb9c020c5d4d1020d98b4f5bdff27643e7580",
+      "size_bytes": 480786,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/hybrid-pricing.json"
+    },
+    "kotoshu://models/uk/buckets": {
+      "type": "model",
+      "language": "uk",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 38144,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "4a5eb5eff95752ca782e2f4ec27a5372092b9d93a2b641dd8bc7ca621d97d3fb",
+      "size_bytes": 11901791,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/uk.buckets.json"
+    },
+    "kotoshu://models/uk/fluency": {
+      "type": "model",
+      "language": "uk",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 60000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.fluency.vocab.json",
+      "sha256": "f1904b1220ef6c231425b1f0901942a06202e9810c26d70773ff4581ab75df3c",
+      "size_bytes": 18240760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/uk.fluency.json"
+    },
+    "kotoshu://models/uk/full": {
+      "type": "model",
+      "language": "uk",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.vocab.json",
+      "sha256": "6b0ecc3f0dd9331160b3b9c5981f8700db1876e19a1f4176dc3a931563f128d3",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/uk/mini": {
+      "type": "model",
+      "language": "uk",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/uk/fasttext.uk.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.uk.mini.vocab.json",
+      "sha256": "2369fd0b31e521b83ddeec92e73882492ced8cbb74dbdd2403f39555ffffb8ee",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/uk.mini.json"
+    },
+    "kotoshu://models/vi/fluency": {
+      "type": "model",
+      "language": "vi",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.vi.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.vi.fluency.vocab.json",
+      "sha256": "f054f939100770db138c62c0d1e6596bf4db5a40590194976ec2304d4e8702a2",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/vi.fluency.json"
+    },
+    "kotoshu://models/vi/full": {
+      "type": "model",
+      "language": "vi",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.vi.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.vi.vocab.json",
+      "sha256": "393cc5a6f39c1ecff99f7b8c5f7aa18d43f74bad7d2701367416f3c97cf6380d",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/vi/mini": {
+      "type": "model",
+      "language": "vi",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.vi.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/vi/fasttext.vi.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.vi.mini.vocab.json",
+      "sha256": "02d6841a5254254499a443228c5aab75a0c3ea7a46324a42cfa0608ba154eeb3",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/vi.mini.json"
+    },
+    "kotoshu://models/zh-Hans-CN/buckets": {
+      "type": "model",
+      "language": "zh-Hans-CN",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32778,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "da63e73fe13cbf45680889d08c16ad85129884d1242155998d0b043d390a38ba",
+      "size_bytes": 10227599,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hans-CN.buckets.json"
+    },
+    "kotoshu://models/zh-Hans-CN/fluency": {
+      "type": "model",
+      "language": "zh-Hans-CN",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.fluency.vocab.json",
+      "sha256": "f3cadd9235eaf7864952daf7bdd5b071d8c93686c0a2199f64fbfd82d68fb3eb",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hans-CN.fluency.json"
+    },
+    "kotoshu://models/zh-Hans-CN/full": {
+      "type": "model",
+      "language": "zh-Hans-CN",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.vocab.json",
+      "sha256": "1e552c59e7a041a2d8cab00402f6c2bbf45dc8ad2d3393162bba4ff18b5173e4",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/zh-Hans-CN/mini": {
+      "type": "model",
+      "language": "zh-Hans-CN",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/zh-Hans-CN/fasttext.zh-Hans-CN.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hans-CN.mini.vocab.json",
+      "sha256": "bf75f40a17fdf746b6a01b877b6e722b8dad5cf5450f287a5d8ad47756585972",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hans-CN.mini.json"
+    },
+    "kotoshu://models/zh-Hant-HK/buckets": {
+      "type": "model",
+      "language": "zh-Hant-HK",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32771,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "e5b4d404ead2719a3e9454907d56ddd73742974820cb93d9f6ca207a3614f5ca",
+      "size_bytes": 10225415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hant-HK.buckets.json"
+    },
+    "kotoshu://models/zh-Hant-HK/fluency": {
+      "type": "model",
+      "language": "zh-Hant-HK",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.fluency.vocab.json",
+      "sha256": "636d25f4d5590465141cc7a28d34b7587cab81c66e98afb87c2114560c812a54",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hant-HK.fluency.json"
+    },
+    "kotoshu://models/zh-Hant-HK/full": {
+      "type": "model",
+      "language": "zh-Hant-HK",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.vocab.json",
+      "sha256": "4bf8b1feb407b3de3c262689a32e1f82f5085efbafc86b5a04b401e5751feee8",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/zh-Hant-HK/mini": {
+      "type": "model",
+      "language": "zh-Hant-HK",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/zh-Hant-HK/fasttext.zh-Hant-HK.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-HK.mini.vocab.json",
+      "sha256": "dd474cb45ad38789eb4120d93ee029998d12d8ecb34dfc729150d0f06e0e6eb4",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hant-HK.mini.json"
+    },
+    "kotoshu://models/zh-Hant-TW/buckets": {
+      "type": "model",
+      "language": "zh-Hant-TW",
+      "tier": {
+        "name": "buckets",
+        "dims": 300,
+        "vocab_size": 32777,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.buckets.onnx",
+        "mirror": null
+      },
+      "vocab_url": null,
+      "sha256": "d5778a3e4d09efd291ec0b1c84d52cc7ff0a0bbaf3c86b1bdebfc102cf49b7de",
+      "size_bytes": 10227287,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hant-TW.buckets.json"
+    },
+    "kotoshu://models/zh-Hant-TW/fluency": {
+      "type": "model",
+      "language": "zh-Hant-TW",
+      "tier": {
+        "name": "fluency",
+        "dims": 300,
+        "vocab_size": 50000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.fluency.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.fluency.vocab.json",
+      "sha256": "c06efc4af59fa2f45e2cd612304dceff8a2f3b5564ee0def58328adc060a1912",
+      "size_bytes": 15200760,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hant-TW.fluency.json"
+    },
+    "kotoshu://models/zh-Hant-TW/full": {
+      "type": "model",
+      "language": "zh-Hant-TW",
+      "tier": {
+        "name": "full",
+        "dims": 300,
+        "vocab_size": 100000,
+        "quantization": null
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.onnx",
+        "mirror": null
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.vocab.json",
+      "sha256": "3e0bcbee805507750558b3d8d8cb6ac1f2212b33deff53f0e6a5279e4c554e36",
+      "size_bytes": 120000415,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": null
+    },
+    "kotoshu://models/zh-Hant-TW/mini": {
+      "type": "model",
+      "language": "zh-Hant-TW",
+      "tier": {
+        "name": "mini",
+        "dims": 300,
+        "vocab_size": 10000,
+        "quantization": "int8-per-row"
+      },
+      "version": "1.8.0",
+      "urls": {
+        "primary": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.mini.onnx",
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/models/zh-Hant-TW/fasttext.zh-Hant-TW.mini.onnx"
+      },
+      "vocab_url": "https://github.com/kotoshu/models-fasttext-onnx/releases/download/v1.8.0/fasttext.zh-Hant-TW.mini.vocab.json",
+      "sha256": "22b03853fb7d273164636eb84b6b1ce8a59056a680698af1ff340d2caa398f00",
+      "size_bytes": 3040752,
+      "license": "CC-BY-SA-3.0",
+      "min_engine_version": "0.7",
+      "eval_ref": "eval/reports/zh-Hant-TW.mini.json"
+    },
+    "kotoshu://packs/de": {
+      "type": "pack",
+      "language": "de",
+      "version": "1.5.0",
+      "tier": "mini",
+      "dictionary_pin": "1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d",
+      "urls": {
+        "primary": null,
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/packs/de-1.5.0.bin"
+      },
+      "contents": {
+        "aff": {
+          "tag": 1,
+          "offset": 13,
+          "length": 19199,
+          "sha256": "57fdd1b16aac2131003c91e0cf2a488becb970382a402a9ce089307301cb3ef0"
+        },
+        "dic": {
+          "tag": 2,
+          "offset": 19249,
+          "length": 1118194,
+          "sha256": "b5c781a0cf6f285fb6b9b8ab02fbea104b987104a1efdda8a835837e89e3ec77"
+        },
+        "model": {
+          "tag": 3,
+          "offset": 1137480,
+          "length": 3040752,
+          "sha256": "4ce3197de1d77d22a889f24d42c930a27bafe3c2c5cf9b62cea45fc443736941"
+        },
+        "vocab": {
+          "tag": 4,
+          "offset": 4178269,
+          "length": 210916,
+          "sha256": "534e4a48ebefa5b7a6a1be113cad707aa945c02ae4bf20c097b0a87a9ca8e40e"
+        },
+        "buckets": {
+          "tag": 5,
+          "offset": 4389222,
+          "length": 10258799,
+          "sha256": "a11de192e0c31d331deeb1b47a3c4086e91801edaadb0a807731faf3826f072d"
+        }
+      },
+      "sha256": "93b86652d9cf87259fbd674d4c95bbb2a98f42e49710c1410453023619ef41d9",
+      "size_bytes": 14648053,
+      "licenses": {
+        "embeddings": "CC-BY-SA-3.0",
+        "dictionary": "https://cdn.jsdelivr.net/gh/kotoshu/dictionaries@1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d/de/spelling/license"
+      },
+      "min_engine_version": "0.5",
+      "eval_ref": null
+    },
+    "kotoshu://packs/en": {
+      "type": "pack",
+      "language": "en",
+      "version": "1.5.0",
+      "tier": "mini",
+      "dictionary_pin": "1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d",
+      "urls": {
+        "primary": null,
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/packs/en-1.5.0.bin"
+      },
+      "contents": {
+        "aff": {
+          "tag": 1,
+          "offset": 13,
+          "length": 3086,
+          "sha256": "8ae1f19d4840d957728ad90555d5a8dff6cc5c046279c95ff0c00fc0a0136c7b"
+        },
+        "dic": {
+          "tag": 2,
+          "offset": 3136,
+          "length": 551762,
+          "sha256": "f0b1a234bd178bdd01875b2a392a9647f888b8fe879f79c52aae62c2759b3647"
+        },
+        "model": {
+          "tag": 3,
+          "offset": 554935,
+          "length": 3040752,
+          "sha256": "a51ed7d8b8d7f25044569d50748261e01e5d95ab166e7dcef6cecf7a8bc62100"
+        },
+        "vocab": {
+          "tag": 4,
+          "offset": 3595724,
+          "length": 202597,
+          "sha256": "d9173eee9958f5f29a60776c1ec8d76e752ab5fc64d939fb4b22dbf6522bf0c9"
+        },
+        "buckets": {
+          "tag": 5,
+          "offset": 3798358,
+          "length": 11375135,
+          "sha256": "88256852406a1f39b5b879f02b87149ca6ce26a57e3c32fb7eff1160073b776a"
+        }
+      },
+      "sha256": "5907b3573cb107a57473cbe8f15ba0c8f19b97e0f20168dd805e2a2d484547eb",
+      "size_bytes": 15173525,
+      "licenses": {
+        "embeddings": "CC-BY-SA-3.0",
+        "dictionary": "https://cdn.jsdelivr.net/gh/kotoshu/dictionaries@1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d/en/spelling/license"
+      },
+      "min_engine_version": "0.5",
+      "eval_ref": null
+    },
+    "kotoshu://packs/pt": {
+      "type": "pack",
+      "language": "pt",
+      "version": "1.5.0",
+      "tier": "mini",
+      "dictionary_pin": "1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d",
+      "urls": {
+        "primary": null,
+        "mirror": "https://raw.githubusercontent.com/kotoshu/models-fasttext-onnx/main/packs/pt-1.5.0.bin"
+      },
+      "contents": {
+        "aff": {
+          "tag": 1,
+          "offset": 13,
+          "length": 979789,
+          "sha256": "a9f3621b94eb4d6838474bf9982027758e77dcb248815f49409b1a4a477dbd27"
+        },
+        "dic": {
+          "tag": 2,
+          "offset": 979839,
+          "length": 4477692,
+          "sha256": "32e2edd83541d58613bcc83ef731a79aadf85ed57e977a16c6b5f711a7a36cee"
+        },
+        "model": {
+          "tag": 3,
+          "offset": 5457568,
+          "length": 3040752,
+          "sha256": "f0e0251e082d9fe83606351c3048be621400761cb9686baaa4989123d4105795"
+        },
+        "vocab": {
+          "tag": 4,
+          "offset": 8498357,
+          "length": 208629,
+          "sha256": "52ef5d165e4a88a96832fcd1597c35c84ea597f2121b02477df01db7b197bc47"
+        },
+        "buckets": {
+          "tag": 5,
+          "offset": 8707023,
+          "length": 10282823,
+          "sha256": "118d831e3af91ea43047446b7e1de59221f5b0a3bc3f45ac93ba3d6f0bf40691"
+        }
+      },
+      "sha256": "b50cb81f3293d448cb9f69e5c508435d1a6b63a3548b6f5de0166be9549057b1",
+      "size_bytes": 18989878,
+      "licenses": {
+        "embeddings": "CC-BY-SA-3.0",
+        "dictionary": "https://cdn.jsdelivr.net/gh/kotoshu/dictionaries@1829a3e2e67dc7ffb38f8dcd2d3d2294b6a8580d/pt/spelling/license"
+      },
+      "min_engine_version": "0.5",
+      "eval_ref": null
     }
   }
 }
