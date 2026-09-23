@@ -117,11 +117,14 @@ fn real_model_registry_download_and_rerank() {
         );
     }
 
-    // 5. The scope assertion: suggest("helo") reranked by the provider
-    //    keeps "hello" at rank 1. The base fixture dictionary (synced
-    //    from the gem repo) yields exactly [hello(1.0, edit_distance)]
-    //    for "helo"; the context words around it are all in-vocab and
-    //    cosine-positive, so the boost cannot displace it.
+    // 5. The scope assertion: suggest("hlelo") reranked by the provider
+    //    keeps "hello" at rank 1. The ranked composite's slate for
+    //    "hlelo" is the frozen-vectors contract — hello at distance 1
+    //    (confidence 1/(1+1) = 0.5), the distance-2 rows at 1/3 — so the
+    //    context boost (~1e-2 here) can refine but not displace the
+    //    distance ordering. (The pre-ranked slate was a single
+    //    hello(1.0, edit_distance) row whose capped confidence the old
+    //    assertion pinned.)
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../tests/fixtures/spec/integrational/fixtures/base");
     let (aff, dic) = (base.with_extension("aff"), base.with_extension("dic"));
@@ -134,16 +137,19 @@ fn real_model_registry_download_and_rerank() {
         return;
     }
     let dictionary = Dictionary::load(&aff, &dic).expect("base fixture dictionary must load");
-    let suggestions = dictionary.suggest("helo", 10);
+    let suggestions = dictionary.suggest("hlelo", 10);
     assert!(
         suggestions.iter().any(|s| s.word == "hello"),
-        "engine must suggest hello for helo: {suggestions:?}"
+        "engine must suggest hello for hlelo: {suggestions:?}"
     );
 
-    let context = Context::new("said ", "helo", " to the world");
+    let context = Context::new("said ", "hlelo", " to the world");
     let reranked = CosineReranker::new().rerank(&provider, &context, suggestions);
     assert_eq!(reranked[0].word, "hello");
-    assert_eq!(reranked[0].confidence, 1.0); // capped boost over 1.0
+    // min(slate confidence + boost, 1.0): strictly above the slate's
+    // 0.5, and the cap only engages when the boost carries it there.
+    assert!(reranked[0].confidence > 0.5);
+    assert!(reranked[0].confidence <= 1.0);
     eprintln!(
         "rerank: {} -> {:?}",
         context.current,
