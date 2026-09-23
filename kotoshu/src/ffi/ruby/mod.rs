@@ -51,7 +51,7 @@ use magnus::typed_data::Obj;
 use magnus::value::Lazy;
 use magnus::{
     Class, DataType, DataTypeFunctions, Error, ExceptionClass, Module, Object, RArray, RClass,
-    RModule, Ruby, TypedData, data_type_builder, function, method,
+    RModule, Ruby, TypedData, function, method,
 };
 
 use crate::dict::{Dictionary, LoadError};
@@ -120,7 +120,7 @@ unsafe impl TypedData for RubyDictionary {
 
     fn data_type() -> &'static DataType {
         static DATA_TYPE: DataType =
-            data_type_builder!(RubyDictionary, "Kotoshu/Native/Dictionary").build();
+            DataType::builder::<RubyDictionary>(c"Kotoshu/Native/Dictionary").build();
         &DATA_TYPE
     }
 }
@@ -256,7 +256,7 @@ pub mod typo {
     use magnus::value::Lazy;
     use magnus::{
         Class, DataType, DataTypeFunctions, Error, Module, Object, RArray, RClass, Ruby, TypedData,
-        data_type_builder, method,
+        method,
     };
 
     use crate::rerank::int8_model::Int8Model;
@@ -380,7 +380,7 @@ pub mod typo {
 
         fn data_type() -> &'static DataType {
             static DATA_TYPE: DataType =
-                data_type_builder!(RubyTypoModel, "Kotoshu/Native/TypoModel").build();
+                DataType::builder::<RubyTypoModel>(c"Kotoshu/Native/TypoModel").build();
             &DATA_TYPE
         }
     }
@@ -408,7 +408,7 @@ pub mod typo {
 
         fn data_type() -> &'static DataType {
             static DATA_TYPE: DataType =
-                data_type_builder!(RubyTypoTier, "Kotoshu/Native/TypoTier").build();
+                DataType::builder::<RubyTypoTier>(c"Kotoshu/Native/TypoTier").build();
             &DATA_TYPE
         }
     }
@@ -437,7 +437,7 @@ pub mod typo {
 
         fn data_type() -> &'static DataType {
             static DATA_TYPE: DataType =
-                data_type_builder!(RubyTypoEngine, "Kotoshu/Native/TypoEngine").build();
+                DataType::builder::<RubyTypoEngine>(c"Kotoshu/Native/TypoEngine").build();
             &DATA_TYPE
         }
     }

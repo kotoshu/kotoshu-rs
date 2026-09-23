@@ -18,4 +18,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 kotoshu = { path = "../../kotoshu", features = ["ruby", "model"] }
-magnus = "0.8"
+magnus = "0.9"
