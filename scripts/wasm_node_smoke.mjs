@@ -93,8 +93,8 @@ try {
   const first = rows[0];
   assertEqual("suggest('hlelo')[0].word — frozen conformance row", "hello", first?.word);
   assertEqual("suggest('hlelo')[0].distance", 1, first?.distance);
-  assertEqual("suggest('hlelo')[0].confidence", 0.5, first?.confidence);
-  assertEqual("suggest('hlelo')[0].source", "symspell", first?.source);
+  assertEqual("suggest('hlelo')[0].confidence", 1.0, first?.confidence);
+  assertEqual("suggest('hlelo')[0].source", "edit_distance", first?.source);
   assert(
     "every row has exactly the four SUGGESTION_KEYS",
     rows.every((row) => {

@@ -25,6 +25,23 @@ mod phonetic;
 mod rank;
 mod ruby_sort;
 mod sweep_index;
+
+/// The SymSpell channel is compiled out of the wasm payload: the
+/// embedded frequency index (list + fold table + the runtime deletion
+/// buckets) blows the wasm32 memory budget the ceiling test enforces
+/// (en: 64 MB; the index alone added ~67 MB peak). Those builds run the
+/// legacy composite; native/FFI builds rank.
+#[cfg(feature = "wasm")]
+mod symspell {
+    pub(crate) fn ranked() -> bool {
+        false
+    }
+    pub(crate) fn slate(_word: &str, _limit: usize) -> Vec<super::rank::Candidate> {
+        Vec::new()
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
 mod symspell;
 
 pub(crate) use sweep_index::SweepIndex;
