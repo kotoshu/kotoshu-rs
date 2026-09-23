@@ -86,12 +86,11 @@ check_equal("base correct('hlelo') — conformance vector", False, base.correct(
 check_equal(
     "base suggest('hlelo', 5) — conformance vector",
     [
-        {
-            "word": "hello",
-            "distance": 1,
-            "confidence": 1.0,
-            "source": "edit_distance",
-        }
+        {"word": "hello", "distance": 1, "confidence": 0.5, "source": "symspell"},
+        {"word": "help", "distance": 2, "confidence": 1 / 3, "source": "symspell"},
+        {"word": "hero", "distance": 2, "confidence": 1 / 3, "source": "symspell"},
+        {"word": "hell", "distance": 2, "confidence": 1 / 3, "source": "symspell"},
+        {"word": "heel", "distance": 2, "confidence": 1 / 3, "source": "symspell"},
     ],
     base.suggest("hlelo", 5),
 )
@@ -116,7 +115,7 @@ else:
         "source is a strategy str",
         isinstance(row["source"], str)
         and row["source"]
-        in ("edit_distance", "phonetic", "keyboard_proximity", "ngram"),
+        in ("symspell", "edit_distance", "phonetic", "keyboard_proximity", "ngram"),
     )
 check("default-limit suggest stays within the limit", len(base.suggest("hlelo")) <= 5)
 

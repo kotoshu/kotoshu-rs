@@ -27,8 +27,8 @@
 //! const dictionary = new KotoshuWasm(aff, dic);
 //! dictionary.correct("hello");    // => true / false
 //! dictionary.suggest("hlelo", 5); // => [{ word: "hello", distance: 1,
-//!                                 //      confidence: 1.0,
-//!                                 //      source: "edit_distance" }, ...]
+//!                                 //      confidence: 0.5,
+//!                                 //      source: "symspell" }, ...]
 //!
 //! // Semantic reranking (plan 85): the tier artifact pair, fetched by
 //! // the host, passed as bytes.
@@ -55,7 +55,8 @@
 //! keys of the gem's `Kotoshu::Suggestions::Suggestion` / the conformance
 //! `SUGGESTION_KEYS`: `word` (string), `distance` (number),
 //! `confidence` (number in `[0, 1]`) and `source` (string, one of
-//! `edit_distance`, `phonetic`, `keyboard_proximity`, `ngram`) — the same
+//! `symspell`, `edit_distance`, `phonetic`, `keyboard_proximity`, `ngram`) —
+//! the same
 //! row shape `ffi::ruby` hashes and the frozen vectors use. `limit` may be
 //! omitted (defaults to 5, the gem's `Spellchecker#suggest` default).
 //!

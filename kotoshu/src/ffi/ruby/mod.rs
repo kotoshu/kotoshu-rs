@@ -35,7 +35,8 @@
 //! of the gem's `Kotoshu::Suggestions::Suggestion` / the conformance
 //! `SUGGESTION_KEYS`: `"word"` (String), `"distance"` (Integer),
 //! `"confidence"` (Float in `[0, 1]`), `"source"` (String, one of
-//! `edit_distance`, `phonetic`, `keyboard_proximity`, `ngram`). The gem-side
+//! `symspell`, `edit_distance`, `phonetic`, `keyboard_proximity`, `ngram`).
+//! The gem-side
 //! wrapper materializes its `Suggestion` objects from these hashes.
 //!
 //! All engine failures surface as `Kotoshu::Native::Error` (a
