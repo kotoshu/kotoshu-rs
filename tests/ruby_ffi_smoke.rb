@@ -71,8 +71,16 @@ base = Kotoshu::Native::Dictionary.load("#{base_dic}.aff", "#{base_dic}.dic")
 assert_equal("base correct?('hello')", true, base.correct?("hello"))
 assert_equal("base correct?('hlelo') — conformance vector", false, base.correct?("hlelo"))
 assert_equal("base suggest('hlelo', 5) — conformance vector",
-             [{ "word" => "hello", "distance" => 1, "confidence" => 1.0,
-                "source" => "edit_distance" }],
+             [{ "word" => "hello", "distance" => 1, "confidence" => 0.5,
+                "source" => "symspell" },
+              { "word" => "help", "distance" => 2, "confidence" => 1.0 / 3,
+                "source" => "symspell" },
+              { "word" => "hero", "distance" => 2, "confidence" => 1.0 / 3,
+                "source" => "symspell" },
+              { "word" => "hell", "distance" => 2, "confidence" => 1.0 / 3,
+                "source" => "symspell" },
+              { "word" => "heel", "distance" => 2, "confidence" => 1.0 / 3,
+                "source" => "symspell" }],
              base.suggest("hlelo", 5))
 
 suggestions = base.suggest("helo", 5)
@@ -89,7 +97,7 @@ else
          row["confidence"].is_a?(Float) && row["confidence"].between?(0.0, 1.0))
   assert("source is a strategy String",
          row["source"].is_a?(String) &&
-         %w[edit_distance phonetic keyboard_proximity ngram].include?(row["source"]))
+         %w[symspell edit_distance phonetic keyboard_proximity ngram].include?(row["source"]))
 end
 assert("default-limit suggest stays within the limit", base.suggest("hlelo").length <= 5)
 

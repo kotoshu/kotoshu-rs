@@ -39,7 +39,8 @@
 //! of the gem's `Kotoshu::Suggestions::Suggestion` / the conformance
 //! `SUGGESTION_KEYS`: `"word"` (str), `"distance"` (int),
 //! `"confidence"` (float in `[0, 1]`), `"source"` (str, one of
-//! `edit_distance`, `phonetic`, `keyboard_proximity`, `ngram`) — the same
+//! `symspell`, `edit_distance`, `phonetic`, `keyboard_proximity`, `ngram`) —
+//! the same
 //! row shape `ffi::ruby` hashes, `ffi::wasm` objects and the frozen
 //! vectors use. The Python wrapper package (PyPI `kotoshu`) materializes
 //! its `Suggestion` dataclasses from these dicts.

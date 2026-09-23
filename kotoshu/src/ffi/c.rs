@@ -229,10 +229,10 @@ mod tests {
         };
         assert_eq!(suggestions[0].word, "hello");
         assert_eq!(suggestions[0].distance, 1);
-        assert_eq!(
-            suggestions[0].source,
-            shared::SuggestionSource::EditDistance
-        );
+        // The ranked composite's SymSpell slate leads ("hlelo" reaches
+        // "hello" through the published frequency list, the frozen
+        // vectors' source too).
+        assert_eq!(suggestions[0].source, shared::SuggestionSource::SymSpell);
         unsafe { kotoshu_free(output, output_len) };
 
         // Free, then the language is gone again.
