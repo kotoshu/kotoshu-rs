@@ -19,8 +19,8 @@
 mod symspell_data;
 
 use self::symspell_data::{FOLD_TABLE, FULL_LIST};
-use super::rank::Candidate;
 use super::SuggestionSource;
+use super::rank::Candidate;
 use std::collections::{HashMap, HashSet};
 
 const MAX_DISTANCE: usize = 2;
@@ -98,10 +98,13 @@ fn damerau(a: &[String], b: &[String], max: usize) -> Option<usize> {
         for j in 1..=lb {
             let sub = prev[j - 1] + usize::from(a[i - 1] != b[j - 1]);
             let mut v = (prev[j] + 1).min(cur[j - 1] + 1).min(sub);
-            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
-                if let Some(p2) = &prev2 {
-                    v = v.min(p2[j - 2] + 1);
-                }
+            if i > 1
+                && j > 1
+                && a[i - 1] == b[j - 2]
+                && a[i - 2] == b[j - 1]
+                && let Some(p2) = &prev2
+            {
+                v = v.min(p2[j - 2] + 1);
             }
             cur[j] = v;
             row_min = row_min.min(v);
@@ -173,10 +176,9 @@ fn ngram_similarity(word1: &str, word2: &str) -> f64 {
         suffix_len += 1;
     }
     let overlap = w1.iter().filter(|c| w2.contains(c)).count();
-    let similarity = overlap as f64 / max_len as f64
-        + prefix_len as f64 * 0.15
-        + suffix_len as f64 * 0.05
-        - len1.abs_diff(len2) as f64 * 0.1;
+    let similarity =
+        overlap as f64 / max_len as f64 + prefix_len as f64 * 0.15 + suffix_len as f64 * 0.05
+            - len1.abs_diff(len2) as f64 * 0.1;
     similarity.clamp(0.0, 1.0)
 }
 
@@ -223,7 +225,11 @@ fn index() -> &'static Index {
                 }
             }
         }
-        Index { words, ranks, deletes }
+        Index {
+            words,
+            ranks,
+            deletes,
+        }
     })
 }
 
@@ -260,9 +266,7 @@ pub fn slate(word: &str, caller_limit: usize) -> Vec<Candidate> {
         return Vec::new();
     }
     let lower_units: Vec<String> = lower.chars().map(String::from).collect();
-    let mut bucket = |key: &str| -> Vec<String> {
-        index.deletes.get(key).cloned().unwrap_or_default()
-    };
+    let bucket = |key: &str| -> Vec<String> { index.deletes.get(key).cloned().unwrap_or_default() };
 
     let mut candidates: HashSet<String> = HashSet::new();
     candidates.extend(bucket(&lower));
@@ -317,7 +321,11 @@ pub fn slate(word: &str, caller_limit: usize) -> Vec<Candidate> {
         .into_iter()
         .take(limit)
         .map(|(cand, dist)| Candidate {
-            confidence: if dist == 0 { 1.0 } else { 1.0 / (1.0 + dist as f64) },
+            confidence: if dist == 0 {
+                1.0
+            } else {
+                1.0 / (1.0 + dist as f64)
+            },
             distance: dist as u8,
             ngram_score: ngram_similarity(word, &cand),
             original_length: word.chars().count(),
@@ -331,28 +339,24 @@ pub fn slate(word: &str, caller_limit: usize) -> Vec<Candidate> {
 mod tests {
     use super::*;
 
+    fn units(words: &[&str]) -> Vec<String> {
+        words.iter().map(|u| u.to_string()).collect()
+    }
+
     #[test]
     fn fold_strips_latin1_marks() {
-        let s = |w: &str| -> Vec<String> { fold_word(w) };
-        assert_eq!(s("á"), vec!["a".to_string()]);
-        assert_eq!(s("é"), vec!["e".to_string()]);
-        assert_eq!(s("ó"), vec!["o".to_string()]);
-        assert_eq!(s("ç"), vec!["c".to_string()]);
-        assert_eq!(s("Iç"), vec!["i".to_string(), "c".to_string()]);
-        assert_eq!(
-            s("foó'"),
-            vec!["f", "o", "o", "'"].iter().map(|u| u.to_string()).collect::<Vec<_>>()
-        );
+        assert_eq!(fold_word("á"), units(&["a"]));
+        assert_eq!(fold_word("é"), units(&["e"]));
+        assert_eq!(fold_word("ó"), units(&["o"]));
+        assert_eq!(fold_word("ç"), units(&["c"]));
+        assert_eq!(fold_word("Iç"), units(&["i", "c"]));
+        assert_eq!(fold_word("foó'"), units(&["f", "o", "o", "'"]));
     }
 
     #[test]
     fn fold_expands_sharp_s() {
-        let s = |w: &str| -> Vec<String> { fold_word(w) };
-        assert_eq!(s("ß"), vec!["ss".to_string()]);
-        assert_eq!(
-            s("söße"),
-            vec!["s", "o", "ss", "e"].iter().map(|u| u.to_string()).collect::<Vec<_>>()
-        );
+        assert_eq!(fold_word("ß"), units(&["ss"]));
+        assert_eq!(fold_word("söße"), units(&["s", "o", "ss", "e"]));
     }
 
     #[test]
@@ -362,12 +366,9 @@ mod tests {
         // element-wise deletions of the fold never produce "musig" from
         // "müßig" (the runtime check: slate("MÜßIG") is empty while
         // slate("mussig") finds "musing").
-        let units = fold_word("müßig");
-        assert_eq!(
-            units,
-            vec!["m", "u", "ss", "i", "g"].iter().map(|u| u.to_string()).collect::<Vec<_>>()
-        );
-        assert!(!single_deletions_units(&units).contains(&"musig".to_string()));
+        let folded_units = fold_word("müßig");
+        assert_eq!(folded_units, units(&["m", "u", "ss", "i", "g"]));
+        assert!(!single_deletions_units(&folded_units).contains(&"musig".to_string()));
     }
 
     #[test]

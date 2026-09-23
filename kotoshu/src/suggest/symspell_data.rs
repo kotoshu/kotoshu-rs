@@ -42595,15 +42595,6 @@ pub const FULL_LIST: &[(&str, u32)] = &[
 ];
 
 /// Generated fold table: for every codepoint whose gem-fold
-/// (downcase is applied separately; sharp-s expands to "ss"; NFD
-/// then strip U+0300-U+036F) differs from the character itself, the
-/// folded string. Generated offline with Ruby's
-/// String#unicode_normalize(:nfd) — the exact primitive the gem's
-/// SymSpellStrategy#fold_word calls — so Rust folds byte-for-byte
-/// like MRI without a unicode-normalization dependency (P0: no
-/// third-party deps in the default build). Sorted by codepoint.
-
-/// Generated fold table: for every codepoint whose gem-fold
 /// (sharp-s expands to "ss"; NFD then strip U+0300-U+036F) differs
 /// from the character itself, the folded string. Generated offline
 /// with Ruby's String#unicode_normalize(:nfd) — the exact primitive
