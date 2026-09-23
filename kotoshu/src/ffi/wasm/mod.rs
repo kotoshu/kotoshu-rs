@@ -27,8 +27,11 @@
 //! const dictionary = new KotoshuWasm(aff, dic);
 //! dictionary.correct("hello");    // => true / false
 //! dictionary.suggest("hlelo", 5); // => [{ word: "hello", distance: 1,
-//!                                 //      confidence: 0.5,
-//!                                 //      source: "symspell" }, ...]
+//!                                 //      confidence: 1.0,
+//!                                 //      source: "edit_distance" }, ...]
+//!                                 // (the wasm payload compiles the
+//!                                 // SymSpell channel out — wasm32 memory
+//!                                 // budget — so legacy rows)
 //!
 //! // Semantic reranking (plan 85): the tier artifact pair, fetched by
 //! // the host, passed as bytes.

@@ -114,7 +114,7 @@ with tempfile.TemporaryDirectory(prefix="kotoshu-wheel-smoke-") as tmp:
             "source is a strategy str",
             isinstance(row["source"], str)
             and row["source"]
-            in ("edit_distance", "phonetic", "keyboard_proximity", "ngram"),
+            in ("symspell", "edit_distance", "phonetic", "keyboard_proximity", "ngram"),
         )
     check("default-limit suggest stays within the limit", len(dictionary.suggest("hlelo")) <= 5)
 

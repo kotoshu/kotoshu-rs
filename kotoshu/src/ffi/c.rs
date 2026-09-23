@@ -229,10 +229,17 @@ mod tests {
         };
         assert_eq!(suggestions[0].word, "hello");
         assert_eq!(suggestions[0].distance, 1);
-        // The ranked composite's SymSpell slate leads ("hlelo" reaches
-        // "hello" through the published frequency list, the frozen
-        // vectors' source too).
+        // Ranked builds: the SymSpell slate leads ("hlelo" reaches
+        // "hello" through the published frequency list — the frozen
+        // vectors' source). The wasm payload compiles the SymSpell
+        // channel out (wasm32 memory budget) and keeps the legacy row.
+        #[cfg(not(feature = "wasm"))]
         assert_eq!(suggestions[0].source, shared::SuggestionSource::SymSpell);
+        #[cfg(feature = "wasm")]
+        assert_eq!(
+            suggestions[0].source,
+            shared::SuggestionSource::EditDistance
+        );
         unsafe { kotoshu_free(output, output_len) };
 
         // Free, then the language is gone again.
