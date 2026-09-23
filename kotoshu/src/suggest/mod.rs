@@ -24,8 +24,8 @@ mod permutations;
 mod phonetic;
 mod rank;
 mod ruby_sort;
-mod symspell;
 mod sweep_index;
+mod symspell;
 
 pub(crate) use sweep_index::SweepIndex;
 
@@ -127,7 +127,11 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
     // merged-and-ranked merge applies only when there is no
     // frequency list (unranked SymSpell).
     let ranked = symspell::ranked();
-    let primary = if ranked { symspell::slate(word, limit) } else { Vec::new() };
+    let primary = if ranked {
+        symspell::slate(word, limit)
+    } else {
+        Vec::new()
+    };
 
     let mut pool: Vec<Candidate> = Vec::new();
     pool.extend(edit_distance_strategy(dictionary, word, words, sweep));
@@ -228,9 +232,8 @@ fn edit_distance_strategy(
     // share distance-1 with the real correction and steal top-1 from
     // SymSpell.
     if word.chars().all(|c| c.is_alphabetic()) {
-        candidates.retain(|(candidate_word, _, _)| {
-            candidate_word.chars().all(|c| c.is_alphabetic())
-        });
+        candidates
+            .retain(|(candidate_word, _, _)| candidate_word.chars().all(|c| c.is_alphabetic()));
     }
 
     // Case-variant dedup (the gem's `seen_words`): keep the
