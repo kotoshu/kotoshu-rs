@@ -88,6 +88,7 @@ pub enum SuggestionSource {
     KeyboardProximity = 2,
     Ngram = 3,
     Semantic = 4,
+    SymSpell = 5,
 }
 
 impl From<crate::suggest::SuggestionSource> for SuggestionSource {
@@ -97,6 +98,7 @@ impl From<crate::suggest::SuggestionSource> for SuggestionSource {
             crate::suggest::SuggestionSource::Phonetic => Self::Phonetic,
             crate::suggest::SuggestionSource::KeyboardProximity => Self::KeyboardProximity,
             crate::suggest::SuggestionSource::Ngram => Self::Ngram,
+            crate::suggest::SuggestionSource::SymSpell => Self::SymSpell,
         }
     }
 }
@@ -109,6 +111,7 @@ impl SuggestionSource {
             2 => Some(Self::KeyboardProximity),
             3 => Some(Self::Ngram),
             4 => Some(Self::Semantic),
+            5 => Some(Self::SymSpell),
             _ => None,
         }
     }

@@ -24,6 +24,7 @@ mod permutations;
 mod phonetic;
 mod rank;
 mod ruby_sort;
+mod symspell;
 mod sweep_index;
 
 pub(crate) use sweep_index::SweepIndex;
@@ -71,6 +72,8 @@ pub struct Suggestion {
 /// wire `source` strings in the conformance vectors).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SuggestionSource {
+    /// `SymSpellStrategy` (the frequency-indexed primary).
+    SymSpell,
     /// `EditDistanceStrategy`.
     EditDistance,
     /// `PhoneticStrategy`.
@@ -86,6 +89,7 @@ impl SuggestionSource {
     /// its string form by the exporter).
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::SymSpell => "symspell",
             Self::EditDistance => "edit_distance",
             Self::Phonetic => "phonetic",
             Self::KeyboardProximity => "keyboard_proximity",
@@ -114,13 +118,39 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
     // a time and its two-round variant set reaches tens of thousands of
     // lookups, each of which used to scan the whole dictionary.
     let index = WordIndex::build(words);
+    // SymSpell-primary composite (gem #226): with a frequency
+    // full_list the engine is in ranked mode — the SymSpell slate
+    // leads verbatim and the traditional strategies' output appends
+    // in strategy order; the ranked path skips sort AND dedup (only
+    // the limit applies — that is why multi-source duplicates and
+    // case variants survive in the frozen vectors). The legacy
+    // merged-and-ranked merge applies only when there is no
+    // frequency list (unranked SymSpell).
+    let ranked = symspell::ranked();
+    let primary = if ranked { symspell::slate(word, limit) } else { Vec::new() };
+
     let mut pool: Vec<Candidate> = Vec::new();
     pool.extend(edit_distance_strategy(dictionary, word, words, sweep));
     pool.extend(phonetic_strategy(word, words, sweep));
     pool.extend(keyboard_proximity_strategy(word, &index));
     pool.extend(ngram_strategy(word, words, sweep));
 
-    rank::suggestion_set(pool, limit)
+    if !ranked {
+        return rank::suggestion_set(pool, limit)
+            .into_iter()
+            .map(|candidate| Suggestion {
+                word: candidate.word,
+                distance: candidate.distance,
+                confidence: candidate.confidence,
+                source: candidate.source,
+            })
+            .collect();
+    }
+
+    let mut merged: Vec<Candidate> = primary;
+    merged.extend(pool);
+    merged.truncate(limit);
+    merged
         .into_iter()
         .map(|candidate| Suggestion {
             word: candidate.word,
@@ -191,6 +221,17 @@ fn edit_distance_strategy(
     // `candidates.sort_by { |_, _, score| score }` — Float keys, MRI's
     // uniform introsort tie order.
     ruby_sort::sort_by(&mut candidates, |candidate| candidate.2);
+
+    // C6 artifact reject: a purely alphabetic input rejects every
+    // candidate carrying punctuation it never typed — Hunspell
+    // compound-split forms like "ihr-t", "hoffentlich.e", "a lot"
+    // share distance-1 with the real correction and steal top-1 from
+    // SymSpell.
+    if word.chars().all(|c| c.is_alphabetic()) {
+        candidates.retain(|(candidate_word, _, _)| {
+            candidate_word.chars().all(|c| c.is_alphabetic())
+        });
+    }
 
     // Case-variant dedup (the gem's `seen_words`): keep the
     // best-scoring form, first after the sort, per lowercased word.

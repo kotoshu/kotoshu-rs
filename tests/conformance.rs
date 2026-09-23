@@ -391,6 +391,7 @@ fn engine_source(
         Wire::Phonetic => Engine::Phonetic,
         Wire::KeyboardProximity => Engine::KeyboardProximity,
         Wire::Ngram => Engine::Ngram,
+        Wire::SymSpell => Engine::SymSpell,
         // Semantic suggestions are not produced by the default P2
         // strategies; the wire keeps the discriminant for P3.
         Wire::Semantic => panic!("unexpected semantic suggestion over the wire"),
