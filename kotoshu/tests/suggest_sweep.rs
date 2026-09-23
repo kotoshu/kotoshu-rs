@@ -50,8 +50,19 @@ fn transposition_suggests_capitalization_form_first() {
     // alone charges the case difference plus the transposition.
     let words = suggestions("Teh");
     assert_eq!(words.first().map(String::as_str), Some("The"));
-    // The lowercased stem must not appear alongside its form.
-    assert!(!words.iter().any(|w| w == "the"));
+    // The edit strategy's case-variant dedup keeps the sweep form ahead
+    // of the stem. The ranked composite appends the other strategies'
+    // rows verbatim, so the lowercase stem may still arrive later from
+    // them — cross-strategy duplicates are the frozen-vectors contract
+    // ("alto" appears twice in sug2/alot) — it must merely never precede
+    // the form.
+    if let Some(stem_pos) = words.iter().position(|w| w == "the") {
+        let form_pos = words
+            .iter()
+            .position(|w| w == "The")
+            .expect("the sweep form is suggested");
+        assert!(form_pos < stem_pos);
+    }
 }
 
 #[test]
