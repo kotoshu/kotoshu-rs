@@ -301,10 +301,16 @@ pub fn slate(word: &str, caller_limit: usize) -> Vec<Candidate> {
     }
     candidates.remove(&lower);
 
+    // Fold-scoped scoring (gem PR #233): the ranking distance runs on
+    // the RAW downcased strings — folded discovery keys stay, but the
+    // fold no longer manufactures distances (the en vectors' dotless_i
+    // rows re-froze accordingly; the engine ranks en only, which is
+    // outside the gem's sanctioned fold set).
+    let lower_raw: Vec<String> = lower.chars().map(String::from).collect();
     let mut scored: Vec<(String, usize)> = Vec::with_capacity(candidates.len());
     for cand in &candidates {
-        let cand_fold = fold_word(cand);
-        if let Some(dist) = damerau(&folded, &cand_fold, MAX_DISTANCE + 1) {
+        let cand_raw: Vec<String> = cand.chars().map(String::from).collect();
+        if let Some(dist) = damerau(&lower_raw, &cand_raw, MAX_DISTANCE + 1) {
             scored.push((cand.clone(), dist));
         }
     }
@@ -377,12 +383,15 @@ mod tests {
     }
 
     #[test]
-    fn embedded_slate_finds_fold_distance_zero() {
-        // "ic" is rank 12021 in the published en list; the folded
-        // deletion of "iç" reaches it at distance 0.
+    fn embedded_slate_ranks_raw_after_fold_scoping() {
+        // Raw (downcased) scoring: "ic" is still discovered through the
+        // folded deletion of "iç", but its distance is honestly 1 and
+        // its rank (12021) loses the top-5 to better-ranked d1 words —
+        // the re-frozen dotless_i vector row.
         let slate = slate("Iç", 5);
-        assert_eq!(slate.first().map(|c| c.word.as_str()), Some("ic"));
-        assert_eq!(slate.first().map(|c| c.distance), Some(0));
+        let words: Vec<&str> = slate.iter().map(|c| c.word.as_str()).collect();
+        assert_eq!(words, vec!["it", "if", "i", "in", "ie"]);
+        assert!(!words.contains(&"ic"));
     }
 
     #[test]
