@@ -138,11 +138,12 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
     // SymSpell-primary composite (gem #226): with a frequency
     // full_list the engine is in ranked mode — the SymSpell slate
     // leads verbatim and the traditional strategies' output appends
-    // in strategy order; the ranked path skips sort AND dedup (only
-    // the limit applies — that is why multi-source duplicates and
-    // case variants survive in the frozen vectors). The legacy
-    // merged-and-ranked merge applies only when there is no
-    // frequency list (unranked SymSpell).
+    // in strategy order; the ranked path skips sort (the (distance,
+    // rank) order IS the decision) but tail rows for words the slate
+    // already carries are dropped (multi-source duplicates and case
+    // variants no longer survive). The legacy merged-and-ranked merge
+    // applies only when there is no frequency list (unranked
+    // SymSpell).
     let ranked = symspell::ranked();
     let primary = if ranked {
         symspell::slate(word, limit)
@@ -168,8 +169,19 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
             .collect();
     }
 
+    // The primary slate leads verbatim; the tail only fills remaining
+    // slots, so a pool candidate for a word the slate already carries
+    // is dropped (gem #226's ranked contract, amended for tail dedup —
+    // the frozen vectors previously carried kühlschrank three times
+    // for kuhlschrank under a 5-suggestion limit).
     let mut merged: Vec<Candidate> = primary;
-    merged.extend(pool);
+    let mut seen: std::collections::HashSet<String> =
+        merged.iter().map(|c| c.word.to_lowercase()).collect();
+    for candidate in pool {
+        if seen.insert(candidate.word.to_lowercase()) {
+            merged.push(candidate);
+        }
+    }
     merged.truncate(limit);
     merged
         .into_iter()
