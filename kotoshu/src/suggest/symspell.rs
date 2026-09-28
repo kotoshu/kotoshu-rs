@@ -37,12 +37,30 @@ const STRATEGY_MAX_RESULTS: usize = 10;
 /// expansion stays ONE element ("ss" among single-char elements).
 /// Deletion keys and distances are element-wise over these units, so
 /// a doubled unit must never be split.
+/// Vowelless-script marks (interscript P0, mirroring the gem's
+/// `Suggestions::VOWELLESS_MARKS`): Arabic haraqat and Hebrew niqqud
+/// are combining marks the unvocalized dictionaries never carry — they
+/// fold away entirely and are stripped from queries at ingress.
+pub fn is_vowelless_mark(ch: char) -> bool {
+    matches!(ch,
+        '\u{0591}'..='\u{05bd}'
+        | '\u{05bf}'
+        | '\u{05c1}'..='\u{05c2}'
+        | '\u{05c4}'..='\u{05c5}'
+        | '\u{05c7}'
+        | '\u{064b}'..='\u{065f}'
+        | '\u{0670}')
+}
+
 pub fn fold_word(word: &str) -> Vec<String> {
     let lower = word.to_lowercase();
     let mut out: Vec<String> = Vec::with_capacity(lower.len());
     for ch in lower.chars() {
         if ch == 'ß' {
             out.push("ss".to_string());
+            continue;
+        }
+        if is_vowelless_mark(ch) {
             continue;
         }
         match fold_table_lookup(ch) {
@@ -355,6 +373,16 @@ mod tests {
         assert_eq!(fold_word("é"), units(&["e"]));
         assert_eq!(fold_word("ó"), units(&["o"]));
         assert_eq!(fold_word("ç"), units(&["c"]));
+
+        // Vowelless scripts (interscript P0): haraqat and niqqud fold
+        // away entirely — a vocalized word folds to its unvocalized
+        // twin, and the marks are never fold units.
+        assert_eq!(fold_word("مُحَمَّد"), fold_word("محمد"));
+        assert_eq!(fold_word("סֵפֶר"), fold_word("ספר"));
+        assert!(is_vowelless_mark('ُ'));
+        assert!(is_vowelless_mark('ָ'));
+        assert!(!is_vowelless_mark('م'));
+        assert!(!is_vowelless_mark('a'));
         assert_eq!(fold_word("Iç"), units(&["i", "c"]));
         assert_eq!(fold_word("foó'"), units(&["f", "o", "o", "'"]));
     }
