@@ -123,6 +123,14 @@ impl SuggestionSource {
 /// dictionary accepts yield nothing (every default strategy's `handles?`
 /// is `!dictionary.lookup(word)`).
 pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggestion> {
+    // Vowelless-script ingress (interscript P0, mirroring the gem's
+    // Generator normalization): haraqat/niqqud strip before any
+    // distance — like downcasing, not scoring. Inert without them.
+    let stripped: String = word
+        .chars()
+        .filter(|c| !symspell::is_vowelless_mark(*c))
+        .collect();
+    let word = stripped.as_str();
     if word.is_empty() || dictionary.correct(word) {
         return Vec::new();
     }
