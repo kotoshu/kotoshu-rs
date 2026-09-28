@@ -122,14 +122,26 @@ impl SuggestionSource {
 /// Mirrors the gem exactly: empty words yield nothing, and words the
 /// dictionary accepts yield nothing (every default strategy's `handles?`
 /// is `!dictionary.lookup(word)`).
+/// Vowelless-script marks (interscript P0, mirroring the gem's
+/// `Suggestions::VOWELLESS_MARKS`): Arabic haraqat and Hebrew niqqud
+/// are combining marks the unvocalized dictionaries never carry —
+/// they fold away entirely and strip from queries at ingress.
+pub(crate) fn is_vowelless_mark(ch: char) -> bool {
+    matches!(ch,
+        '\u{0591}'..='\u{05bd}'
+        | '\u{05bf}'
+        | '\u{05c1}'..='\u{05c2}'
+        | '\u{05c4}'..='\u{05c5}'
+        | '\u{05c7}'
+        | '\u{064b}'..='\u{065f}'
+        | '\u{0670}')
+}
+
 pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggestion> {
     // Vowelless-script ingress (interscript P0, mirroring the gem's
     // Generator normalization): haraqat/niqqud strip before any
     // distance — like downcasing, not scoring. Inert without them.
-    let stripped: String = word
-        .chars()
-        .filter(|c| !symspell::is_vowelless_mark(*c))
-        .collect();
+    let stripped: String = word.chars().filter(|c| !is_vowelless_mark(*c)).collect();
     let word = stripped.as_str();
     if word.is_empty() || dictionary.correct(word) {
         return Vec::new();
