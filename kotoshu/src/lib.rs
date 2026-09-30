@@ -7,6 +7,8 @@
 //! feature-gated inside the core, per-language packages as thin shims.
 
 pub mod dict;
+#[cfg(feature = "grammar")]
+pub mod grammar;
 pub mod ffi;
 #[cfg(feature = "model")]
 pub mod lid;
