@@ -3,7 +3,7 @@
 //! Kotoshu::Grammar::Checker.
 
 use super::pattern_rule::{MatcherKind, PatternRule};
-use super::pos_tagger::{tag, tokenize_with_offsets, Pos};
+use super::pos_tagger::{Pos, tag, tokenize_with_offsets};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenView {
@@ -57,12 +57,7 @@ impl Checker {
                 continue;
             }
             let mut tokens: Vec<TokenView> = Vec::with_capacity(words.len());
-            let poses = tag(
-                &words
-                    .iter()
-                    .map(|(w, _, _)| w.clone())
-                    .collect::<Vec<_>>(),
-            );
+            let poses = tag(&words.iter().map(|(w, _, _)| w.clone()).collect::<Vec<_>>());
             for (i, ((word, start, end), pos)) in words.iter().zip(poses).enumerate() {
                 tokens.push(TokenView {
                     word: word.clone(),
@@ -140,10 +135,10 @@ pub fn seq_match_spans(rule: &PatternRule, tokens: &[TokenView]) -> Vec<(usize, 
         return out;
     }
     for start in 0..tokens.len() {
-        if let Some(consumed) = seq_match(rule, &rule.pattern, 0, start, tokens, &[]) {
-            if !consumed.is_empty() {
-                out.push((*consumed.first().unwrap(), *consumed.last().unwrap()));
-            }
+        if let Some(consumed) = seq_match(rule, &rule.pattern, 0, start, tokens, &[])
+            && !consumed.is_empty()
+        {
+            out.push((*consumed.first().unwrap(), *consumed.last().unwrap()));
         }
     }
     out
@@ -165,43 +160,40 @@ pub fn seq_match_all(rule: &PatternRule, tokens: &[TokenView]) -> Vec<String> {
 }
 
 fn token_matches(constraint: &super::pattern_rule::Constraint, token: &TokenView) -> bool {
-    if let Some(words) = &constraint.exception {
-        if words.iter().any(|w| w.eq_ignore_ascii_case(&token.word)) {
-            return false;
-        }
+    if let Some(words) = &constraint.exception
+        && words.iter().any(|w| w.eq_ignore_ascii_case(&token.word))
+    {
+        return false;
     }
-    if let Some(pos) = &constraint.exception_pos {
-        if pos.iter().any(|p| token.pos.matches(p)) {
-            return false;
-        }
+    if let Some(pos) = &constraint.exception_pos
+        && pos.iter().any(|p| token.pos.matches(p))
+    {
+        return false;
     }
 
     let mut matched = true;
-    if let Some(pos_values) = &constraint.pos {
-        if !pos_values.iter().any(|p| token.pos.matches(p)) {
+    if let Some(pos_values) = &constraint.pos
+        && !pos_values.iter().any(|p| token.pos.matches(p))
+    {
+        matched = false;
+    }
+    if matched && let Some(words) = &constraint.word {
+        let hit = words.iter().any(|w| {
+            if constraint.case_sensitive {
+                *w == token.word
+            } else {
+                w.eq_ignore_ascii_case(&token.word)
+            }
+        });
+        if !hit {
             matched = false;
         }
     }
-    if matched {
-        if let Some(words) = &constraint.word {
-            let hit = words.iter().any(|w| {
-                if constraint.case_sensitive {
-                    *w == token.word
-                } else {
-                    w.eq_ignore_ascii_case(&token.word)
-                }
-            });
-            if !hit {
-                matched = false;
-            }
-        }
-    }
-    if matched {
-        if let Some(regex) = &constraint.regex {
-            if !regex_token_match(regex, &token.word, constraint.case_sensitive) {
-                matched = false;
-            }
-        }
+    if matched
+        && let Some(regex) = &constraint.regex
+        && !regex_token_match(regex, &token.word, constraint.case_sensitive)
+    {
+        matched = false;
     }
     if constraint.negated {
         !matched
@@ -240,32 +232,32 @@ fn regex_seq(pat: &str, word: &[char], pi: usize, wi: usize) -> bool {
     if pi + 1 < pchars.len() && pchars[pi] == '.' && pchars[pi + 1] == '*' {
         return (wi..=word.len()).any(|next| regex_seq(pat, word, pi + 2, next));
     }
-    if pchars[pi] == '[' {
-        if let Some(close) = pat[pi..].find(']') {
-            let class = &pat[pi + 1..pi + close];
-            let rest = &pat[pi + close + 1..];
-            let (quant, rest) = if let Some(r) = rest.strip_prefix('*') {
-                ("*", r)
-            } else if let Some(r) = rest.strip_prefix('?') {
-                ("?", r)
-            } else {
-                ("", rest)
-            };
-            let (min, max) = match quant {
-                "*" => (0usize, usize::MAX),
-                "?" => (0, 1),
-                _ => (1, 1),
-            };
-            for count in (min..=max.min(word.len() - wi)).rev() {
-                let slice: Vec<char> = word[wi..wi + count].to_vec();
-                if slice.iter().all(|c| class_matches(class, *c))
-                    && regex_seq(rest, word, 0, wi + count)
-                {
-                    return true;
-                }
+    if pchars[pi] == '['
+        && let Some(close) = pat[pi..].find(']')
+    {
+        let class = &pat[pi + 1..pi + close];
+        let rest = &pat[pi + close + 1..];
+        let (quant, rest) = if let Some(r) = rest.strip_prefix('*') {
+            ("*", r)
+        } else if let Some(r) = rest.strip_prefix('?') {
+            ("?", r)
+        } else {
+            ("", rest)
+        };
+        let (min, max) = match quant {
+            "*" => (0usize, usize::MAX),
+            "?" => (0, 1),
+            _ => (1, 1),
+        };
+        for count in (min..=max.min(word.len() - wi)).rev() {
+            let slice: Vec<char> = word[wi..wi + count].to_vec();
+            if slice.iter().all(|c| class_matches(class, *c))
+                && regex_seq(rest, word, 0, wi + count)
+            {
+                return true;
             }
-            return false;
         }
+        return false;
     }
     if wi < word.len() && pchars[pi] == word[wi] {
         return regex_seq(pat, word, pi + 1, wi + 1);
@@ -290,13 +282,13 @@ fn seq_match(
     }
     let constraint = &pattern[p_i];
 
-    if let Some(pos_values) = &constraint.pos {
-        if pos_values.contains(&Pos::SentStart) {
-            if t_i != 0 {
-                return None;
-            }
-            return seq_match(rule, pattern, p_i + 1, t_i, tokens, consumed);
+    if let Some(pos_values) = &constraint.pos
+        && pos_values.contains(&Pos::SentStart)
+    {
+        if t_i != 0 {
+            return None;
         }
+        return seq_match(rule, pattern, p_i + 1, t_i, tokens, consumed);
     }
 
     if constraint.optional {

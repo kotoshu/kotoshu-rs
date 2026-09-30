@@ -95,8 +95,21 @@ impl Pos {
 const PRONOUNS_1SG: &[&str] = &["i"];
 const PRONOUNS_OBJ: &[&str] = &["me", "him", "her", "us", "them"];
 const WH_WORDS: &[&str] = &[
-    "who", "whom", "whose", "which", "what", "where", "why", "how", "whoever", "whomever",
-    "whatever", "whichever", "wherever", "however", "whenever",
+    "who",
+    "whom",
+    "whose",
+    "which",
+    "what",
+    "where",
+    "why",
+    "how",
+    "whoever",
+    "whomever",
+    "whatever",
+    "whichever",
+    "wherever",
+    "however",
+    "whenever",
 ];
 const PRONOUNS_3SG: &[&str] = &["he", "she", "it", "this", "that"];
 const PRONOUNS_PLURAL: &[&str] = &["they", "we", "you", "these", "those"];
@@ -113,10 +126,10 @@ const DETERMINERS: &[&str] = &[
     "their", "every", "each", "some", "any", "no", "all", "both", "half",
 ];
 const PREPOSITIONS: &[&str] = &[
-    "in", "on", "at", "by", "for", "with", "from", "to", "of", "about", "over", "under",
-    "between", "among", "through", "during", "before", "after", "above", "below", "near",
-    "against", "without", "within", "into", "onto", "upon", "across", "behind", "beyond",
-    "despite", "except", "inside", "outside", "toward", "towards",
+    "in", "on", "at", "by", "for", "with", "from", "to", "of", "about", "over", "under", "between",
+    "among", "through", "during", "before", "after", "above", "below", "near", "against",
+    "without", "within", "into", "onto", "upon", "across", "behind", "beyond", "despite", "except",
+    "inside", "outside", "toward", "towards",
 ];
 const CONJUNCTIONS: &[&str] = &[
     "and", "but", "or", "nor", "so", "yet", "for", "if", "then", "than", "when", "while",
@@ -128,15 +141,89 @@ const NUMBERS: &[&str] = &[
     "thousand", "million", "billion",
 ];
 const COMMON_ADJECTIVES: &[&str] = &[
-    "good", "bad", "new", "old", "young", "big", "small", "large", "great", "little", "long",
-    "short", "high", "low", "early", "late", "easy", "hard", "simple", "difficult", "wrong",
-    "right", "strong", "weak", "hot", "cold", "warm", "cool", "clean", "dirty", "fast", "slow",
-    "open", "closed", "rich", "poor", "happy", "sad", "ready", "true", "false", "real", "many",
-    "few", "several", "most", "more", "enough", "important", "interesting", "available",
-    "possible", "able", "similar", "various", "popular", "expensive", "cheap", "beautiful",
-    "famous", "comfortable", "dangerous", "different", "common", "special", "modern", "national",
-    "public", "political", "social", "economic", "international", "necessary", "responsible",
-    "serious", "careful", "useful", "useless", "helpful", "proud", "afraid", "alive", "alone",
+    "good",
+    "bad",
+    "new",
+    "old",
+    "young",
+    "big",
+    "small",
+    "large",
+    "great",
+    "little",
+    "long",
+    "short",
+    "high",
+    "low",
+    "early",
+    "late",
+    "easy",
+    "hard",
+    "simple",
+    "difficult",
+    "wrong",
+    "right",
+    "strong",
+    "weak",
+    "hot",
+    "cold",
+    "warm",
+    "cool",
+    "clean",
+    "dirty",
+    "fast",
+    "slow",
+    "open",
+    "closed",
+    "rich",
+    "poor",
+    "happy",
+    "sad",
+    "ready",
+    "true",
+    "false",
+    "real",
+    "many",
+    "few",
+    "several",
+    "most",
+    "more",
+    "enough",
+    "important",
+    "interesting",
+    "available",
+    "possible",
+    "able",
+    "similar",
+    "various",
+    "popular",
+    "expensive",
+    "cheap",
+    "beautiful",
+    "famous",
+    "comfortable",
+    "dangerous",
+    "different",
+    "common",
+    "special",
+    "modern",
+    "national",
+    "public",
+    "political",
+    "social",
+    "economic",
+    "international",
+    "necessary",
+    "responsible",
+    "serious",
+    "careful",
+    "useful",
+    "useless",
+    "helpful",
+    "proud",
+    "afraid",
+    "alive",
+    "alone",
     "aware",
 ];
 const IRREGULAR_PLURALS: &[&str] = &[
@@ -202,16 +289,7 @@ fn suffix_pos(lower: &str) -> Option<Pos> {
 fn subject_pronoun(word: &str) -> bool {
     matches!(
         word,
-        "he" | "she"
-            | "it"
-            | "i"
-            | "they"
-            | "we"
-            | "you"
-            | "this"
-            | "that"
-            | "these"
-            | "those"
+        "he" | "she" | "it" | "i" | "they" | "we" | "you" | "this" | "that" | "these" | "those"
     )
 }
 
@@ -252,7 +330,7 @@ pub fn tokenize_with_offsets(sentence: &str, base: usize) -> Vec<(String, usize,
         let b = bytes[i];
         // Unicode word characters: alphanumeric in any script, plus
         // _ ' - (ASCII \w drops accents, mangling fr/de/es text).
-        let ch_len = utf8_char_len(&sentence[i..]);
+        let _ch_len = utf8_char_len(&sentence[i..]);
         let ch = sentence[i..].chars().next().unwrap();
         if ch.is_alphanumeric() || ch == '_' || ch == '\'' || ch == '-' {
             let start = i;
@@ -369,12 +447,7 @@ fn pos_for(word: &str, index: usize, all_words: &[String]) -> Pos {
             return Pos::VerbBase;
         }
     }
-    if index > 0
-        && word
-            .chars()
-            .next()
-            .is_some_and(|c| c.is_ascii_uppercase())
-    {
+    if index > 0 && word.chars().next().is_some_and(|c| c.is_ascii_uppercase()) {
         return Pos::ProperNoun;
     }
     Pos::Noun
