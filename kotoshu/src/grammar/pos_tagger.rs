@@ -250,15 +250,19 @@ pub fn tokenize_with_offsets(sentence: &str, base: usize) -> Vec<(String, usize,
     let mut i = 0;
     while i < bytes.len() {
         let b = bytes[i];
-        if b.is_ascii_alphanumeric() || b == b'_' || b == b'\'' || b == b'-' {
+        // Unicode word characters: alphanumeric in any script, plus
+        // _ ' - (ASCII \w drops accents, mangling fr/de/es text).
+        let ch_len = utf8_char_len(&sentence[i..]);
+        let ch = sentence[i..].chars().next().unwrap();
+        if ch.is_alphanumeric() || ch == '_' || ch == '\'' || ch == '-' {
             let start = i;
-            while i < bytes.len()
-                && (bytes[i].is_ascii_alphanumeric()
-                    || bytes[i] == b'_'
-                    || bytes[i] == b'\''
-                    || bytes[i] == b'-')
-            {
-                i += 1;
+            while i < bytes.len() {
+                let c = sentence[i..].chars().next().unwrap();
+                if c.is_alphanumeric() || c == '_' || c == '\'' || c == '-' {
+                    i += utf8_char_len(&sentence[i..]);
+                } else {
+                    break;
+                }
             }
             push_word(&mut out, &sentence[start..i], start + base);
         } else if b.is_ascii_punctuation() {
@@ -382,4 +386,9 @@ pub fn tag(words: &[String]) -> Vec<Pos> {
     (0..words.len())
         .map(|i| pos_for(&words[i], i, words))
         .collect()
+}
+
+/// Byte length of the UTF-8 character starting at the head of `s`.
+fn utf8_char_len(s: &str) -> usize {
+    s.chars().next().map(|c| c.len_utf8()).unwrap_or(1)
 }
