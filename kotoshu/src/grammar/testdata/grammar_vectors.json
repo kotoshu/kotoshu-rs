@@ -1,0 +1,303 @@
+[
+  {
+    "input": "He go to school. They was late.",
+    "errors": [
+      {
+        "rule_id": "EN_SV_AGREEMENT_3SG",
+        "start_offset": 0,
+        "end_offset": 4,
+        "suggestions": [
+          "goes"
+        ]
+      },
+      {
+        "rule_id": "EN_WAS_PLURAL",
+        "start_offset": 17,
+        "end_offset": 24,
+        "suggestions": [
+          "They were"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "I could of gone. She should of known.",
+    "errors": [
+      {
+        "rule_id": "EN_WOULD_OF",
+        "start_offset": 2,
+        "end_offset": 9,
+        "suggestions": [
+          "could have"
+        ]
+      },
+      {
+        "rule_id": "EN_COULD_OF",
+        "start_offset": 2,
+        "end_offset": 9,
+        "suggestions": [
+          "could have"
+        ]
+      },
+      {
+        "rule_id": "EN_WOULD_OF",
+        "start_offset": 21,
+        "end_offset": 29,
+        "suggestions": [
+          "should have"
+        ]
+      },
+      {
+        "rule_id": "EN_COULD_OF",
+        "start_offset": 21,
+        "end_offset": 29,
+        "suggestions": [
+          "should have"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "Your going to love this. Its time to leave.",
+    "errors": [
+      {
+        "rule_id": "EN_YOUR_YOU_RE_ARE",
+        "start_offset": 0,
+        "end_offset": 9,
+        "suggestions": [
+          "you're going"
+        ]
+      },
+      {
+        "rule_id": "EN_YOUR_WELCOME",
+        "start_offset": 0,
+        "end_offset": 9,
+        "suggestions": [
+          "you're going"
+        ]
+      },
+      {
+        "rule_id": "EN_ITS_IT_S_IS",
+        "start_offset": 25,
+        "end_offset": 32,
+        "suggestions": [
+          "it's time"
+        ]
+      },
+      {
+        "rule_id": "EN_ITS_RAINING",
+        "start_offset": 25,
+        "end_offset": 32,
+        "suggestions": [
+          "it's time"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "There is many reasons. One of the books are missing.",
+    "errors": [
+      {
+        "rule_id": "EN_THERE_IS_PLURAL",
+        "start_offset": 0,
+        "end_offset": 20,
+        "suggestions": [
+          "There are many reasons"
+        ]
+      },
+      {
+        "rule_id": "EN_ONE_OF_ARE",
+        "start_offset": 23,
+        "end_offset": 42,
+        "suggestions": [
+          "One of the books is"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "It took a hour. He is an good man. Open the the door.",
+    "errors": [
+      {
+        "rule_id": "EN_IN_AN_HOUR_LIKE",
+        "start_offset": 8,
+        "end_offset": 13,
+        "suggestions": [
+          "an hour"
+        ]
+      },
+      {
+        "rule_id": "EN_AN_CONSONANT",
+        "start_offset": 22,
+        "end_offset": 28,
+        "suggestions": [
+          "a good"
+        ]
+      },
+      {
+        "rule_id": "EN_THE_THE",
+        "start_offset": 40,
+        "end_offset": 46,
+        "suggestions": [
+          "the"
+        ]
+      },
+      {
+        "rule_id": "EN_DUP_AND",
+        "start_offset": 40,
+        "end_offset": 46,
+        "suggestions": [
+          "the the"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "We discussed about the plan. It depends of the weather.",
+    "errors": [
+      {
+        "rule_id": "EN_DISCUSS_ABOUT",
+        "start_offset": 3,
+        "end_offset": 17,
+        "suggestions": [
+          "discussed"
+        ]
+      },
+      {
+        "rule_id": "EN_DEPEND_OF",
+        "start_offset": 32,
+        "end_offset": 41,
+        "suggestions": [
+          "depends on"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "This is better then that. He seen him yesterday.",
+    "errors": [
+      {
+        "rule_id": "EN_THEN_THAN_COMPARE",
+        "start_offset": 8,
+        "end_offset": 18,
+        "suggestions": [
+          "better than"
+        ]
+      },
+      {
+        "rule_id": "EN_THEN_THAN",
+        "start_offset": 8,
+        "end_offset": 18,
+        "suggestions": [
+          "better than"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "I dont have no money. You shouldnt never lie.",
+    "errors": []
+  },
+  {
+    "input": "he went home early. Yesterday i went home.",
+    "errors": [
+      {
+        "rule_id": "EN_LOWER_SENTENCE_START",
+        "start_offset": 0,
+        "end_offset": 1,
+        "suggestions": []
+      },
+      {
+        "rule_id": "EN_LOWER_I",
+        "start_offset": 30,
+        "end_offset": 30,
+        "suggestions": [
+          "I"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "The meeting is in march. She lives in germany.",
+    "errors": [
+      {
+        "rule_id": "EN_LOWER_MONTHS",
+        "start_offset": 18,
+        "end_offset": 22,
+        "suggestions": [
+          "March"
+        ]
+      },
+      {
+        "rule_id": "EN_LOWER_COUNTRIES",
+        "start_offset": 38,
+        "end_offset": 44,
+        "suggestions": [
+          "Europe"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "I would of gone if I had known.",
+    "errors": [
+      {
+        "rule_id": "EN_WOULD_OF",
+        "start_offset": 2,
+        "end_offset": 9,
+        "suggestions": [
+          "would have"
+        ]
+      },
+      {
+        "rule_id": "EN_COULD_OF",
+        "start_offset": 2,
+        "end_offset": 9,
+        "suggestions": [
+          "would have"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "He is been sick. They have went home.",
+    "errors": [
+      {
+        "rule_id": "EN_BEEN_BEING",
+        "start_offset": 3,
+        "end_offset": 9,
+        "suggestions": [
+          "is being"
+        ]
+      },
+      {
+        "rule_id": "EN_IS_BEEN",
+        "start_offset": 3,
+        "end_offset": 9,
+        "suggestions": [
+          "has been"
+        ]
+      },
+      {
+        "rule_id": "EN_HAVE_WENT",
+        "start_offset": 22,
+        "end_offset": 30,
+        "suggestions": [
+          "have gone"
+        ]
+      }
+    ]
+  },
+  {
+    "input": "The quick brown fox jumps over the lazy dog.",
+    "errors": []
+  },
+  {
+    "input": "It is important to arrive on time.",
+    "errors": []
+  },
+  {
+    "input": "She speaks English and a little French.",
+    "errors": []
+  }
+]
