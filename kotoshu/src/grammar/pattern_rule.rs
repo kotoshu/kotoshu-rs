@@ -3,7 +3,7 @@
 //! pos_sequence or word_list matcher; renders template/replace/
 //! replace_span suggestions with 3sg/base morphology.
 
-use super::pos_tagger::{split_clitic, Pos, IRREGULAR_VERBS};
+use super::pos_tagger::{IRREGULAR_VERBS, Pos, split_clitic};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -86,11 +86,9 @@ fn yaml_scalar_to_string(v: &serde_yaml::Value) -> Option<String> {
 
 fn word_list(v: &serde_yaml::Value) -> Option<Vec<String>> {
     match v {
-        serde_yaml::Value::Sequence(seq) => Some(
-            seq.iter()
-                .filter_map(yaml_scalar_to_string)
-                .collect(),
-        ),
+        serde_yaml::Value::Sequence(seq) => {
+            Some(seq.iter().filter_map(yaml_scalar_to_string).collect())
+        }
         v => yaml_scalar_to_string(v).map(|s| vec![s]),
     }
 }
@@ -123,12 +121,8 @@ impl Constraint {
             negated: get("negated")
                 .and_then(|x| x.as_str())
                 .is_some_and(|s| s == "yes" || s == "true")
-                || get("negated")
-                    .and_then(|x| x.as_bool())
-                    .unwrap_or(false),
-            optional: get("optional")
-                .and_then(|x| x.as_bool())
-                .unwrap_or(false),
+                || get("negated").and_then(|x| x.as_bool()).unwrap_or(false),
+            optional: get("optional").and_then(|x| x.as_bool()).unwrap_or(false),
             skip: get("skip")
                 .and_then(serde_yaml::Value::as_i64)
                 .unwrap_or(0)
@@ -206,26 +200,24 @@ impl PatternRule {
     pub fn render_suggestions(&self, window: &[super::checker::TokenView]) -> Vec<String> {
         self.suggestions
             .iter()
-            .filter_map(|s| match s {
-                Suggestion::Replace { replace } => Some(
-                    window
-                        .iter()
-                        .map(|t| {
-                            if t.word.eq_ignore_ascii_case(&replace.word) {
-                                replace.with.clone()
-                            } else {
-                                t.word.clone()
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join(" ")
-                        .split_whitespace()
-                        .collect::<Vec<_>>()
-                        .join(" "),
-                ),
-                Suggestion::ReplaceSpan { replace_span } => Some(replace_span.with.clone()),
-                Suggestion::Template { template } => Some(expand_template(template, window)),
-                Suggestion::Plain(text) => Some(expand_template(text, window)),
+            .map(|s| match s {
+                Suggestion::Replace { replace } => window
+                    .iter()
+                    .map(|t| {
+                        if t.word.eq_ignore_ascii_case(&replace.word) {
+                            replace.with.clone()
+                        } else {
+                            t.word.clone()
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+                Suggestion::ReplaceSpan { replace_span } => replace_span.with.clone(),
+                Suggestion::Template { template } => expand_template(template, window),
+                Suggestion::Plain(text) => expand_template(text, window),
             })
             .collect()
     }
@@ -237,22 +229,22 @@ fn expand_template(template: &str, window: &[super::checker::TokenView]) -> Stri
     let bytes = template.as_bytes();
     let mut i = 0;
     while i < bytes.len() {
-        if template[i..].starts_with("{{") {
-            if let Some(end) = template[i + 2..].find("}}") {
-                let inner = &template[i + 2..i + 2 + end];
-                let mut parts = inner.split('|');
-                let idx: Option<usize> = parts.next().and_then(|p| p.trim().parse().ok());
-                let verb = parts.next();
-                if let Some(n) = idx {
-                    let word = window.get(n).map(|t| t.word.as_str()).unwrap_or("");
-                    match verb {
-                        Some("3sg") => out.push_str(&inflect_3sg(word)),
-                        Some("base") => out.push_str(&uninflect_3sg(word)),
-                        _ => out.push_str(word),
-                    }
-                    i += 2 + end + 2;
-                    continue;
+        if template[i..].starts_with("{{")
+            && let Some(end) = template[i + 2..].find("}}")
+        {
+            let inner = &template[i + 2..i + 2 + end];
+            let mut parts = inner.split('|');
+            let idx: Option<usize> = parts.next().and_then(|p| p.trim().parse().ok());
+            let verb = parts.next();
+            if let Some(n) = idx {
+                let word = window.get(n).map(|t| t.word.as_str()).unwrap_or("");
+                match verb {
+                    Some("3sg") => out.push_str(&inflect_3sg(word)),
+                    Some("base") => out.push_str(&uninflect_3sg(word)),
+                    _ => out.push_str(word),
                 }
+                i += 2 + end + 2;
+                continue;
             }
         }
         out.push(template[i..].chars().next().unwrap());
@@ -291,7 +283,8 @@ pub fn uninflect_3sg(word: &str) -> String {
     }
     for suffix in ["ches", "shes", "xes", "zes", "oes"] {
         if base.ends_with(suffix) {
-            return base[..base.len() - suffix.len() + if suffix == "oes" { 1 } else { 2 }].to_string();
+            return base[..base.len() - suffix.len() + if suffix == "oes" { 1 } else { 2 }]
+                .to_string();
         }
     }
     if base.len() >= 4 && base.ends_with('s') && !base.ends_with("ss") {
