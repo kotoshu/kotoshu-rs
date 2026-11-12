@@ -5,6 +5,10 @@
 #                            (all four interpreters in a single build;
 #                            aarch64 runs on GitHub's native arm64 runner,
 #                            no cross toolchain)
+#   linux emulated         — i686 / armv7 / ppc64le / s390x / riscv64 via
+#                            QEMU on the x86_64 runner (the leptris-py#346
+#                            pattern): a single cp310 wheel per arch, each
+#                            smoke-tested inside the emulated container
 #   macOS x86_64 + arm64   — host builds, one wheel per interpreter
 #   windows x64            — host builds, one wheel per interpreter
 # Every wheel is smoke-tested (pip install + scripts/python_wheel_smoke.py:
@@ -91,6 +95,54 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-manylinux-${{ matrix.arch }}
+          path: dist/
+          if-no-files-found: error
+
+  wheels-linux-emulated:
+    name: wheels (manylinux emulated ${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: i686
+          - target: armv7
+          - target: ppc64le
+          - target: s390x
+          - target: riscv64
+    steps:
+      - uses: actions/checkout@v4
+      # Cross-arch Linux legs build inside the manylinux container under
+      # QEMU (leptris-py#346 pattern). A single cp310 wheel per arch —
+      # the full 3.10-3.13 range stays on the native legs (emulation
+      # multiplies run time four-fold for little value).
+      - name: Build cp310 wheel in the emulated manylinux container
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out ../dist -i 3.10
+          manylinux: auto
+          sccache: "true"
+          working-directory: kotoshu-python
+      - name: Report wheel
+        run: ls -lh dist
+        shell: bash
+      - name: Smoke the wheel inside the emulated container
+        run: |
+          set -euo pipefail
+          case "${{ matrix.target }}" in
+            i686)    plat=linux/386 ;;
+            armv7)   plat=linux/arm/v7 ;;
+            ppc64le) plat=linux/ppc64le ;;
+            s390x)   plat=linux/s390x ;;
+            riscv64) plat=linux/riscv64 ;;
+          esac
+          docker run --rm --platform "$plat" -v "$PWD:/work" \
+            ghcr.io/rust-cross/manylinux_2_28:x86_64 \
+            /bin/bash -exc "cd /work/kotoshu-python && /opt/python/cp310-cp310/bin/python -m pip install --no-index --find-links /work/dist kotoshu-native && /opt/python/cp310-cp310/bin/python scripts/python_wheel_smoke.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-manylinux-emulated-${{ matrix.target }}
           path: dist/
           if-no-files-found: error
 
