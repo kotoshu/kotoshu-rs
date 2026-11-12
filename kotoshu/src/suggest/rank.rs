@@ -24,6 +24,10 @@ pub(crate) struct Candidate {
     pub source: SuggestionSource,
     pub original_length: usize,
     pub ngram_score: f64,
+    /// Lookup-verified inflection of the typed stem (the edit
+    /// strategy's morph sweep) — its own channel tier in the band
+    /// merge.
+    pub morph: bool,
 }
 
 impl Candidate {
@@ -36,7 +40,16 @@ impl Candidate {
     }
 
     /// `Suggestion#<=>` (fully total except for same-lowercase-word ties).
+    /// Distance FIRST: cross-strategy confidence is not comparable
+    /// (per-pool min-max normalization), and a distance-1 candidate
+    /// explains the typo better than a distance-2 one regardless of
+    /// any strategy's self-scored confidence.
     fn compare(&self, other: &Candidate) -> Ordering {
+        // Distance, lower first.
+        let distance_cmp = self.distance.cmp(&other.distance);
+        if distance_cmp != Ordering::Equal {
+            return distance_cmp;
+        }
         // Combined score, higher first.
         let score_cmp = other
             .combined_score()
@@ -44,11 +57,6 @@ impl Candidate {
             .unwrap_or(Ordering::Equal);
         if score_cmp != Ordering::Equal {
             return score_cmp;
-        }
-        // Distance, lower first.
-        let distance_cmp = self.distance.cmp(&other.distance);
-        if distance_cmp != Ordering::Equal {
-            return distance_cmp;
         }
         // Length similarity: |word.length - original_length|, lower first.
         let my_len_diff = self.word.chars().count().abs_diff(self.original_length);
@@ -94,6 +102,7 @@ mod tests {
 
     fn candidate(word: &str, distance: u8, confidence: f64, original_length: usize) -> Candidate {
         Candidate {
+            morph: false,
             word: word.to_owned(),
             distance,
             confidence,

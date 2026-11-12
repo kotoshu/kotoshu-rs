@@ -258,6 +258,13 @@ pub fn ranked() -> bool {
     !FULL_LIST.is_empty()
 }
 
+/// The embedded rank of `word` (1 = most frequent), mirroring the
+/// gem provider's rank map. The edit strategy's continuous-frequency
+/// regime reads this.
+pub fn rank_of(word: &str) -> Option<u32> {
+    index().ranks.get(word).copied()
+}
+
 /// The SymSpell slate for `word` — empty when the word is a known
 /// frequency word (the gem's in-dictionary guard) or no candidates
 /// match.
@@ -317,29 +324,69 @@ pub fn slate(word: &str, caller_limit: usize) -> Vec<Candidate> {
             scored.push((cand.clone(), dist));
         }
     }
+    // Sort: distance, then the C6 double-letter pattern flag; after
+    // that the channel prior decides ONLY within a narrow frequency
+    // window (~2x rank ratio) — outside it the dominant corpus rank
+    // keeps C9's ordering law (the gem's de fold fixture).
+    let op_weight = |cand: &str| -> f64 {
+        match super::patterns::single_edit_op(word, cand) {
+            1 => 0.5,
+            2 => 0.3,
+            3 => 0.0,
+            _ => -0.5,
+        }
+    };
+    let rank_of = |w: &str| -> f64 {
+        let r = index.ranks.get(w).copied().unwrap_or(1_000_000_000);
+        (r.max(1) as f64).log10()
+    };
     scored.sort_by(|a, b| {
-        let key = |w: &str, dist: usize| {
-            let pattern = u8::from(!double_letter_pattern(word, w));
-            let rank = index.ranks.get(w).copied().unwrap_or(1_000_000_000);
-            (dist, pattern, rank)
-        };
-        key(&a.0, a.1).cmp(&key(&b.0, b.1))
+        if a.1 != b.1 {
+            return a.1.cmp(&b.1);
+        }
+        let pa = u8::from(!double_letter_pattern(word, &a.0));
+        let pb = u8::from(!double_letter_pattern(word, &b.0));
+        if pa != pb {
+            return pa.cmp(&pb);
+        }
+        let (la, lb) = (rank_of(&a.0), rank_of(&b.0));
+        if (la - lb).abs() <= 0.3 {
+            let ob = op_weight(&b.0)
+                .partial_cmp(&op_weight(&a.0))
+                .unwrap_or(std::cmp::Ordering::Equal);
+            if ob != std::cmp::Ordering::Equal {
+                return ob;
+            }
+            return la.partial_cmp(&lb).unwrap_or(std::cmp::Ordering::Equal);
+        }
+        la.partial_cmp(&lb).unwrap_or(std::cmp::Ordering::Equal)
     });
 
     scored
         .into_iter()
         .take(limit)
-        .map(|(cand, dist)| Candidate {
-            confidence: if dist == 0 {
+        .map(|(cand, dist)| {
+            // Pattern/confusion are symspell-only signals; the composite
+            // band merge re-sorts by (true distance, pattern, morph/op),
+            // so they ride on confidence to survive the re-sort (the
+            // gem's unpatterned 0.95 multiplier; the en engine carries
+            // no confusion set).
+            let base_conf = if dist == 0 {
                 1.0
             } else {
                 1.0 / (1.0 + dist as f64)
-            },
-            distance: dist as u8,
-            ngram_score: ngram_similarity(word, &cand),
-            original_length: word.chars().count(),
-            source: SuggestionSource::SymSpell,
-            word: cand,
+            };
+            let patterned = double_letter_pattern(word, &cand);
+            let conf = (base_conf * if patterned { 1.0 } else { 0.95 }).clamp(0.0, 1.0);
+            Candidate {
+                confidence: conf,
+                distance: dist as u8,
+                ngram_score: ngram_similarity(word, &cand),
+                original_length: word.chars().count(),
+                source: SuggestionSource::SymSpell,
+                word: cand,
+                morph: false,
+            }
         })
         .collect()
 }
