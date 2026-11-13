@@ -112,6 +112,12 @@ jobs:
           - arch: riscv64
     steps:
       - uses: actions/checkout@v4
+      # The smoke runs inside the container where cibuildwheel mounts
+      # only the package dir (/project) — the repo-root scripts/ is not
+      # there. Copy the self-contained smoke next to the pyproject so
+      # {project}/python_wheel_smoke.py resolves.
+      - name: Stage the wheel smoke inside the package dir
+        run: cp scripts/python_wheel_smoke.py kotoshu-python/python_wheel_smoke.py
       # docker's embedded loopback DNS (127.0.0.11) is unreachable for
       # binaries under qemu-i386 — the i686 leg lost every pypi/rustup
       # connection to "Name or service not known". Point the daemon at
@@ -123,6 +129,16 @@ jobs:
           { "dns": ["8.8.8.8", "1.1.1.1"] }
           EOF
           sudo systemctl restart docker
+      # Ground truth for the i686 DNS failure (the other four legs all
+      # built and only hit the smoke-path bug; the i686 container alone
+      # cannot resolve anything on GH runners — locally the same image
+      # resolves fine). Dump execution mode, resolver config, and a
+      # live lookup before the build starts.
+      - name: Probe i686 container DNS
+        run: |
+          docker run --rm --platform linux/386 \
+            quay.io/pypa/manylinux_2_28_i686:2026.03.20-1 \
+            /bin/bash -c 'uname -m; cat /etc/resolv.conf; getent hosts pypi.org || echo GETENT-FAILED; curl -sI --max-time 10 https://pypi.org 2>&1 | head -1 || echo CURL-FAILED'
       # Cross-arch Linux legs build AND smoke inside cibuildwheel's
       # managed manylinux container under QEMU (the leptris-py#346
       # pattern): container selection, emulation, and the test venv
@@ -146,7 +162,7 @@ jobs:
         env:
           CIBW_BUILD: "cp310-manylinux_${{ matrix.arch }}"
           CIBW_ARCHS_LINUX: "${{ matrix.arch }}"
-          CIBW_TEST_COMMAND: "python {project}/../scripts/python_wheel_smoke.py"
+          CIBW_TEST_COMMAND: "python {project}/python_wheel_smoke.py"
           # the riscv64/armv7 manylinux images ship no Rust toolchain —
           # maturin's bootstrap died mapping riscv64-unknown-linux-gnu;
           # a real rustup in PATH bypasses it
