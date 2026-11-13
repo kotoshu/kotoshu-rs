@@ -118,15 +118,19 @@ jobs:
       # {project}/python_wheel_smoke.py resolves.
       - name: Stage the wheel smoke inside the package dir
         run: cp scripts/python_wheel_smoke.py kotoshu-python/python_wheel_smoke.py
-      # docker's embedded loopback DNS (127.0.0.11) is unreachable for
-      # binaries under qemu-i386 — the i686 leg lost every pypi/rustup
-      # connection to "Name or service not known". Point the daemon at
-      # real resolvers so every container it creates (cibuildwheel's
-      # included) resolves normally.
-      - name: Give docker real DNS servers
+      # GH runners (Azure) block public UDP/53 egress — the probe
+      # proved getent fails on 8.8.8.8/1.1.1.1 even natively, while the
+      # host's own systemd-resolved servers work. Hand every emulated
+      # container the host resolver list; `options use-vc` forces TCP
+      # for DNS so nothing depends on UDP egress either.
+      - name: Stage the host resolvers for the containers
+        run: cp /run/systemd/resolve/resolv.conf kotoshu-python/host-resolv.conf
+      - name: Give docker the host's DNS servers
         run: |
-          sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
-          { "dns": ["8.8.8.8", "1.1.1.1"] }
+          DNS=$(grep -hoE 'nameserver\s+\K[0-9.]+' /run/systemd/resolve/resolv.conf \
+            | sort -u | head -2 | sed 's/.*/"&"/' | paste -sd, -)
+          sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+          { "dns": [${DNS}] }
           EOF
           sudo systemctl restart docker
       # Ground truth for the i686 DNS failure (the other four legs all
@@ -165,8 +169,11 @@ jobs:
           CIBW_TEST_COMMAND: "python {project}/python_wheel_smoke.py"
           # the riscv64/armv7 manylinux images ship no Rust toolchain —
           # maturin's bootstrap died mapping riscv64-unknown-linux-gnu;
-          # a real rustup in PATH bypasses it
-          CIBW_BEFORE_ALL_LINUX: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable"
+          # a real rustup in PATH bypasses it. The staged host-resolv
+          # override runs first: container DNS must work before curl
+          # can even fetch the rustup installer (see the DNS staging
+          # step above).
+          CIBW_BEFORE_ALL_LINUX: "cp /project/kotoshu-python/host-resolv.conf /etc/resolv.conf && printf 'options use-vc\\n' >> /etc/resolv.conf && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable"
           CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
       - name: Report wheel
         run: ls -lh wheelhouse
