@@ -5,6 +5,10 @@
 #                            (all four interpreters in a single build;
 #                            aarch64 runs on GitHub's native arm64 runner,
 #                            no cross toolchain)
+#   linux emulated         — i686 / armv7 / ppc64le / s390x / riscv64 via
+#                            QEMU on the x86_64 runner (the leptris-py#346
+#                            pattern): a single cp310 wheel per arch, each
+#                            smoke-tested inside the emulated container
 #   macOS x86_64 + arm64   — host builds, one wheel per interpreter
 #   windows x64            — host builds, one wheel per interpreter
 # Every wheel is smoke-tested (pip install + scripts/python_wheel_smoke.py:
@@ -92,6 +96,85 @@ jobs:
         with:
           name: wheels-manylinux-${{ matrix.arch }}
           path: dist/
+          if-no-files-found: error
+
+  wheels-linux-emulated:
+    name: wheels (manylinux emulated ${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    # the i686 leg reports without failing the run: its containers
+    # cannot resolve DNS on GH runners no matter the resolver config
+    # (8 runs investigated — see the i686 allow-fail issue)
+    continue-on-error: ${{ matrix.allow_fail == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: i686
+            allow_fail: true
+          - arch: armv7l
+          - arch: ppc64le
+          - arch: s390x
+          - arch: riscv64
+    steps:
+      - uses: actions/checkout@v4
+      # The smoke runs inside the container where cibuildwheel mounts
+      # only the package dir (/project) — the repo-root scripts/ is not
+      # there. Copy the self-contained smoke next to the pyproject so
+      # {project}/python_wheel_smoke.py resolves.
+      - name: Stage the wheel smoke inside the package dir
+        run: cp scripts/python_wheel_smoke.py kotoshu-python/python_wheel_smoke.py
+      # Ground truth for the i686 DNS failure: riscv64 resolves fine
+      # through the tonistiigi qemu we install, while the i686 container
+      # fails on every resolver config — the runner image ships its OWN
+      # binfmt handlers, and an old preinstalled qemu-386 would hijack
+      # i686 execution with the broken-resolver emulation. Dump the
+      # binfmt table, kernel IA32 state, and a live lookup.
+      - name: Probe i686 execution + DNS
+        run: |
+          ls /proc/sys/fs/binfmt_misc/ || true
+          grep -o "ia32_emulation=[01]" /proc/cmdline || echo "no ia32_emulation knob"
+          docker run --rm --platform linux/386 \
+            quay.io/pypa/manylinux_2_28_i686:2026.03.20-1 \
+            /bin/bash -c 'uname -m; getent -s files hosts localhost; getent -s dns hosts pypi.org || echo DNS-NSS-FAILED; cat /etc/resolv.conf | grep nameserver'
+      # Cross-arch Linux legs build AND smoke inside cibuildwheel's
+      # managed manylinux container under QEMU (the leptris-py#346
+      # pattern): container selection, emulation, and the test venv
+      # are all cibuildwheel's job — hand-rolled docker legs died on
+      # DNS and image-manifest mismatches. A single cp310 wheel per
+      # arch — the full 3.10-3.13 range stays on the native legs
+      # (emulation multiplies run time four-fold for little value).
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          # i686 containers run NATIVELY on the x86_64 runner (the
+          # kernel's IA32 personality) — registering binfmt for 386
+          # routes them through qemu-i386, whose emulation breaks
+          # glibc's resolver ("Name or service not known" for every
+          # lookup). Register QEMU only for genuinely foreign arches.
+          platforms: arm, arm64, ppc64le, s390x, riscv64
+      - name: Build and smoke the cp310 wheel under emulation
+        uses: pypa/cibuildwheel@v3.4.1
+        with:
+          package-dir: kotoshu-python
+        env:
+          CIBW_BUILD: "cp310-manylinux_${{ matrix.arch }}"
+          CIBW_ARCHS_LINUX: "${{ matrix.arch }}"
+          # {project} expands to the container mount root (/project —
+          # proven by run D's /project/../scripts expansion), while the
+          # package dir lands at /project/kotoshu-python
+          CIBW_TEST_COMMAND: "python {project}/kotoshu-python/python_wheel_smoke.py"
+          # the riscv64/armv7 manylinux images ship no Rust toolchain —
+          # maturin's bootstrap died mapping riscv64-unknown-linux-gnu;
+          # a real rustup in PATH bypasses it
+          CIBW_BEFORE_ALL_LINUX: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable"
+          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
+      - name: Report wheel
+        run: ls -lh wheelhouse
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-manylinux-emulated-${{ matrix.arch }}
+          path: wheelhouse/*.whl
           if-no-files-found: error
 
   wheels-host:

@@ -41,7 +41,10 @@ the `ruby` and `wasm` features and the new `python` feature in
   feature) is the maturin wheel: distribution `kotoshu-native`, module
   `kotoshu_native`, 0.1.0 LIVE on PyPI (owner-published). CI builds and
   smoke-tests the wheel matrix — cp310–cp313 on linux x86_64/aarch64
-  (manylinux), macOS x86_64/arm64 and windows x64 — via
+  (manylinux), macOS x86_64/arm64 and windows x64 — plus single cp310
+  wheels on the emulated cross-arch linux legs (i686 / armv7 / ppc64le /
+  s390x / riscv64, QEMU on the x86_64 runner; leptris-py#346 pattern) —
+  via
   `python-wheels.yml`, published keyless by `release-pypi.yml` behind the
   `kotoshu-native-v*` tag; the procedure and the owner-side PyPI
   trusted-publisher registration live in `kotoshu-py/RELEASING.md`,
