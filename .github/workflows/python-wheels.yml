@@ -131,6 +131,16 @@ jobs:
           CIBW_BUILD: "cp310-manylinux_${{ matrix.arch }}"
           CIBW_ARCHS_LINUX: "${{ matrix.arch }}"
           CIBW_TEST_COMMAND: "python {project}/../scripts/python_wheel_smoke.py"
+          # host network: docker's embedded loopback DNS (127.0.0.11)
+          # is unreachable for binaries under qemu-i386 — the i686 leg
+          # lost every pypi/rustup connection to "Name or service not
+          # known"
+          CIBW_CONTAINER_ENGINE: '{"name": "docker", "create_args": ["--network", "host"]}'
+          # the riscv64/armv7 manylinux images ship no Rust toolchain —
+          # maturin's bootstrap died mapping riscv64-unknown-linux-gnu;
+          # a real rustup in PATH bypasses it
+          CIBW_BEFORE_ALL_LINUX: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable"
+          CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
       - name: Report wheel
         run: ls -lh wheelhouse
         shell: bash
