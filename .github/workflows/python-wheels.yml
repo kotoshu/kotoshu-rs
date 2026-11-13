@@ -133,7 +133,12 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: all
+          # i686 containers run NATIVELY on the x86_64 runner (the
+          # kernel's IA32 personality) — registering binfmt for 386
+          # routes them through qemu-i386, whose emulation breaks
+          # glibc's resolver ("Name or service not known" for every
+          # lookup). Register QEMU only for genuinely foreign arches.
+          platforms: arm, arm64, ppc64le, s390x, riscv64
       - name: Build and smoke the cp310 wheel under emulation
         uses: pypa/cibuildwheel@v3.4.1
         with:
