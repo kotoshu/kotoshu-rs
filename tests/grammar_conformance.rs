@@ -8,16 +8,46 @@ use kotoshu::grammar::pattern_rule::{MatcherKind, PatternRule, RuleDef};
 const VECTORS: &str = include_str!("../kotoshu/src/grammar/testdata/grammar_vectors.json");
 
 const RULE_FILES: &[(&str, &str)] = &[
-    ("agreement", include_str!("../kotoshu/src/grammar/rules/en/agreement.yml")),
-    ("agreement2", include_str!("../kotoshu/src/grammar/rules/en/agreement2.yml")),
-    ("articles", include_str!("../kotoshu/src/grammar/rules/en/articles.yml")),
-    ("confusions", include_str!("../kotoshu/src/grammar/rules/en/confusions.yml")),
-    ("mechanics", include_str!("../kotoshu/src/grammar/rules/en/mechanics.yml")),
-    ("prepositions", include_str!("../kotoshu/src/grammar/rules/en/prepositions.yml")),
-    ("punctuation", include_str!("../kotoshu/src/grammar/rules/en/punctuation.yml")),
-    ("redundancy", include_str!("../kotoshu/src/grammar/rules/en/redundancy.yml")),
-    ("style", include_str!("../kotoshu/src/grammar/rules/en/style.yml")),
-    ("word_confusion", include_str!("../kotoshu/src/grammar/rules/en/word_confusion.yml")),
+    (
+        "agreement",
+        include_str!("../kotoshu/src/grammar/rules/en/agreement.yml"),
+    ),
+    (
+        "agreement2",
+        include_str!("../kotoshu/src/grammar/rules/en/agreement2.yml"),
+    ),
+    (
+        "articles",
+        include_str!("../kotoshu/src/grammar/rules/en/articles.yml"),
+    ),
+    (
+        "confusions",
+        include_str!("../kotoshu/src/grammar/rules/en/confusions.yml"),
+    ),
+    (
+        "mechanics",
+        include_str!("../kotoshu/src/grammar/rules/en/mechanics.yml"),
+    ),
+    (
+        "prepositions",
+        include_str!("../kotoshu/src/grammar/rules/en/prepositions.yml"),
+    ),
+    (
+        "punctuation",
+        include_str!("../kotoshu/src/grammar/rules/en/punctuation.yml"),
+    ),
+    (
+        "redundancy",
+        include_str!("../kotoshu/src/grammar/rules/en/redundancy.yml"),
+    ),
+    (
+        "style",
+        include_str!("../kotoshu/src/grammar/rules/en/style.yml"),
+    ),
+    (
+        "word_confusion",
+        include_str!("../kotoshu/src/grammar/rules/en/word_confusion.yml"),
+    ),
 ];
 
 fn bundled_checker() -> Checker {
@@ -50,11 +80,7 @@ fn vectors_replay_identically() {
                     e["end_offset"].as_u64().unwrap() as usize,
                     e["suggestions"]
                         .as_array()
-                        .map(|a| {
-                            a.iter()
-                                .map(|s| s.as_str().unwrap().to_string())
-                                .collect()
-                        })
+                        .map(|a| a.iter().map(|s| s.as_str().unwrap().to_string()).collect())
                         .unwrap_or_default(),
                 )
             })
