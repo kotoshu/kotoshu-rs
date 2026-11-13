@@ -112,6 +112,17 @@ jobs:
           - arch: riscv64
     steps:
       - uses: actions/checkout@v4
+      # docker's embedded loopback DNS (127.0.0.11) is unreachable for
+      # binaries under qemu-i386 — the i686 leg lost every pypi/rustup
+      # connection to "Name or service not known". Point the daemon at
+      # real resolvers so every container it creates (cibuildwheel's
+      # included) resolves normally.
+      - name: Give docker real DNS servers
+        run: |
+          sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
+          { "dns": ["8.8.8.8", "1.1.1.1"] }
+          EOF
+          sudo systemctl restart docker
       # Cross-arch Linux legs build AND smoke inside cibuildwheel's
       # managed manylinux container under QEMU (the leptris-py#346
       # pattern): container selection, emulation, and the test venv
@@ -131,11 +142,6 @@ jobs:
           CIBW_BUILD: "cp310-manylinux_${{ matrix.arch }}"
           CIBW_ARCHS_LINUX: "${{ matrix.arch }}"
           CIBW_TEST_COMMAND: "python {project}/../scripts/python_wheel_smoke.py"
-          # host network: docker's embedded loopback DNS (127.0.0.11)
-          # is unreachable for binaries under qemu-i386 — the i686 leg
-          # lost every pypi/rustup connection to "Name or service not
-          # known"
-          CIBW_CONTAINER_ENGINE: '{"name": "docker", "create_args": ["--network", "host"]}'
           # the riscv64/armv7 manylinux images ship no Rust toolchain —
           # maturin's bootstrap died mapping riscv64-unknown-linux-gnu;
           # a real rustup in PATH bypasses it
