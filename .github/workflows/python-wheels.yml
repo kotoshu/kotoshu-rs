@@ -118,31 +118,19 @@ jobs:
       # {project}/python_wheel_smoke.py resolves.
       - name: Stage the wheel smoke inside the package dir
         run: cp scripts/python_wheel_smoke.py kotoshu-python/python_wheel_smoke.py
-      # GH runners (Azure) block public UDP/53 egress — the probe
-      # proved getent fails on 8.8.8.8/1.1.1.1 even natively, while the
-      # host's own systemd-resolved servers work. Hand every emulated
-      # container the host resolver list; `options use-vc` forces TCP
-      # for DNS so nothing depends on UDP egress either.
-      - name: Stage the host resolvers for the containers
-        run: cp /run/systemd/resolve/resolv.conf kotoshu-python/host-resolv.conf
-      - name: Give docker the host's DNS servers
+      # Ground truth for the i686 DNS failure: riscv64 resolves fine
+      # through the tonistiigi qemu we install, while the i686 container
+      # fails on every resolver config — the runner image ships its OWN
+      # binfmt handlers, and an old preinstalled qemu-386 would hijack
+      # i686 execution with the broken-resolver emulation. Dump the
+      # binfmt table, kernel IA32 state, and a live lookup.
+      - name: Probe i686 execution + DNS
         run: |
-          DNS=$(grep -hoE 'nameserver\s+\K[0-9.]+' /run/systemd/resolve/resolv.conf \
-            | sort -u | head -2 | sed 's/.*/"&"/' | paste -sd, -)
-          sudo tee /etc/docker/daemon.json > /dev/null <<EOF
-          { "dns": [${DNS}] }
-          EOF
-          sudo systemctl restart docker
-      # Ground truth for the i686 DNS failure (the other four legs all
-      # built and only hit the smoke-path bug; the i686 container alone
-      # cannot resolve anything on GH runners — locally the same image
-      # resolves fine). Dump execution mode, resolver config, and a
-      # live lookup before the build starts.
-      - name: Probe i686 container DNS
-        run: |
+          ls /proc/sys/fs/binfmt_misc/ || true
+          grep -o "ia32_emulation=[01]" /proc/cmdline || echo "no ia32_emulation knob"
           docker run --rm --platform linux/386 \
             quay.io/pypa/manylinux_2_28_i686:2026.03.20-1 \
-            /bin/bash -c 'uname -m; cat /etc/resolv.conf; getent hosts pypi.org || echo GETENT-FAILED; curl -sI --max-time 10 https://pypi.org 2>&1 | head -1 || echo CURL-FAILED'
+            /bin/bash -c 'uname -m; getent -s files hosts localhost; getent -s dns hosts pypi.org || echo DNS-NSS-FAILED; cat /etc/resolv.conf | grep nameserver'
       # Cross-arch Linux legs build AND smoke inside cibuildwheel's
       # managed manylinux container under QEMU (the leptris-py#346
       # pattern): container selection, emulation, and the test venv
@@ -169,11 +157,8 @@ jobs:
           CIBW_TEST_COMMAND: "python {project}/python_wheel_smoke.py"
           # the riscv64/armv7 manylinux images ship no Rust toolchain —
           # maturin's bootstrap died mapping riscv64-unknown-linux-gnu;
-          # a real rustup in PATH bypasses it. The staged host-resolv
-          # override runs first: container DNS must work before curl
-          # can even fetch the rustup installer (see the DNS staging
-          # step above).
-          CIBW_BEFORE_ALL_LINUX: "cp /project/kotoshu-python/host-resolv.conf /etc/resolv.conf && printf 'options use-vc\\n' >> /etc/resolv.conf && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable"
+          # a real rustup in PATH bypasses it
+          CIBW_BEFORE_ALL_LINUX: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable"
           CIBW_ENVIRONMENT: 'PATH="$HOME/.cargo/bin:$PATH"'
       - name: Report wheel
         run: ls -lh wheelhouse
