@@ -20,6 +20,7 @@ mod frequency;
 mod keyboard;
 mod macos_qsort;
 mod ngram;
+pub(crate) mod patterns;
 mod permutations;
 mod phonetic;
 mod rank;
@@ -189,12 +190,17 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
             .collect();
     }
 
-    // The primary slate leads verbatim; the tail only fills remaining
-    // slots, so a pool candidate for a word the slate already carries
-    // is dropped (gem #226's ranked contract, amended for tail dedup —
-    // the frozen vectors previously carried kühlschrank three times
-    // for kuhlschrank under a 5-suggestion limit).
+    // The primary slate leads within its distance bands; the tail
+    // fills slots with NEW words only (gem #226's ranked contract) —
+    // and the merged pool re-sorts by the noisy-channel band key:
+    // TRUE edit distance recomputed per candidate (tail strategies
+    // self-report incomparable scales), then the double-letter fix,
+    // then the channel op class with verified morph inflections
+    // tiered between the pattern fix and plain edits. The typed word
+    // itself is never a suggestion.
+    let typed = word;
     let mut merged: Vec<Candidate> = primary;
+    let slate_size = merged.len();
     let mut seen: std::collections::HashSet<String> =
         merged.iter().map(|c| c.word.to_lowercase()).collect();
     for candidate in pool {
@@ -202,9 +208,43 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
             merged.push(candidate);
         }
     }
-    merged.truncate(limit);
+    // Ruby `casecmp?` (Unicode case-FOLD equality, not the ASCII-only
+    // compare): the gem drops a MAP-expanded form ("groß") as
+    // fold-equal to the typed "gross" — the typed word is never a
+    // suggestion, and fold-equal twins count as the typed word.
+    merged.retain(|c| !patterns::casecmp_eq(&c.word, typed));
+    let typed_units: Vec<char> = typed.chars().collect();
+    let mut ordered: Vec<(usize, &Candidate)> =
+        merged.iter().enumerate().collect();
+    ordered.sort_by(|&(ia, a), &(ib, b)| {
+        let true_dist = |c: &Candidate| -> usize {
+            let cu: Vec<char> = c.word.chars().collect();
+            edit_distance::damerau_with_threshold(&typed_units, &cu, 3)
+                .unwrap_or(9)
+        };
+        // The gem's band key: true distance, the double-letter fix,
+        // then the channel op class with verified morph inflections
+        // tiered between the pattern fix and plain edits.
+        let key = |c: &Candidate, i: usize| {
+            (
+                true_dist(c),
+                u8::from(!patterns::double_letter_fix(typed, &c.word)),
+                if c.morph {
+                    1
+                } else {
+                    patterns::single_edit_op(typed, &c.word)
+                },
+                usize::from(i >= slate_size),
+                i,
+            )
+        };
+        key(a, ia).cmp(&key(b, ib))
+    });
+    let merged: Vec<Candidate> =
+        ordered.into_iter().map(|(_, c)| c.clone()).collect();
     merged
         .into_iter()
+        .take(limit)
         .map(|candidate| Suggestion {
             word: candidate.word,
             distance: candidate.distance,
@@ -229,7 +269,7 @@ fn edit_distance_strategy(
     let length_min = target_length.saturating_sub(EDIT_MAX_DISTANCE);
     let length_max = target_length + EDIT_MAX_DISTANCE;
 
-    let mut candidates: Vec<(String, usize, f64)> = Vec::new();
+    let mut candidates: Vec<(String, usize, f64, bool)> = Vec::new();
     let mut dict_chars: Vec<char> = Vec::with_capacity(32);
     // Only the ±2 length buckets — the index restores word-list order, so
     // the candidate array (and every tie in the ranking sort) is exactly
@@ -250,7 +290,7 @@ fn edit_distance_strategy(
             continue;
         }
         let score = enhanced_score(&word_chars, &dict_chars, distance);
-        candidates.push((dict_word.clone(), distance, score));
+        candidates.push((dict_word.clone(), distance, score, false));
     }
 
     // Single-edit sweep (the gem's `edit_sweep_candidates`): the
@@ -264,7 +304,33 @@ fn edit_distance_strategy(
     for (candidate_word, distance) in edit_sweep(dictionary, word, &word_chars) {
         let candidate_chars: Vec<char> = candidate_word.chars().collect();
         let score = enhanced_score(&word_chars, &candidate_chars, distance);
-        candidates.push((candidate_word, distance, score));
+        candidates.push((candidate_word, distance, score, false));
+    }
+
+    let mut morph_words: Vec<String> = Vec::new();
+    // Morphological sweep (the gem's `morph_sweep_candidates`): regular
+    // inflection surface forms of the typed word — strong transforms
+    // (affix strips/additions, doubling, y->ies, ng restoration) flagged
+    // as morph; weak vowel insertions unflagged. Every variant must
+    // pass the affix-aware lookup; the max_distance contract holds for
+    // every yielded candidate.
+    for (candidate_word, distance, strong) in
+        morph_sweep(dictionary, word, &word_chars, EDIT_MAX_DISTANCE)
+    {
+        let candidate_chars: Vec<char> = candidate_word.chars().collect();
+        let score = enhanced_score(&word_chars, &candidate_chars, distance);
+        // The gem tracks morph membership by WORD (`morph_words <<
+        // candidate.downcase if strong`), not by candidate instance —
+        // the emitted Suggestion recomputes `morph:` from that set, so
+        // a word that also came from the headword loop / edit sweep
+        // (same string, same score, deduped to the first row) keeps its
+        // morph status and the composite's channel op class tiers it
+        // between the pattern fix and plain edits ("foos" -> "foo"
+        // outranks the frequency slate's same-distance insertions).
+        if strong {
+            morph_words.push(candidate_word.to_lowercase());
+        }
+        candidates.push((candidate_word, distance, score, strong));
     }
 
     if candidates.is_empty() {
@@ -282,13 +348,13 @@ fn edit_distance_strategy(
     // SymSpell.
     if word.chars().all(|c| c.is_alphabetic()) {
         candidates
-            .retain(|(candidate_word, _, _)| candidate_word.chars().all(|c| c.is_alphabetic()));
+            .retain(|(candidate_word, ..)| candidate_word.chars().all(|c| c.is_alphabetic()));
     }
 
     // Case-variant dedup (the gem's `seen_words`): keep the
     // best-scoring form, first after the sort, per lowercased word.
     let mut seen_words = std::collections::HashSet::new();
-    candidates.retain(|(candidate_word, _, _)| seen_words.insert(candidate_word.to_lowercase()));
+    candidates.retain(|(candidate_word, ..)| seen_words.insert(candidate_word.to_lowercase()));
 
     let max_score = candidates
         .iter()
@@ -298,10 +364,11 @@ fn edit_distance_strategy(
         .iter()
         .map(|candidate| candidate.2)
         .fold(f64::INFINITY, f64::min);
+    let is_morph = |w: &str| morph_words.contains(&w.to_lowercase());
     let score_range = (max_score - min_score).abs();
 
     let mut suggestions: Vec<Candidate> = Vec::new();
-    for (dict_word, distance, score) in &candidates {
+    for (dict_word, distance, score, _) in &candidates {
         let confidence = if score_range > 0.0 {
             1.0 - ((score - min_score) / score_range)
         } else {
@@ -309,8 +376,13 @@ fn edit_distance_strategy(
         };
         let jaro = ngram::typo_similarity(word, dict_word);
 
+        // Morph candidates are exempt from the quality gate: they are
+        // affix-aware lookup-verified dictionary forms — the gate
+        // would otherwise cut exactly the distance-2 inflected
+        // corrections the sweep exists to surface.
         if (confidence < EDIT_MIN_CONFIDENCE || jaro < EDIT_MIN_SIMILARITY)
             && suggestions.len() >= EDIT_MIN_RESULTS
+            && !is_morph(dict_word)
         {
             continue;
         }
@@ -322,6 +394,10 @@ fn edit_distance_strategy(
             source: SuggestionSource::EditDistance,
             original_length: target_length,
             ngram_score: jaro,
+            // Word-keyed, mirroring the gem's `morph_words.include?` —
+            // NOT the per-row flag, which the score-sort dedup can strip
+            // from a word the morph sweep also proposed.
+            morph: is_morph(dict_word),
         });
 
         if suggestions.len() >= STRATEGY_MAX_RESULTS {
@@ -374,12 +450,122 @@ fn edit_sweep(dictionary: &Dictionary, word: &str, word_chars: &[char]) -> Vec<(
 fn enhanced_score(original: &[char], suggestion: &[char], distance: usize) -> f64 {
     let mut score = distance as f64 * 1000.0;
     let suggestion_word: String = suggestion.iter().collect();
-    score -= frequency::bonus(&suggestion_word) as f64;
+    // Continuous log-scale frequency when the embedded rank map covers
+    // the word (the gem's warm-provider regime); tiers remain the
+    // frozen fallback.
+    let continuous = symspell::rank_of(&suggestion_word)
+        .map(|r| (300.0 - 45.0 * (r.max(1) as f64).log10()).clamp(0.0, 300.0));
+    score -= continuous.unwrap_or_else(|| frequency::bonus(&suggestion_word) as f64);
     score += keyboard_penalty(original, suggestion) as f64;
     score -= transposition_bonus(original, suggestion) as f64;
     score -= typo_pattern_bonus(original, suggestion) as f64;
     let length_diff = original.len().abs_diff(suggestion.len()) as f64;
     score + length_diff * 50.0
+}
+
+/// The gem's `EditDistanceStrategy#morph_sweep_candidates`: generate
+/// the regular-inflection surface forms of the typed word (plurals,
+/// -ed/-ing with doubling and e-restoration, y->ies, ng restoration,
+/// vowel insertions) and yield the ones the affix-aware lookup accepts
+/// with their true distances. Strong (true-inflection) variants carry
+/// `strong = true`; weak vowel insertions don't.
+fn morph_sweep(
+    dictionary: &Dictionary,
+    word: &str,
+    word_chars: &[char],
+    max_dist: usize,
+) -> Vec<(String, usize, bool)> {
+    let variants = morph_variants(word);
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for (cand, strong) in variants {
+        if cand == word || !seen.insert(cand.clone()) {
+            continue;
+        }
+        if !dictionary.correct(&cand) {
+            continue;
+        }
+        let cand_chars: Vec<char> = cand.chars().collect();
+        let Some(dist) =
+            edit_distance::damerau_with_threshold(word_chars, &cand_chars, max_dist)
+        else {
+            continue;
+        };
+        if dist == 0 {
+            continue;
+        }
+        out.push((cand, dist, strong));
+    }
+    out
+}
+
+/// Bounded morphological variant generator (`morph_variants`): strong
+/// inflection transforms + weak vowel insertions. Over-generation is
+/// cheap — every variant is lookup-checked by the caller.
+fn morph_variants(w: &str) -> Vec<(String, bool)> {
+    let mut v: Vec<(String, bool)> = Vec::new();
+    let last = w.chars().last();
+    let add = |cand: String, strong: bool, v: &mut Vec<(String, bool)>| {
+        v.push((cand, strong))
+    };
+    if let Some(l) = last {
+        add(format!("{w}s"), true, &mut v);
+        add(format!("{w}es"), true, &mut v);
+        if !matches!(l, 's' | 'x' | 'z') {
+            add(format!("{w}{l}s"), true, &mut v);
+        }
+        if w.ends_with('y') {
+            add(format!("{}ies", &w[..w.len() - 1]), true, &mut v);
+        }
+        if matches!(l, 'b' | 'c' | 'd' | 'f' | 'g' | 'h' | 'j' | 'k' | 'l' | 'm'
+            | 'n' | 'p' | 'r' | 't' | 'v' | 'w' | 'y')
+        {
+            add(format!("{w}{l}ed"), true, &mut v);
+            add(format!("{w}{l}ing"), true, &mut v);
+        }
+        if w.ends_with('e') {
+            add(format!("{}ing", &w[..w.len() - 1]), true, &mut v);
+        }
+        if w.ends_with("ng") {
+            add(format!("{}ing", &w[..w.len() - 1]), true, &mut v);
+        }
+        if w.ends_with('s') {
+            let stem = &w[..w.len() - 1];
+            add(stem.to_string(), true, &mut v);
+            if stem.ends_with('y') {
+                add(format!("{}ies", &stem[..stem.len() - 1]), true, &mut v);
+            }
+            add(format!("{stem}ing"), true, &mut v);
+        }
+        if w.ends_with("ed") {
+            let stem = &w[..w.len() - 2];
+            add(stem.to_string(), true, &mut v);
+            add(format!("{stem}e"), true, &mut v);
+            let b: Vec<char> = stem.chars().collect();
+            if b.len() > 2 && b[b.len() - 1] == b[b.len() - 2] {
+                add(b[..b.len() - 1].iter().collect(), true, &mut v);
+            }
+        }
+        if w.ends_with("ing") {
+            let stem = &w[..w.len() - 3];
+            add(stem.to_string(), true, &mut v);
+            add(format!("{stem}e"), true, &mut v);
+            let b: Vec<char> = stem.chars().collect();
+            if b.len() > 2 && b[b.len() - 1] == b[b.len() - 2] {
+                add(b[..b.len() - 1].iter().collect(), true, &mut v);
+            }
+        }
+        for c in ['a', 'e', 'i', 'o', 'u'] {
+            let chars: Vec<char> = w.chars().collect();
+            for i in 1..chars.len() {
+                let mut cand: String = chars[..i].iter().collect();
+                cand.push(c);
+                cand.extend(&chars[i..]);
+                add(cand, false, &mut v);
+            }
+        }
+    }
+    v
 }
 
 /// `EditDistanceStrategy#keyboard_penalty` — Manhattan-distance-weighted
@@ -523,6 +709,7 @@ fn phonetic_strategy(word: &str, words: &[String], sweep: &SweepIndex) -> Vec<Ca
             distance: 1,
             confidence: 1.0 / (1.0 + 1.0),
             source: SuggestionSource::Phonetic,
+            morph: false,
             original_length: dict_word.chars().count(),
             ngram_score: 0.0,
         })
@@ -593,6 +780,7 @@ fn keyboard_proximity_strategy(word: &str, index: &WordIndex<'_>) -> Vec<Candida
             distance: distance as u8,
             source: SuggestionSource::KeyboardProximity,
             original_length: word_chars.len(),
+            morph: false,
         })
         .collect();
 
@@ -806,6 +994,7 @@ fn ngram_strategy(word: &str, words: &[String], sweep: &SweepIndex) -> Vec<Candi
             confidence: 1.0 / (1.0 + distance as f64),
             distance: distance as u8,
             source: SuggestionSource::Ngram,
+            morph: false,
             original_length: word_chars.len(),
         })
         .collect();
