@@ -99,6 +99,34 @@ fn subsequence_exactly_two(longer: &[char], shorter: &[char]) -> bool {
     true
 }
 
+/// Ruby `String#casecmp?` — Unicode case-FOLD equality (Onigmo full
+/// fold, not plain lowercasing). ASCII pairs short-circuit through
+/// `eq_ignore_ascii_case` (identical semantics); otherwise both sides
+/// fold — sharp s (ß/ẞ) expands to "ss", final sigma (ς) folds to σ,
+/// everything else lowercases — before the compare. The composite's
+/// typed-word reject runs through this: the gem's
+/// `merged.reject { |s| s.word.casecmp?(typed) }` drops a MAP-expanded
+/// form ("groß") as fold-equal to the typed "gross", so the MAP
+/// fixtures see zero suggestions; an ASCII-only compare would keep it.
+pub(crate) fn casecmp_eq(a: &str, b: &str) -> bool {
+    if a.eq_ignore_ascii_case(b) {
+        return true;
+    }
+    fold_case(a) == fold_case(b)
+}
+
+fn fold_case(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        match ch {
+            'ß' | 'ẞ' => out.push_str("ss"),
+            'ς' => out.push('σ'),
+            other => out.extend(other.to_lowercase()),
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,6 +146,17 @@ mod tests {
         assert_eq!(single_edit_op("colums", "column"), 3);
         assert_eq!(single_edit_op("teh", "the"), 1);
         assert_eq!(single_edit_op("containg", "containing"), 2);
+    }
+
+    #[test]
+    fn casecmp_eq_matches_ruby_full_case_fold() {
+        // MRI: "groß".casecmp?("gross") => true, "größe".casecmp?("grösse")
+        // => true — the fold expands ß to "ss" instead of comparing chars.
+        assert!(casecmp_eq("gross", "GROSS"));
+        assert!(casecmp_eq("groß", "gross"));
+        assert!(casecmp_eq("GRÖSSE", "größe"));
+        assert!(!casecmp_eq("grüße", "grusse"));
+        assert!(!casecmp_eq("helo", "hello"));
     }
 }
 

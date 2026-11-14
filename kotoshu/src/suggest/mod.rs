@@ -208,7 +208,11 @@ pub fn suggest(dictionary: &Dictionary, word: &str, limit: usize) -> Vec<Suggest
             merged.push(candidate);
         }
     }
-    merged.retain(|c| !c.word.eq_ignore_ascii_case(typed));
+    // Ruby `casecmp?` (Unicode case-FOLD equality, not the ASCII-only
+    // compare): the gem drops a MAP-expanded form ("groß") as
+    // fold-equal to the typed "gross" — the typed word is never a
+    // suggestion, and fold-equal twins count as the typed word.
+    merged.retain(|c| !patterns::casecmp_eq(&c.word, typed));
     let typed_units: Vec<char> = typed.chars().collect();
     let mut ordered: Vec<(usize, &Candidate)> =
         merged.iter().enumerate().collect();
@@ -315,6 +319,17 @@ fn edit_distance_strategy(
     {
         let candidate_chars: Vec<char> = candidate_word.chars().collect();
         let score = enhanced_score(&word_chars, &candidate_chars, distance);
+        // The gem tracks morph membership by WORD (`morph_words <<
+        // candidate.downcase if strong`), not by candidate instance —
+        // the emitted Suggestion recomputes `morph:` from that set, so
+        // a word that also came from the headword loop / edit sweep
+        // (same string, same score, deduped to the first row) keeps its
+        // morph status and the composite's channel op class tiers it
+        // between the pattern fix and plain edits ("foos" -> "foo"
+        // outranks the frequency slate's same-distance insertions).
+        if strong {
+            morph_words.push(candidate_word.to_lowercase());
+        }
         candidates.push((candidate_word, distance, score, strong));
     }
 
@@ -353,7 +368,7 @@ fn edit_distance_strategy(
     let score_range = (max_score - min_score).abs();
 
     let mut suggestions: Vec<Candidate> = Vec::new();
-    for (dict_word, distance, score, morph) in &candidates {
+    for (dict_word, distance, score, _) in &candidates {
         let confidence = if score_range > 0.0 {
             1.0 - ((score - min_score) / score_range)
         } else {
@@ -379,7 +394,10 @@ fn edit_distance_strategy(
             source: SuggestionSource::EditDistance,
             original_length: target_length,
             ngram_score: jaro,
-            morph: *morph,
+            // Word-keyed, mirroring the gem's `morph_words.include?` —
+            // NOT the per-row flag, which the score-sort dedup can strip
+            // from a word the morph sweep also proposed.
+            morph: is_morph(dict_word),
         });
 
         if suggestions.len() >= STRATEGY_MAX_RESULTS {
